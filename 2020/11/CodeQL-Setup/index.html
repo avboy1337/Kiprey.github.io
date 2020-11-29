@@ -95,7 +95,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">727</span>
+            <span class="post-count">820</span>
         </span>
     </span>
 
@@ -104,7 +104,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">2 分钟</span>
+            <span class="post-count">3 分钟</span>
         </span>
     </span>
 </div>
@@ -128,6 +128,10 @@ var _hmt = _hmt || [];
 </blockquote>
 <ul>
 <li>
+<p>首先，下载一下<code>CodeQL CLI</code>二进制文件并安装</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 下载codeql.zip</span></span><br><span class="line">wget https://github.com/github/codeql-cli-binaries/releases/latest/download/codeql.zip</span><br><span class="line"><span class="comment"># 解压</span></span><br><span class="line">unzip codeql.zip</span><br><span class="line"><span class="comment"># 将codeql添加至path中</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"export PATH=\$PATH:/usr/class/codeql"</span> &gt;&gt; ~/.zshrc</span><br><span class="line"><span class="built_in">source</span> ~/.zshrc</span><br></pre></td></tr></table></figure>
+</li>
+<li>
 <p>由于是入门，我们只需要使用初始工作区（starter workspace）就好，因此执行以下命令</p>
 <blockquote>
 <p>工作区配置参考——<a href="https://help.semmle.com/codeql/codeql-for-vscode/procedures/setting-up.html#using-the-starter-workspace" target="_blank" rel="noopener">Using the starter workspace</a></p>
@@ -141,7 +145,8 @@ var _hmt = _hmt || [];
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 设置代理</span></span><br><span class="line">git config --global http.proxy &lt;Protocol&gt;://&lt;IP&gt;:&lt;PORT&gt;</span><br><span class="line"><span class="comment"># 取消代理</span></span><br><span class="line">git config --global --<span class="built_in">unset</span> http.proxy</span><br></pre></td></tr></table></figure>
 </li>
 <li>
-<p>于此同时，我们还需要在VScode中下载CodeQL的插件——<a href="https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-codeql" target="_blank" rel="noopener">Visual Studio Code Marketplace</a></p>
+<p>最后，我们还需要在VScode中下载CodeQL的插件——<a href="https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-codeql" target="_blank" rel="noopener">Visual Studio Code Marketplace</a>。</p>
+<p>插件下载完成后，还需要在vscode中设置一下<code>Code QL -- Cli: Executable Path</code>为刚刚下载下来的<code>codeql</code>二进制文件执行路径。</p>
 </li>
 <li>
 <p>上述操作完成后，我们需要先建立一个AST数据库，后续的查询操作等都是在该数据库中完成。</p>
@@ -166,7 +171,7 @@ var _hmt = _hmt || [];
 </li>
 </ul>
 <p>建立好的数据库，其目录结构为</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">- log\					# 输出的日志信息</span><br><span class="line">- db-cpp\				# 编译的数据库</span><br><span class="line">- src.zip				# 编译所对应的目标源码</span><br><span class="line">- codeql-database.yml	# 数据库相关配置</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">- log\                # 输出的日志信息</span><br><span class="line">- db-cpp\             # 编译的数据库</span><br><span class="line">- src.zip             # 编译所对应的目标源码</span><br><span class="line">- codeql-database.yml # 数据库相关配置</span><br></pre></td></tr></table></figure>
 </li>
 <li>
 <p>之后在VSCode中，</p>
@@ -184,6 +189,7 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>CodeQL使用操作参考 - <a href="https://help.semmle.com/codeql/codeql-for-vscode/procedures/using-extension.html" target="_blank" rel="noopener">CodeQL分析项目</a></p>
 </blockquote>
+<h2 id="三、编写">三、编写</h2>
  
       <!-- reward -->
       
