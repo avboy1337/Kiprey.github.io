@@ -9,6 +9,325 @@
 ]]></content>
   </entry>
   <entry>
+    <title>CodeQL使用</title>
+    <url>/2020/12/CodeQL-Setup/</url>
+    <content><![CDATA[<h2 id="一、简介">一、简介</h2>
+<p>CodeQL 是一个语义代码分析引擎，它可以扫描发现代码库中的漏洞。使用 CodeQL，可以像对待数据一样查询代码。编写查询条件以查找漏洞的所有变体并处理，同时可以分享个人查询条件。</p>
+<a id="more"></a>
+<p>编写该文章时，主要参考了官方文档 - <a href="https://help.semmle.com/QL/ql-handbook/index.html#" target="_blank" rel="noopener">QL language reference</a></p>
+<h2 id="二、环境搭建">二、环境搭建</h2>
+<blockquote>
+<p>环境搭建整体参考 <a href="https://paper.seebug.org/1078/" target="_blank" rel="noopener">代码分析引擎 CodeQL 初体验</a></p>
+</blockquote>
+<ul>
+<li>
+<p>首先，下载一下<code>CodeQL CLI</code>二进制文件并安装</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 下载codeql.zip</span></span><br><span class="line">wget https://github.com/github/codeql-cli-binaries/releases/latest/download/codeql.zip</span><br><span class="line"><span class="comment"># 解压</span></span><br><span class="line">unzip codeql.zip</span><br><span class="line"><span class="comment"># 将codeql添加至path中</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"export PATH=\$PATH:/usr/class/codeql"</span> &gt;&gt; ~/.zshrc</span><br><span class="line"><span class="built_in">source</span> ~/.zshrc</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>由于是入门，我们只需要使用初始工作区（starter workspace）就好，因此执行以下命令</p>
+<blockquote>
+<p>工作区配置参考——<a href="https://help.semmle.com/codeql/codeql-for-vscode/procedures/setting-up.html#using-the-starter-workspace" target="_blank" rel="noopener">Using the starter workspace</a></p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git <span class="built_in">clone</span> --recursive git@github.com:github/vscode-codeql-starter.git</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意：该工作区内含了QL库，因此一定要使用递归方式来下拉工作区代码。</p>
+<p>递归方式下拉该仓库后，我们不需要再下拉<code>https://github.com/Semmle/ql</code>这个库了。</p>
+</blockquote>
+<p>如果觉得下拉很慢，可以挂个代理</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 设置代理</span></span><br><span class="line">git config --global http.proxy &lt;Protocol&gt;://&lt;IP&gt;:&lt;PORT&gt;</span><br><span class="line"><span class="comment"># 取消代理</span></span><br><span class="line">git config --global --<span class="built_in">unset</span> http.proxy</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>最后，我们还需要在VScode中下载CodeQL的插件——<a href="https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-codeql" target="_blank" rel="noopener">Visual Studio Code Marketplace</a>。</p>
+<p>插件下载完成后，还需要在vscode中设置一下<code>Code QL -- Cli: Executable Path</code>为刚刚下载下来的<code>codeql</code>二进制文件执行路径。</p>
+</li>
+<li>
+<p>上述操作完成后，我们需要先建立一个AST数据库，后续的查询操作等都是在该数据库中完成。</p>
+<p>以C++代码为例，我们可以使用如下命令来建立一个数据库</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">codeql database create &lt;database-folder&gt; --language=cpp --<span class="built_in">command</span>=&lt;prefix <span class="built_in">command</span>&gt;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>如果省略<code>--command</code>参数，则codeQL会自动检测并使用自己的工具来构建。</p>
+<p>但还是强烈推荐使用自己自定义的参数，尤其是大项目时。</p>
+</blockquote>
+<p>以构建chrome为例，由于chrome项目过于庞大，因此我们只能针对某个模块来进行分析。</p>
+<p>于是我们可以进行如下操作</p>
+<ul>
+<li>
+<p>先完整编译一个chromium，release不带符号即可。</p>
+</li>
+<li>
+<p>进入obj目录，将目标模块的obj删除。</p>
+</li>
+<li>
+<p>执行以下命令，重新编译该模块并构建数据库即可。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">gn gen out/ql &amp;&amp; codeql database create &lt;targetFolder&gt; --language=cpp --Command=<span class="string">' ninja -C out/ql chrome'</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>建立好的数据库，其目录结构为</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- log\                # 输出的日志信息</span><br><span class="line">- db-cpp\             # 编译的数据库</span><br><span class="line">- src.zip             # 编译所对应的目标源码</span><br><span class="line">- codeql-database.yml # 数据库相关配置</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>之后在VSCode中，</p>
+<ul>
+<li>点击“打开工作区”来打开刚刚下拉的<code>vscode-codeql-starter</code>工作区</li>
+<li>在CodeQL插件里，打开刚刚生成的database</li>
+<li>之后编写自己的CodeQL脚本，并将脚本保存至<code>vscode-codeql-starter\codeql-custom-queries-cpp</code>处，这样import模块时就可以正常引用。</li>
+<li>将编写的ql脚本在VSCode中打开，之后点击CodeQL插件中的<code>Run on queue</code>，即可开始查询。</li>
+</ul>
+</li>
+<li>
+<p>如果想查看某个文件的AST，直接对目标源码，点击右键—<code>CodeQL: View AST</code>即可。第一次执行时会比较慢，稍微等待十分钟左右即可。</p>
+</li>
+</ul>
+<blockquote>
+<p>CodeQL使用操作参考 - <a href="https://help.semmle.com/codeql/codeql-for-vscode/procedures/using-extension.html" target="_blank" rel="noopener">CodeQL分析项目</a></p>
+</blockquote>
+<h2 id="三、基本语法">三、基本语法</h2>
+<blockquote>
+<p>基础语法将结合ql代码来讲解。</p>
+</blockquote>
+<ul>
+<li>
+<p>该QL将输出所有基础块中的空基础块。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">// 首先是引入QL库中的一个包</span><br><span class="line">import cpp</span><br><span class="line">// 限定范围在所有的BlockStmt，即所有的基础块</span><br><span class="line">from BlockStmt b</span><br><span class="line">// 获取在当前基础块中，语句个数为0的基础块（即空基础块）</span><br><span class="line">where b.getNumStmt() = 0</span><br><span class="line">// 输出搜索到的空基础块，与其后面的字符串</span><br><span class="line"><span class="keyword">select</span> b, <span class="string">"This is an empty block."</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>以下是获取某个宏定义位置的ql代码</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">from Macro m</span><br><span class="line">where m.getName() = "_LIBCPP_NO_CFI"</span><br><span class="line">  or m.getName() = "_GLIBC_LIKELY"</span><br><span class="line"><span class="keyword">select</span> m,<span class="string">"macro"</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>该代码获取调用特定函数的代码位置</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">from Function f</span><br><span class="line">where f.getName() = "memcpy"</span><br><span class="line"><span class="keyword">select</span> f, <span class="string">"a function named memcpy"</span></span><br></pre></td></tr></table></figure>
+<p>这并不稀奇，但关键是下一个ql代码</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">from FunctionCall <span class="keyword">call</span>, <span class="keyword">Function</span> func</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">    call.getTarget() = func <span class="keyword">and</span></span><br><span class="line">    func.getName() = <span class="string">"memcpy"</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">call</span>,<span class="string">"func named memcpy and called"</span></span><br></pre></td></tr></table></figure>
+<p><code>FunctionCall</code>将会涵盖所有的函数调用，因此我们可以通过该对象来获取特定函数被调用的位置。</p>
+</li>
+</ul>
+<blockquote>
+<p>对于所有的类和函数，都可以通过ctrl+右键的形式来查看其源码来了解更多信息。</p>
+</blockquote>
+<h2 id="四、高级语法">四、高级语法</h2>
+<h3 id="1-谓词">1. 谓词</h3>
+<h4 id="a-概述">a. 概述</h4>
+<ul>
+<li>
+<p>在CodeQL中，函数并不叫“函数”，叫做<code>Predicates</code>（谓词）。为了便于说明，下文中笔者可能会混用<strong>函数</strong>这个词语，即下文中的**“函数”<strong>与</strong>“谓语”**都是指代同一个内容。</p>
+</li>
+<li>
+<p>在使用谓词前，我们需要定义一个谓词。谓词的格式如下</p>
+<figure class="highlight"><table><tr><td class="code"><pre><span class="line">predicate name(type arg)</span><br><span class="line">&#123;</span><br><span class="line">  statements</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>定义谓词有三个步骤</p>
+<ul>
+<li>关键词predicate（如果没有返回值），或者结果的类型（如果当前谓词内存在返回值）</li>
+<li>谓词的名称</li>
+<li>谓词的参数列表</li>
+<li>谓词主体</li>
+</ul>
+</li>
+</ul>
+<h4 id="b-无返回值的谓词">b. 无返回值的谓词</h4>
+<ul>
+<li>
+<p>无返回值的谓词以<code>predicate</code>关键词开头。若传入的值满足谓词主体中的逻辑，则该谓词将保留该值。</p>
+</li>
+<li>
+<p>无返回值谓词的使用范围较小，但仍然在某些情况下扮演了很重要的一个角色，具体功能将在下文中逐渐讲解。</p>
+</li>
+<li>
+<p>需要注意的是，参数<code>i</code>是一个<strong>数据集合</strong></p>
+</li>
+<li>
+<p>举一个简单的例子</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function">predicate <span class="title">isSmall</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">  i in [<span class="number">1</span> .. <span class="number">9</span>]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from <span class="keyword">int</span> i </span><br><span class="line"><span class="function">where <span class="title">isSmall</span><span class="params">(i)</span> <span class="comment">// 将整数集合i从正无穷大的数据集含，限制至1-9</span></span></span><br><span class="line"><span class="function">select i</span></span><br><span class="line"><span class="function"><span class="comment">// 输出 1-9的数字</span></span></span><br></pre></td></tr></table></figure>
+<p>若传入的<code>i</code>是小于10的正整数，则<code>isSmall(i)</code>将会使得传入的集合<code>i</code>只保留符合条件的值，其他值将会被舍弃。</p>
+</li>
+</ul>
+<h4 id="c-带返回值的谓词">c. 带返回值的谓词</h4>
+<ul>
+<li>
+<p>当我们需要将某些结果从谓词中返回时，与C/C++的return语句不同的是，谓词使用的是一个特殊变量<code>result</code>。</p>
+</li>
+<li>
+<p>举个简单例子</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">int getSuccessor(int i) &#123;</span><br><span class="line">  // 若传入的i位于1-9内，则返回i+1</span><br><span class="line">  // 注意这个语法不能用C++语法来理解</span><br><span class="line">  result = i + 1 and i in [1 .. 9]</span><br><span class="line">&#125;</span><br><span class="line">  </span><br><span class="line"><span class="keyword">select</span> getSuccessor(<span class="number">3</span>)  // 输出<span class="number">4</span></span><br><span class="line"><span class="keyword">select</span> getSuccessor(<span class="number">33</span>) // 不输出任何信息</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>谓词主体的语法只是为了表述逻辑之间的关系，因此务必不要用一般编程语言的语法来理解。</p>
+</blockquote>
+</li>
+<li>
+<p>在谓词主体中，<code>result</code>变量可以像一般变量一样正常使用，唯一不同的是这个变量内的数据将会被返回。</p>
+<p>同时，<strong>谓词可能返回多个结果，或者根本不返回任何结果</strong>。以下是一个简单的例子。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">string getANeighbor(string country) &#123;</span><br><span class="line">    country = "France" and result = "Belgium"</span><br><span class="line">    or</span><br><span class="line">    country = "France" and result = "Germany"</span><br><span class="line">    or</span><br><span class="line">    country = "Germany" and result = "Austria"</span><br><span class="line">    or</span><br><span class="line">    country = "Germany" and result = "Belgium"</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> getANeighbor(<span class="string">"France"</span>)</span><br><span class="line">// 返回两个条目，<span class="string">"Belgium"</span>与<span class="string">"Germany"</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>谓词类似于函数，可以<strong>递归调用</strong>。</p>
+<p>同时<code>result</code>变量可以按照任何方式来表达与其他变量之间的关系，因此<code>result</code>变量的赋值不局限于使用<code>=</code>符号。</p>
+<p>以下是一个简单例子</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">string getANeighbor(string country) &#123;</span><br><span class="line">  country = "France" and result = "Belgium"</span><br><span class="line">  or</span><br><span class="line">  country = "France" and result = "Germany"</span><br><span class="line">  or</span><br><span class="line">  country = "Germany" and result = "Austria"</span><br><span class="line">  or</span><br><span class="line">  country = "Germany" and result = "Belgium"</span><br><span class="line">  or</span><br><span class="line">  country = getANeighbor(result)</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">select</span> getANeighbor(<span class="string">"Austria"</span>)</span><br><span class="line">// 输出Germany</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>谓词不允许描述的数据集合个数<strong>不限于有限数量大小</strong>的。举个例子</p>
+<figure class="highlight"><table><tr><td class="code"><pre><span class="line">// 该谓词将使得编译报错</span><br><span class="line">int multiplyBy4(int i) &#123;</span><br><span class="line">  // i是一个数据集合，此时该集合可能是**无限大小**</span><br><span class="line">  // result集合被设置为i*4，意味着result集合的大小有可能也是**无限大小**</span><br><span class="line">  result = i * 4</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但如果我们仍然需要定义这类函数，则必须<strong>限制集合数据大小</strong>，同时添加一个<code>bindingset</code>标注。该标注将会声明谓词<code>plusOne</code>所包含的数据集合是有限的，前提是<code>i</code>绑定到有限数量的数据集合。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">bindingset[x] bindingset[y]</span><br><span class="line">predicate plusOne(int x, int y) &#123;</span><br><span class="line">  x + 1 = y</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from int x, int y</span><br><span class="line">where y = 42 and plusOne(x, y)</span><br><span class="line"><span class="keyword">select</span> x, y</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<blockquote>
+<p>参考：<a href="https://help.semmle.com/QL/ql-handbook/predicates.html" target="_blank" rel="noopener">Predicates - QL language reference</a></p>
+</blockquote>
+<h3 id="2-类">2. 类</h3>
+<ul>
+<li>
+<p>以上面ql中的各种类为例（例如Function类），这些类的设计将特定一类的代码归结为一处，以便于后续查询的使用。而如果我们需要自定义特定的类，那该怎么做呢？</p>
+<blockquote>
+<p>CodeQL中的类，<strong>并不意味着建立一个新的对象</strong>，而只是表示特定一类的数据集合，请注意区分。</p>
+</blockquote>
+</li>
+<li>
+<p>定义一个类，需要三个步骤</p>
+<ul>
+<li>
+<p>使用关键字<code>class</code></p>
+</li>
+<li>
+<p>起一个类名，其中类名必须是首字母大写的。</p>
+</li>
+<li>
+<p>确定是从哪个类中派生出来的</p>
+<blockquote>
+<p>使用的基类，除了cpp包中定义的各种类以外，还包括基本类型，即<code>boolean</code>、<code>float</code>、<code>int</code>、<code>string</code>以及<code>date</code>。</p>
+</blockquote>
+</li>
+<li>
+<p>类的主体</p>
+</li>
+</ul>
+</li>
+<li>
+<p>以下是一个简单的例子，这个例子是官方的一个样例。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">class OneTwoThree extends int &#123;</span><br><span class="line">  OneTwoThree() &#123; // characteristic predicate</span><br><span class="line">    this = 1 or this = 2 or this = 3</span><br><span class="line">  &#125;</span><br><span class="line"> </span><br><span class="line">  string getAString() &#123; // member predicate</span><br><span class="line">    result = "One, two or three: " + this.toString()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  predicate isEven() &#123; // member predicate</span><br><span class="line">    this in [1 .. 2] // </span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from OneTwoThree i </span><br><span class="line">where i = 1 or i.getAString() = "One, two or three: 2"</span><br><span class="line"><span class="keyword">select</span> i</span><br><span class="line">// 输出<span class="number">1</span>和<span class="number">2</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>
+<p><strong>特征谓词</strong>类似于C++中的类构造函数，它将会进一步限制当前类所表示数据的集合。例如上面的特征谓词</p>
+<figure class="highlight"><table><tr><td class="code"><pre><span class="line">OneTwoThree() &#123; // characteristic predicate</span><br><span class="line">  this = 1 or this = 2 or this = 3</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>它将数据集合从原先的<code>Int</code>集，进一步限制至1-3这个范围。</p>
+<p><code>this</code>变量表示的是当前类中所包含的数据集合。与<code>result</code>变量类似，<code>this</code>同样是用于表示数据集合直接的关系。</p>
+</li>
+<li>
+<p>在特征谓词中，比较常用的一个关键字是<a href="https://help.semmle.com/QL/ql-handbook/formulas.html#exists" target="_blank" rel="noopener">exists</a>。该关键字的语法如下</p>
+<figure class="highlight"><table><tr><td class="code"><pre><span class="line">exists(&lt;variable declarations&gt; | &lt;formula&gt;)</span><br><span class="line">// 以下两个exists所表达的意思等价。</span><br><span class="line">exists(&lt;variable declarations&gt; | &lt;formula 1&gt; | &lt;formula 2&gt;</span><br><span class="line">exists(&lt;variable declarations&gt; | &lt;formula 1&gt; and &lt;formula 2&gt;</span><br></pre></td></tr></table></figure>
+<p>这个关键字的使用引入了一些新的变量。如果变量中至少有一组值可以使formula成立，那么该值将被保留。</p>
+<p>一个简单的例子</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">class NetworkByteSwap extends Expr&#123;</span><br><span class="line">    NetworkByteSwap()</span><br><span class="line">    &#123;</span><br><span class="line">        // 对于MacroInvocation这个大类的数据集合来说，</span><br><span class="line">        exists(MacroInvocation mi |</span><br><span class="line">            // 如果存在宏调用，其宏名称满足特定正则表达式</span><br><span class="line">            mi.getMacroName().regexpMatch("ntoh(s|l|ll)") and</span><br><span class="line">            // 将这类数据保存至当前类中</span><br><span class="line">            this = mi.getExpr()</span><br><span class="line">          )</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from NetworkByteSwap n</span><br><span class="line"><span class="keyword">select</span> n, <span class="string">"Network byte swap"</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>与之对应的还有成员谓词，如下例所示</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">class OneTwoThree extends int &#123;</span><br><span class="line">  OneTwoThree() &#123; // characteristic predicate</span><br><span class="line">    this = 1 or this = 2 or this = 3</span><br><span class="line">  &#125;</span><br><span class="line"> </span><br><span class="line">  string getAString() &#123; // member predicate</span><br><span class="line">    result = "One, two or three: " + this.toString()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  predicate isEven() &#123; // member predicate</span><br><span class="line">    this in [1 .. 2]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">select</span> <span class="number">1.</span>(OneTwoThree).getAString() // 输出<span class="string">"One, two or three: 1"</span></span><br><span class="line">//<span class="keyword">select</span> <span class="number">4.</span>(OneTwoThree).getAString() // 无输出</span><br></pre></td></tr></table></figure>
+<p>其中，<code>1.(OneTwoThree).getAString()</code>会将<code>int</code>类型的1转换为<code>OneTwoThree</code>类型。<strong>在转换的过程中会丢弃不满足<code>OneTwoThree</code>类中限定条件的数据</strong>。因此<code>4.(OneTwoThree).getAString()</code>将不会输出任何信息，因为整数4在转换的过程中被丢弃了。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>与C++类似，CodeQL中类里可以声明一个类字段，如下例所示</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">class SmallInt extends int &#123;</span><br><span class="line">  SmallInt() &#123; this = [1 .. 10] &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class DivisibleInt extends SmallInt &#123;</span><br><span class="line">  SmallInt divisor;   // declaration of the field `divisor`</span><br><span class="line">  DivisibleInt() &#123; this % divisor = 0 &#125;</span><br><span class="line"></span><br><span class="line">  SmallInt getADivisor() &#123; result = divisor &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from DivisibleInt i</span><br><span class="line"><span class="keyword">select</span> i, i.getADivisor()</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>需要注意的是，</p>
+<ul>
+<li>
+<p>每个类都不能继承自己</p>
+</li>
+<li>
+<p>不能继承final类</p>
+</li>
+<li>
+<p>不能继承不相容的类</p>
+<blockquote>
+<p>这一点需要额外说明一下，从某个基类派生出的类，将拥有基类的所有数据集合范围。如果某个类继承了多个基类，那么<strong>该类内含的数据集合，将是两个基类数据集合的交集</strong>。</p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>参考：<a href="https://help.semmle.com/QL/ql-handbook/types.html#classes" target="_blank" rel="noopener">class - QL language reference</a></p>
+</blockquote>
+<h2 id="六、数据流和污点跟踪分析">六、数据流和污点跟踪分析</h2>
+<p>参考：<a href="https://help.semmle.com/QL/learn-ql/cpp/dataflow.html" target="_blank" rel="noopener">dataflow - QL language reference</a></p>
+<h2 id="七、CodeQL-U-Boot-Challenge">七、CodeQL U-Boot Challenge</h2>
+<ul>
+<li>
+<p>纸上得来终觉浅，绝知此事要躬行。简单翻阅QL文档是学不到什么的，我们需要自己动手实践一下。</p>
+<p>下面笔者将讲述github learning lab中，用于学习CodeQL的一个入门课程 - <a href="https://lab.github.com/GitHubtraining/codeql-u-boot-challenge-(cc++)" target="_blank" rel="noopener">CodeQL U-Boot Challenge (C/C++)</a></p>
+</li>
+<li>
+<p>Step1: 了解从何处获取帮助</p>
+<ul>
+<li><a href="https://lgtm.com/help/lgtm/console/ql-cpp-basic-example" target="_blank" rel="noopener">Writing a basic C++ Code QL query</a></li>
+<li><a href="https://help.semmle.com/QL/learn-ql/introduction-to-ql.html" target="_blank" rel="noopener">Introduction to CodeQL</a></li>
+<li><a href="https://help.semmle.com/QL/learn-ql/" target="_blank" rel="noopener">Learning CodeQL</a></li>
+</ul>
+</li>
+<li>
+<p>Step2: 设置IDE</p>
+<ul>
+<li>下载VSCode以及CodeQL插件，还有CodeQL CLI文件。</li>
+<li>下载<a href="https://github.com/github/vscode-codeql-starter/" target="_blank" rel="noopener">CodeQL starter</a>工作区</li>
+<li>下载<a href="https://downloads.lgtm.com/snapshots/cpp/uboot/u-boot_u-boot_cpp-srcVersion_d0d07ba86afc8074d79e436b1ba4478fa0f0c1b5-dist_odasa-2019-07-25-linux64.zip" target="_blank" rel="noopener">U-Boot CodeQL database</a>并解压</li>
+<li>克隆<a href="https://github.com/Kiprey/codeql-uboot" target="_blank" rel="noopener">当前github课程仓库</a></li>
+<li>将当前课程仓库的文件夹添加至之前下载的VScode starter工作区，同时将之前下载的U-Boot数据库导入至VScode</li>
+<li>一切就绪!</li>
+</ul>
+</li>
+<li>
+<p>Step3: 编写一个简单的查询。在这里我们用于查询<code>strlen</code>函数的定义位置。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">from Function f</span><br><span class="line">where f.getName() = "strlen"</span><br><span class="line"><span class="keyword">select</span> f, <span class="string">"a function named strlen"</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>Step4: 分析这个简单的查询，之后查询一下<code>memcpy</code>函数</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">from Function f</span><br><span class="line">where f.getName() = "memcpy"</span><br><span class="line"><span class="keyword">select</span> f, <span class="string">"a function named memcpy"</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>Step5: 使用不同的类以及不同的谓语。这里我们编写QL查找名为<code>ntohs</code>、<code>ntohl</code>以及<code>ntohll</code>的宏定义。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp </span><br><span class="line"></span><br><span class="line">from Macro macro</span><br><span class="line">//where macro.getName() = "ntohs" or macro.getName() = "ntohl" or macro.getName() = "ntohll"</span><br><span class="line">where macro.getName().regexpMatch("ntoh(s|l|ll)")</span><br><span class="line"><span class="keyword">select</span> macro</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>Step6: 使用双变量。通过使用多个变量来描述复杂的代码关系，查询特定函数的调用位置。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">from FunctionCall c, Function f</span><br><span class="line">where c.getTarget() = f and f.getName() == "memcpy"</span><br><span class="line"><span class="keyword">select</span> c</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>Step7:  使用Step6的技巧，查询宏定义的调用位置。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">from MacroInvocation invoc</span><br><span class="line">where invoc.getMacroName().regexpMatch("ntoh(s|l|ll)")</span><br><span class="line"><span class="keyword">select</span> invoc</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>Step8: 改变select的输出。查找这些宏调用所扩展到的顶级表达式。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">from MacroInvocation mi</span><br><span class="line">where mi.getMacro().getName().regexpMatch("ntoh(s|l|ll)")</span><br><span class="line"><span class="keyword">select</span> mi.getExpr() // 注意这里的.getExpr()</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>Step9：编写一个类。用<code>exists</code>关键字来引入一个临时变量，以设置当前类的数据集合；特征谓词在声明时会被调用以确定当前类的范围，类似于C++构造函数。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">class NetworkByteSwap extends Expr&#123;</span><br><span class="line">    NetworkByteSwap()</span><br><span class="line">    &#123;</span><br><span class="line">        exists(MacroInvocation mi |</span><br><span class="line">            mi.getMacroName().regexpMatch("ntoh(s|l|ll)") and</span><br><span class="line">            this = mi.getExpr()</span><br><span class="line">          )</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from NetworkByteSwap n</span><br><span class="line"><span class="keyword">select</span> n, <span class="string">"Network byte swap"</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>Step10：数据流和污点跟踪分析。若<code>memcpy</code>中<code>length</code>直接来自于远程，而不加以验证，那么这将会产生OOB漏洞。以下编写的CodeQL查询针对的就是这类情况，它将查出6个真正的CVE漏洞。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">import cpp</span><br><span class="line">import semmle.code.cpp.dataflow.TaintTracking</span><br><span class="line">import DataFlow::PathGraph</span><br><span class="line"></span><br><span class="line">// 设置用于交换网络数据的类</span><br><span class="line">class NetworkByteSwap extends Expr&#123;</span><br><span class="line">    NetworkByteSwap()    &#123;</span><br><span class="line">        exists(MacroInvocation mi |</span><br><span class="line">            mi.getMacroName().regexpMatch("ntoh(s|l|ll)") and</span><br><span class="line">            this = mi.getExpr()</span><br><span class="line">          )</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">// 设置污点跟踪的分析信息</span><br><span class="line">class Config extends TaintTracking::Configuration&#123;</span><br><span class="line">    Config() &#123; this = "NetworkToMemFuncLength"&#125;</span><br><span class="line">    // 覆盖原先的isSource. 该谓语用于表示满足控制流源头的表达式.</span><br><span class="line">    override predicate isSource(DataFlow::Node source)&#123;</span><br><span class="line">        source.asExpr() instanceof NetworkByteSwap</span><br><span class="line">    &#125;</span><br><span class="line">    // 覆盖原先的isSink, 该谓语用于表示满足控制流尽头的表达式.</span><br><span class="line">    override predicate isSink(DataFlow::Node sink)&#123;</span><br><span class="line">        exists(FunctionCall c | c.getTarget().getName() = "memcpy" and sink.asExpr() = c.getArgument(2))</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">// 查询</span><br><span class="line">from Config cfg, DataFlow::PathNode source, DataFlow::PathNode sink</span><br><span class="line">where cfg.hasFlowPath(source, sink)</span><br><span class="line"><span class="keyword">select</span> sink, <span class="keyword">source</span>, sink, <span class="string">"Network byte swap flows to mmcpy"</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="六、结语">六、结语</h2>
+<ul>
+<li>当我们学习Codeql之后，我们就可以使用CodeQL挖掘特定漏洞模式的漏洞。</li>
+<li>CodeQL入门大致如上所示，更深层次的使用需要翻阅各种QL API来结合使用。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>天问之路</category>
+        <category>chrome</category>
+      </categories>
+      <tags>
+        <tag>chrome</tag>
+        <tag>CodeQL</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>下拉&amp;编译 chromium&amp;v8 代码</title>
     <url>/2020/11/fetch-chromium/</url>
     <content><![CDATA[<h2 id="一、背景">一、背景</h2>
@@ -123,90 +442,6 @@
       <tags>
         <tag>chrome</tag>
         <tag>v8</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CodeQL使用</title>
-    <url>/2020/11/CodeQL-Setup/</url>
-    <content><![CDATA[<h2 id="一、简介">一、简介</h2>
-<p>CodeQL 是一个语义代码分析引擎，它可以扫描发现代码库中的漏洞。使用 CodeQL，可以像对待数据一样查询代码。编写查询条件以查找漏洞的所有变体并处理，同时可以分享个人查询条件。</p>
-<a id="more"></a>
-<h2 id="二、环境搭建">二、环境搭建</h2>
-<blockquote>
-<p>环境搭建整体参考 <a href="https://paper.seebug.org/1078/" target="_blank" rel="noopener">代码分析引擎 CodeQL 初体验</a></p>
-</blockquote>
-<ul>
-<li>
-<p>首先，下载一下<code>CodeQL CLI</code>二进制文件并安装</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 下载codeql.zip</span></span><br><span class="line">wget https://github.com/github/codeql-cli-binaries/releases/latest/download/codeql.zip</span><br><span class="line"><span class="comment"># 解压</span></span><br><span class="line">unzip codeql.zip</span><br><span class="line"><span class="comment"># 将codeql添加至path中</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"export PATH=\$PATH:/usr/class/codeql"</span> &gt;&gt; ~/.zshrc</span><br><span class="line"><span class="built_in">source</span> ~/.zshrc</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>由于是入门，我们只需要使用初始工作区（starter workspace）就好，因此执行以下命令</p>
-<blockquote>
-<p>工作区配置参考——<a href="https://help.semmle.com/codeql/codeql-for-vscode/procedures/setting-up.html#using-the-starter-workspace" target="_blank" rel="noopener">Using the starter workspace</a></p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git <span class="built_in">clone</span> --recursive git@github.com:github/vscode-codeql-starter.git</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>注意：该工作区内含了QL库，因此一定要使用递归方式来下拉工作区代码。</p>
-<p>递归方式下拉该仓库后，我们不需要再下拉<code>https://github.com/Semmle/ql</code>这个库了。</p>
-</blockquote>
-<p>如果觉得下拉很慢，可以挂个代理</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 设置代理</span></span><br><span class="line">git config --global http.proxy &lt;Protocol&gt;://&lt;IP&gt;:&lt;PORT&gt;</span><br><span class="line"><span class="comment"># 取消代理</span></span><br><span class="line">git config --global --<span class="built_in">unset</span> http.proxy</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>最后，我们还需要在VScode中下载CodeQL的插件——<a href="https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-codeql" target="_blank" rel="noopener">Visual Studio Code Marketplace</a>。</p>
-<p>插件下载完成后，还需要在vscode中设置一下<code>Code QL -- Cli: Executable Path</code>为刚刚下载下来的<code>codeql</code>二进制文件执行路径。</p>
-</li>
-<li>
-<p>上述操作完成后，我们需要先建立一个AST数据库，后续的查询操作等都是在该数据库中完成。</p>
-<p>以C++代码为例，我们可以使用如下命令来建立一个数据库</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">codeql database create &lt;database-folder&gt; --language=cpp --<span class="built_in">command</span>=&lt;prefix <span class="built_in">command</span>&gt;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>如果省略<code>--command</code>参数，则codeQL会自动检测并使用自己的工具来构建。</p>
-<p>但还是强烈推荐使用自己自定义的参数，尤其是大项目时。</p>
-</blockquote>
-<p>以构建chrome为例，由于chrome项目过于庞大，因此我们只能针对某个模块来进行分析。</p>
-<p>于是我们可以进行如下操作</p>
-<ul>
-<li>
-<p>先完整编译一个chromium，release不带符号即可。</p>
-</li>
-<li>
-<p>进入obj目录，将目标模块的obj删除。</p>
-</li>
-<li>
-<p>执行以下命令，重新编译该模块并构建数据库即可。</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">gn gen out/ql &amp;&amp; codeql database create &lt;targetFolder&gt; --language=cpp --Command=<span class="string">' ninja -C out/ql chrome'</span></span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<p>建立好的数据库，其目录结构为</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- log\                # 输出的日志信息</span><br><span class="line">- db-cpp\             # 编译的数据库</span><br><span class="line">- src.zip             # 编译所对应的目标源码</span><br><span class="line">- codeql-database.yml # 数据库相关配置</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>之后在VSCode中，</p>
-<ul>
-<li>点击“打开工作区”来打开刚刚下拉的<code>vscode-codeql-starter</code>工作区</li>
-<li>在CodeQL插件里，打开刚刚生成的database</li>
-<li>之后编写自己的CodeQL脚本，并将脚本保存至<code>vscode-codeql-starter\codeql-custom-queries-cpp</code>处，这样import模块时就可以正常引用。</li>
-<li>将编写的ql脚本在VSCode中打开，之后点击CodeQL插件中的<code>Run on queue</code>，即可开始查询。</li>
-</ul>
-</li>
-<li>
-<p>如果想查看某个文件的AST，直接对目标源码，点击右键—<code>CodeQL: View AST</code>即可。第一次执行时会比较慢，稍微等待十分钟左右即可。</p>
-</li>
-</ul>
-<blockquote>
-<p>CodeQL使用操作参考 - <a href="https://help.semmle.com/codeql/codeql-for-vscode/procedures/using-extension.html" target="_blank" rel="noopener">CodeQL分析项目</a></p>
-</blockquote>
-<h2 id="三、编写">三、编写</h2>
-]]></content>
-      <categories>
-        <category>天问之路</category>
-        <category>chrome</category>
-      </categories>
-      <tags>
-        <tag>chrome</tag>
-        <tag>CodeQL</tag>
       </tags>
   </entry>
   <entry>
@@ -11198,27 +11433,6 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
       </tags>
   </entry>
   <entry>
-    <title>CTF Reverse 的笔记</title>
-    <url>/2020/04/reverse/</url>
-    <content><![CDATA[<ul>
-<li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li>
-<li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li>
-</ul>
-<h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2>
-<p>迷宫问题有以下特点:</p>
-<ul>
-<li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li>
-<li>将用户输入限制在少数几个字符范围内.</li>
-<li>一般只有一个迷宫入口和一个迷宫出口</li>
-</ul>
-<p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p>
-<a id="more"></a>]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Reverse</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>CTF Web 的笔记</title>
     <url>/2020/04/CTF_web/</url>
     <content><![CDATA[<p>一点点曾经整理的Web笔记，篇幅会相对较小一点。</p>
@@ -11409,6 +11623,27 @@ ipconfig/flusdns<br>
       <tags>
         <tag>CTF</tag>
         <tag>Web</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CTF Reverse 的笔记</title>
+    <url>/2020/04/reverse/</url>
+    <content><![CDATA[<ul>
+<li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li>
+<li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li>
+</ul>
+<h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2>
+<p>迷宫问题有以下特点:</p>
+<ul>
+<li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li>
+<li>将用户输入限制在少数几个字符范围内.</li>
+<li>一般只有一个迷宫入口和一个迷宫出口</li>
+</ul>
+<p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p>
+<a id="more"></a>]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Reverse</tag>
       </tags>
   </entry>
   <entry>
@@ -11757,6 +11992,92 @@ numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 pr
 <p>所有的分析都以注释的形式添加进源代码中，方便阅读</p>
 </blockquote>
 <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="keyword">void</span> *</span><br><span class="line">__libc_malloc (<span class="keyword">size_t</span> bytes)</span><br><span class="line">&#123;</span><br><span class="line">  mstate ar_ptr;  <span class="comment">// 指向arena的指针</span></span><br><span class="line">  <span class="keyword">void</span> *victim;   <span class="comment">// 指向待分配chunk的指针</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 判断 __malloc_hook 是否为空</span></span><br><span class="line">  <span class="comment">// 如果不为空，则返回 其执行 __malloc_hook指向函数的返回值</span></span><br><span class="line">  <span class="keyword">void</span> *(*hook) (<span class="keyword">size_t</span>, <span class="keyword">const</span> <span class="keyword">void</span> *)</span><br><span class="line">    = atomic_forced_read (__malloc_hook);</span><br><span class="line">  <span class="keyword">if</span> (__builtin_expect (hook != <span class="literal">NULL</span>, <span class="number">0</span>))</span><br><span class="line">    <span class="keyword">return</span> (*hook)(bytes, RETURN_ADDRESS (<span class="number">0</span>));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 获取arena并上线程锁</span></span><br><span class="line">  arena_get (ar_ptr, bytes);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 执行核心内存分配函数，并获得所分配的chunk地址</span></span><br><span class="line">  victim = _int_malloc (ar_ptr, bytes);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前arena不为空，但分配不到chunk</span></span><br><span class="line">  <span class="comment">// 则更换可用arena并尝试重新分配chunk</span></span><br><span class="line">  <span class="keyword">if</span> (!victim &amp;&amp; ar_ptr != <span class="literal">NULL</span>)</span><br><span class="line">    &#123;</span><br><span class="line">      LIBC_PROBE (memory_malloc_retry, <span class="number">1</span>, bytes);</span><br><span class="line">      ar_ptr = arena_get_retry (ar_ptr, bytes);</span><br><span class="line">      victim = _int_malloc (ar_ptr, bytes);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果arena不为空，则解除arena上的线程锁</span></span><br><span class="line">  <span class="keyword">if</span> (ar_ptr != <span class="literal">NULL</span>)</span><br><span class="line">    (<span class="keyword">void</span>) mutex_unlock (&amp;ar_ptr-&gt;mutex);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 判断条件，若不满足指定条件则断言出错</span></span><br><span class="line">  assert (!victim || chunk_is_mmapped (mem2chunk (victim)) ||</span><br><span class="line">          ar_ptr == arena_for_chunk (mem2chunk (victim)));</span><br><span class="line">  <span class="keyword">return</span> victim;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Pwn</tag>
+        <tag>Heap</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>heap - 4 - _int_malloc的相关操作</title>
+    <url>/2020/04/heap-4-_int_malloc_process/</url>
+    <content><![CDATA[<p>_int_malloc的一系列操作</p>
+<a id="more"></a>
+<blockquote>
+<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
+</blockquote>
+<h2 id="1-判断arena是否为空">1. 判断arena是否为空</h2>
+<ul>
+<li>如果是，则调用sysmalloc分配所需内存，<strong>返回并退出</strong></li>
+</ul>
+<h2 id="2-判断所申请的chunk大小是否小于fast-chunk的最大值">2. 判断所申请的chunk大小是否小于fast chunk的最大值</h2>
+<ul>
+<li>如果是，则尝试取出fast bin里的第一个chunk(<code>fastbin-&gt;fd</code>)</li>
+<li>如果该chunk不为空，则检查该chunk是否出错、 <strong>返回该chunk用户地址并退出</strong></li>
+</ul>
+<h2 id="3-判断所申请的chunk大小是否小于small-chunk的最大值">3. 判断所申请的chunk大小是否小于small chunk的最大值</h2>
+<ul>
+<li>如果是，并且指向small bin最后一个chunk的指针（<code>smallbin-&gt;bk</code>）不指向small bin自己，则判断该指针是否为NULL
+<ul>
+<li>如果是，则说明此时是第一次执行该部分代码，则执行<code>malloc_consolidate</code>函数</li>
+<li>否则，则说明small bin上存在可用chunk，检查该chunk是否出错、将该chunk取出， <strong>返回该chunk用户地址并退出</strong></li>
+</ul>
+</li>
+</ul>
+<h2 id="4-取出largebin的索引，并判断是否有空闲的fastchunk">4. 取出largebin的索引，并判断是否有空闲的fastchunk</h2>
+<ul>
+<li>如果有，则执行<code>malloc_consolidate</code>函数</li>
+</ul>
+<h2 id="5-进入大型循环——for循环">5. 进入大型循环——for循环</h2>
+<h3 id="1-遍历unsortedbin里的chunk最多10000次，并执行以下操作">1. 遍历unsortedbin里的chunk最多10000次，并执行以下操作</h3>
+<ol>
+<li>检测该chunk的大小是否非常小或非常大
+<ul>
+<li>如果是，输出错误信息并 <strong>退出</strong></li>
+</ul>
+</li>
+<li>判断用户申请的大小是否同时满足以下3个条件
+<ol>
+<li>在smallchunk的范围内</li>
+<li>unsorted bin里只有一个chunk</li>
+<li>并且该chunk是last_remainder</li>
+</ol>
+<ul>
+<li>如果是，则切割last_remainder,并将剩余remainder放回unsortedbin里、重设last_remainder、检查chunk，最后 <strong>返回该chunk的用户地址并退出</strong></li>
+</ul>
+</li>
+<li>如果这块chunk刚好与所申请的chunk大小相等，则取出该chunk、检查chunk、 <strong>返回该chunk的用户地址并退出</strong></li>
+<li>将遍历到的chunk根据大小放置进small bin或large bin里</li>
+</ol>
+<h3 id="2-尝试在large-bin里搜索可用的chunk">2. 尝试在large bin里搜索可用的chunk</h3>
+<ul>
+<li>如果large bin里，size最大的chunk，其size小于所申请的内存大小
+<ol>
+<li>取出large bin里，size最接近所申请chunk的chunk</li>
+<li>判断该chunk和所申请内存大小相差是否小于MINSIZE
+<ul>
+<li>如果是，则多出的这块内存一并附赠给用户</li>
+<li>否则，分割这块chunk，将剩余的chunk放入unsorted bin里、检查目标chunk、<strong>返回该chunk的用户地址并退出</strong></li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+<h3 id="3-在其他free-chunks大小更大的bin里找更大的内存">3. 在其他free chunks大小更大的bin里找更大的内存</h3>
+<ul>
+<li>由于fastbin、smallbin、largebin上的freechunk是分组的，所以可能出现目标组别上的freechunk无法满足大小，此时使用binmap，去其他更大的bins里查找freechunk</li>
+</ul>
+<h3 id="4-如果执行到了这里，那就真是什么freechunk都找不到了，则判断top-chunk是否够用">4. 如果执行到了这里，那就真是什么freechunk都找不到了，则判断top chunk是否够用</h3>
+<ol>
+<li>如果够用，切割top chunk并使用</li>
+<li>否则，则判断是否有fast chunk空闲
+<ul>
+<li>如果有，则执行<code>malloc_consolidate</code>函数，然后 <strong>返回for循环起点，重新执行相关代码</strong></li>
+<li>否则，调用sysmalloc申请内存，<strong>返回该chunk的用户地址并退出</strong></li>
+</ul>
+</li>
+</ol>
 ]]></content>
       <tags>
         <tag>CTF</tag>
@@ -12455,92 +12776,6 @@ numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 pr
 <p>源代码</p>
 <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">NONCONTIGUOUS_BIT indicates that MORECORE does not return contiguous</span></span><br><span class="line"><span class="comment">regions.  Otherwise, contiguity is exploited in merging together,</span></span><br><span class="line"><span class="comment">when possible, results from consecutive MORECORE calls.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">The initial value comes from MORECORE_CONTIGUOUS, but is</span></span><br><span class="line"><span class="comment">changed dynamically if mmap is ever used as an sbrk substitute.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NONCONTIGUOUS_BIT     (2U)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> contiguous(M)          (((M)-&gt;flags &amp; NONCONTIGUOUS_BIT) == 0)</span></span><br></pre></td></tr></table></figure>
 </li>
-</ul>
-</li>
-</ol>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-        <tag>Heap</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>heap - 4 - _int_malloc的相关操作</title>
-    <url>/2020/04/heap-4-_int_malloc_process/</url>
-    <content><![CDATA[<p>_int_malloc的一系列操作</p>
-<a id="more"></a>
-<blockquote>
-<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
-</blockquote>
-<h2 id="1-判断arena是否为空">1. 判断arena是否为空</h2>
-<ul>
-<li>如果是，则调用sysmalloc分配所需内存，<strong>返回并退出</strong></li>
-</ul>
-<h2 id="2-判断所申请的chunk大小是否小于fast-chunk的最大值">2. 判断所申请的chunk大小是否小于fast chunk的最大值</h2>
-<ul>
-<li>如果是，则尝试取出fast bin里的第一个chunk(<code>fastbin-&gt;fd</code>)</li>
-<li>如果该chunk不为空，则检查该chunk是否出错、 <strong>返回该chunk用户地址并退出</strong></li>
-</ul>
-<h2 id="3-判断所申请的chunk大小是否小于small-chunk的最大值">3. 判断所申请的chunk大小是否小于small chunk的最大值</h2>
-<ul>
-<li>如果是，并且指向small bin最后一个chunk的指针（<code>smallbin-&gt;bk</code>）不指向small bin自己，则判断该指针是否为NULL
-<ul>
-<li>如果是，则说明此时是第一次执行该部分代码，则执行<code>malloc_consolidate</code>函数</li>
-<li>否则，则说明small bin上存在可用chunk，检查该chunk是否出错、将该chunk取出， <strong>返回该chunk用户地址并退出</strong></li>
-</ul>
-</li>
-</ul>
-<h2 id="4-取出largebin的索引，并判断是否有空闲的fastchunk">4. 取出largebin的索引，并判断是否有空闲的fastchunk</h2>
-<ul>
-<li>如果有，则执行<code>malloc_consolidate</code>函数</li>
-</ul>
-<h2 id="5-进入大型循环——for循环">5. 进入大型循环——for循环</h2>
-<h3 id="1-遍历unsortedbin里的chunk最多10000次，并执行以下操作">1. 遍历unsortedbin里的chunk最多10000次，并执行以下操作</h3>
-<ol>
-<li>检测该chunk的大小是否非常小或非常大
-<ul>
-<li>如果是，输出错误信息并 <strong>退出</strong></li>
-</ul>
-</li>
-<li>判断用户申请的大小是否同时满足以下3个条件
-<ol>
-<li>在smallchunk的范围内</li>
-<li>unsorted bin里只有一个chunk</li>
-<li>并且该chunk是last_remainder</li>
-</ol>
-<ul>
-<li>如果是，则切割last_remainder,并将剩余remainder放回unsortedbin里、重设last_remainder、检查chunk，最后 <strong>返回该chunk的用户地址并退出</strong></li>
-</ul>
-</li>
-<li>如果这块chunk刚好与所申请的chunk大小相等，则取出该chunk、检查chunk、 <strong>返回该chunk的用户地址并退出</strong></li>
-<li>将遍历到的chunk根据大小放置进small bin或large bin里</li>
-</ol>
-<h3 id="2-尝试在large-bin里搜索可用的chunk">2. 尝试在large bin里搜索可用的chunk</h3>
-<ul>
-<li>如果large bin里，size最大的chunk，其size小于所申请的内存大小
-<ol>
-<li>取出large bin里，size最接近所申请chunk的chunk</li>
-<li>判断该chunk和所申请内存大小相差是否小于MINSIZE
-<ul>
-<li>如果是，则多出的这块内存一并附赠给用户</li>
-<li>否则，分割这块chunk，将剩余的chunk放入unsorted bin里、检查目标chunk、<strong>返回该chunk的用户地址并退出</strong></li>
-</ul>
-</li>
-</ol>
-</li>
-</ul>
-<h3 id="3-在其他free-chunks大小更大的bin里找更大的内存">3. 在其他free chunks大小更大的bin里找更大的内存</h3>
-<ul>
-<li>由于fastbin、smallbin、largebin上的freechunk是分组的，所以可能出现目标组别上的freechunk无法满足大小，此时使用binmap，去其他更大的bins里查找freechunk</li>
-</ul>
-<h3 id="4-如果执行到了这里，那就真是什么freechunk都找不到了，则判断top-chunk是否够用">4. 如果执行到了这里，那就真是什么freechunk都找不到了，则判断top chunk是否够用</h3>
-<ol>
-<li>如果够用，切割top chunk并使用</li>
-<li>否则，则判断是否有fast chunk空闲
-<ul>
-<li>如果有，则执行<code>malloc_consolidate</code>函数，然后 <strong>返回for循环起点，重新执行相关代码</strong></li>
-<li>否则，调用sysmalloc申请内存，<strong>返回该chunk的用户地址并退出</strong></li>
 </ul>
 </li>
 </ol>
