@@ -95,7 +95,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">3.8k</span>
+            <span class="post-count">5.9k</span>
         </span>
     </span>
 
@@ -104,7 +104,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">15 分钟</span>
+            <span class="post-count">24 分钟</span>
         </span>
     </span>
 </div>
@@ -268,16 +268,42 @@ var _hmt = _hmt || [];
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">string getANeighbor(string country) &#123;</span><br><span class="line">    country = "France" and result = "Belgium"</span><br><span class="line">    or</span><br><span class="line">    country = "France" and result = "Germany"</span><br><span class="line">    or</span><br><span class="line">    country = "Germany" and result = "Austria"</span><br><span class="line">    or</span><br><span class="line">    country = "Germany" and result = "Belgium"</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> getANeighbor(<span class="string">"France"</span>)</span><br><span class="line">// 返回两个条目，<span class="string">"Belgium"</span>与<span class="string">"Germany"</span></span><br></pre></td></tr></table></figure>
 </li>
 <li>
+<p>谓词不允许描述的数据集合个数<strong>不限于有限数量大小</strong>的。举个例子</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// 该谓词将使得编译报错</span><br><span class="line">int multiplyBy4(int i) &#123;</span><br><span class="line">  // i是一个数据集合，此时该集合可能是**无限大小**</span><br><span class="line">  // result集合被设置为i*4，意味着result集合的大小有可能也是**无限大小**</span><br><span class="line">  result = i * 4</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但如果我们仍然需要定义这类函数，则必须<strong>限制集合数据大小</strong>，同时添加一个<code>bindingset</code>标注。该标注将会声明谓词<code>plusOne</code>所包含的数据集合是有限的，前提是<code>i</code>绑定到有限数量的数据集合。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">bindingset[x] bindingset[y]</span><br><span class="line">predicate plusOne(int x, int y) &#123;</span><br><span class="line">  x + 1 = y</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from int x, int y</span><br><span class="line">where y = 42 and plusOne(x, y)</span><br><span class="line"><span class="keyword">select</span> x, y</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="d-递归">d. 递归</h4>
+<ul>
+<li>
 <p>谓词类似于函数，可以<strong>递归调用</strong>。</p>
 <p>同时<code>result</code>变量可以按照任何方式来表达与其他变量之间的关系，因此<code>result</code>变量的赋值不局限于使用<code>=</code>符号。</p>
 <p>以下是一个简单例子</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">string getANeighbor(string country) &#123;</span><br><span class="line">  country = "France" and result = "Belgium"</span><br><span class="line">  or</span><br><span class="line">  country = "France" and result = "Germany"</span><br><span class="line">  or</span><br><span class="line">  country = "Germany" and result = "Austria"</span><br><span class="line">  or</span><br><span class="line">  country = "Germany" and result = "Belgium"</span><br><span class="line">  or</span><br><span class="line">  country = getANeighbor(result)</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">select</span> getANeighbor(<span class="string">"Austria"</span>)</span><br><span class="line">// 输出Germany</span><br></pre></td></tr></table></figure>
 </li>
 <li>
-<p>谓词不允许描述的数据集合个数<strong>不限于有限数量大小</strong>的。举个例子</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// 该谓词将使得编译报错</span><br><span class="line">int multiplyBy4(int i) &#123;</span><br><span class="line">  // i是一个数据集合，此时该集合可能是**无限大小**</span><br><span class="line">  // result集合被设置为i*4，意味着result集合的大小有可能也是**无限大小**</span><br><span class="line">  result = i * 4</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>但如果我们仍然需要定义这类函数，则必须<strong>限制集合数据大小</strong>，同时添加一个<code>bindingset</code>标注。该标注将会声明谓词<code>plusOne</code>所包含的数据集合是有限的，前提是<code>i</code>绑定到有限数量的数据集合。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">bindingset[x] bindingset[y]</span><br><span class="line">predicate plusOne(int x, int y) &#123;</span><br><span class="line">  x + 1 = y</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from int x, int y</span><br><span class="line">where y = 42 and plusOne(x, y)</span><br><span class="line"><span class="keyword">select</span> x, y</span><br></pre></td></tr></table></figure>
+<p>传递闭包</p>
+<blockquote>
+<p>谓词的传递闭包是递归谓词，它的结果是通过重复应用原始的谓词来获得的。</p>
+<p>特别要注意的是，原始谓词必须有两个参数(可能包括this或result值)，并且这些参数必须具有兼容的类型。</p>
+<p>由于传递闭包是递归的一种常见形式，因此QL有两个有用的缩写，分别是<code>+</code>和<code>*</code></p>
+</blockquote>
+<ul>
+<li>
+<p><strong>传递闭包(+)</strong></p>
+<p>如果要一次或多次的应用特定谓词，请在谓词后添加一个<code>+</code>符号。</p>
+<p>举个例子，假设定义了一个带有成员谓词<code>getAParent()</code>的<code>Person</code>类，其中<code>p.getAParent()</code>会返回p的所有父母。而<code>p.getAParent+()</code>将会返回p的父母、p的父母的父母、等等等等。</p>
+<p>使用<code>+</code>来表示通常会比显式定义递归谓词更简单，<code>p.getAParent+()</code>等价于以下递归谓词：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Person getAnAncestor() &#123;</span><br><span class="line">  result = this.getAParent()</span><br><span class="line">  or</span><br><span class="line">  result = this.getAParent().getAnAncestor()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>自反传递闭包(*)</strong></p>
+<p>这个类似于上面的传递闭包。与之前所不同的是，使用<code>*</code>可以让谓词调用自己一次至多次。</p>
+<p>例如：<code>p.getAParent*()</code>将会输出p的祖先，或者p。该谓词调用等价于以下谓词:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Person getAnAncestor2() &#123;</span><br><span class="line">  result = this</span><br><span class="line">  or</span><br><span class="line">  result = this.getAParent().getAnAncestor2()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
 </li>
 </ul>
 <blockquote>
@@ -360,8 +386,110 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>参考：<a href="https://help.semmle.com/QL/ql-handbook/types.html#classes" target="_blank" rel="noopener">class - QL language reference</a></p>
 </blockquote>
-<h2 id="六、数据流和污点跟踪分析">六、数据流和污点跟踪分析</h2>
-<p>参考：<a href="https://help.semmle.com/QL/learn-ql/cpp/dataflow.html" target="_blank" rel="noopener">dataflow - QL language reference</a></p>
+<h2 id="六、数据流分析与污点追踪">六、数据流分析与污点追踪</h2>
+<blockquote>
+<p>该部分内容主要 <s>参考</s> 翻译自：<a href="https://codeql.github.com/docs/codeql-language-guides/analyzing-data-flow-in-cpp/" target="_blank" rel="noopener">Analyzing data flow in C and C++ - CodeQL documentation</a></p>
+<p>参考了<a href="https://codeql.github.com/docs/writing-codeql-queries/about-data-flow-analysis/#about-data-flow-analysis" target="_blank" rel="noopener">About data flow analysis</a>的部分内容</p>
+</blockquote>
+<ul>
+<li>我们可以在CodeQL中，使用数据流分析来跟踪可能导致漏洞的潜在恶意数据流。</li>
+<li>数据流分析可以分析出变量在程序中各节点上可能的值，并确定这些值如何在程序中传输以及使用方式。</li>
+<li><strong>数据流</strong>分为两个部分：<strong>局部数据流</strong>以及<strong>全局数据流</strong></li>
+</ul>
+<h3 id="1-局部数据流">1. 局部数据流</h3>
+<p><strong>局部数据流</strong>指的是在一个单独函数内的数据流。局部数据流比全局数据流分析的更加简单、迅速，同时也更加精确。</p>
+<h4 id="a-使用局部数据流">a. 使用局部数据流</h4>
+<ul>
+<li>
+<p>局部数据流的库函数主要位于<code>DataFlow</code>模块中。该模块定义了一个类<code>Class</code>，这个类用于表示数据可以流经的任何元素。</p>
+</li>
+<li>
+<p>而<code>Node</code>类分为两种，分别是表达式节点<code>ExprNode</code>与参数节点<code>ParameterNode</code>。我们可以使用谓词<code>asExpr</code>与<code>asParameter</code>，将数据流结点与表达式节点/参数结点之间进行映射。</p>
+<blockquote>
+<p>注意：参数结点<code>ParameterNode</code>指的是<strong>当前函数参数</strong>的数据流结点。</p>
+</blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">class Node &#123;</span><br><span class="line">  <span class="comment">/** Gets the expression corresponding to this node, if any. */</span></span><br><span class="line">  Expr asExpr() &#123; ... &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** Gets the parameter corresponding to this node, if any. */</span></span><br><span class="line">  Parameter asParameter() &#123; ... &#125;</span><br><span class="line"></span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>或者使用谓词<code>exprNode</code>以及<code>parameterNode</code></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Gets the node corresponding to expression `e`.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">ExprNode <span class="title">exprNode</span><span class="params">(Expr e)</span> </span>&#123; ... &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Gets the node corresponding to the value of parameter `p` at function entry.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">ParameterNode <span class="title">parameterNode</span><span class="params">(Parameter p)</span> </span>&#123; ... &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>谓词<code>localFlowStep(Node nodeFrom, Node nodeTo)</code>可以分析出从<code>nodeFrom</code>到<code>nodeTo</code>中的元素之间数据流动的方式。该谓词可以通过使用符号<code>+</code>和<code>*</code>来进行递归调用，或者使用预定义好的递归谓词<code>localFlow</code>。</p>
+<p>以下是一个用于查找从参数<code>source</code>到表达式<code>sink</code>的例子</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DataFlow::localFlow(DataFlow::parameterNode(source), DataFlow::exprNode(sink))</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="b-使用局部污点追踪">b. 使用局部污点追踪</h4>
+<ul>
+<li>局部污点追踪通过包括非保留值的流程步骤来扩展了局部数据流，例如以下C++代码</li>
+</ul>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i = tainted_user_input();</span><br><span class="line">some_big_struct *<span class="built_in">array</span> = <span class="built_in">malloc</span>(i * <span class="keyword">sizeof</span>(some_big_struct));</span><br></pre></td></tr></table></figure>
+<p>由于输出的变量<code>i</code>被污染，因此使用变量<code>i</code>的<code>malloc</code>函数参数也被污染。</p>
+<ul>
+<li>
+<p>局部污点追踪的库函数主要位于<code>TaintTracking</code>模块中。与局部数据流分析类似，污点追踪同样有谓词<code>localTaintStep(DataFlow::Node nodeFrom, DataFlow::Node nodeTo)</code>用于污点分析，同样有递归版本的<code>localTaint</code>谓词。</p>
+<p>一个简单的例子，查找从参数<code>source</code>到表达式<code>sink</code>的污点传播。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TaintTracking::localTaint(DataFlow::parameterNode(source), DataFlow::exprNode(sink))</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="c-例子">c. 例子</h4>
+<ul>
+<li>这个例子是用于查找传入<code>fopen</code>函数的文件名称</li>
+</ul>
+  <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">from Function fopen, FunctionCall fc</span><br><span class="line">where fopen.hasQualifiedName("fopen")</span><br><span class="line">  and fc.getTarget() = fopen</span><br><span class="line"><span class="keyword">select</span> fc.getArgument(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>但上面的ql代码只会将<strong>文件名参数</strong>的表达式输出，而这并不是可能传递给它的值。因此我们需要使用局部数据流分析来找到所有可流入该参数的表达式。</p>
+  <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import semmle.code.cpp.dataflow.DataFlow</span><br><span class="line"></span><br><span class="line">from Function fopen, FunctionCall fc, Expr src</span><br><span class="line">where fopen.hasQualifiedName("fopen")</span><br><span class="line">  and fc.getTarget() = fopen</span><br><span class="line">  and DataFlow::localFlow(DataFlow::exprNode(src), DataFlow::exprNode(fc.getArgument(0)))</span><br><span class="line"><span class="keyword">select</span> src</span><br></pre></td></tr></table></figure>
+<p>这样它将会输出可能流入<code>fopen</code>文件名参数的<strong>所有变量的表达式</strong>。</p>
+<p>现在我们可以稍微将<code>source</code>改一下，将<code>exprNode</code>改成<code>parameterNode</code>，这样就可以查询出<strong>既是当前函数的参数，又可以作为<code>fopen</code>的文件名参数</strong>的表达式。</p>
+  <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import semmle.code.cpp.dataflow.DataFlow</span><br><span class="line"></span><br><span class="line">from Function fopen, FunctionCall fc, Parameter p</span><br><span class="line">where fopen.hasQualifiedName("fopen")</span><br><span class="line">  and fc.getTarget() = fopen</span><br><span class="line">  and DataFlow::localFlow(DataFlow::parameterNode(p), DataFlow::exprNode(fc.getArgument(0)))</span><br><span class="line"><span class="keyword">select</span> p</span><br></pre></td></tr></table></figure>
+<ul>
+<li>
+<p>以下这个例子将会查找<strong>格式字符串中没有被硬编码</strong>的格式化函数的调用。</p>
+<blockquote>
+<p>格式化函数包括但不限于各种<code>printf</code>函数。</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">import semmle.code.cpp.dataflow.DataFlow</span><br><span class="line">import semmle.code.cpp.commons.Printf</span><br><span class="line"></span><br><span class="line">from FormattingFunction format, FunctionCall <span class="keyword">call</span>, Expr formatString</span><br><span class="line"><span class="keyword">where</span> call.getTarget() = <span class="keyword">format</span></span><br><span class="line">  <span class="keyword">and</span> call.getArgument(format.getFormatParameterIndex()) = formatString</span><br><span class="line">  <span class="keyword">and</span> <span class="keyword">not</span> <span class="keyword">exists</span>(DataFlow::Node <span class="keyword">source</span>, DataFlow::Node sink |</span><br><span class="line">    DataFlow::localFlow(<span class="keyword">source</span>, sink) <span class="keyword">and</span></span><br><span class="line">    source.asExpr() instanceof StringLiteral <span class="keyword">and</span></span><br><span class="line">    sink.asExpr() = formatString</span><br><span class="line">  )</span><br><span class="line"><span class="keyword">select</span> <span class="keyword">call</span>, <span class="string">"Argument to "</span> + format.getQualifiedName() + <span class="string">" isn't hard-coded."</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="2-全局数据流">2. 全局数据流</h3>
+<p>全局数据流跟踪整个程序的数据流，因此比局部数据流更强大。但全局数据流的准确性不如本地数据流，并且通常需要更多的时间和内存来执行分析。</p>
+<h4 id="a-使用全局数据流">a. 使用全局数据流</h4>
+<p>通过继承<code>DataFlow::Configuration</code>类来使用全局数据流库。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">class MyDataFlowConfiguration extends DataFlow::Configuration &#123;</span><br><span class="line">  MyDataFlowConfiguration() &#123; this = "MyDataFlowConfiguration" &#125;</span><br><span class="line"></span><br><span class="line">  override predicate isSource(DataFlow::Node source) &#123;</span><br><span class="line">    ...</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  override predicate isSink(DataFlow::Node sink) &#123;</span><br><span class="line">    ...</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>DataFlow::Configuration</code>类中定义了如下几个谓词：</p>
+<ul>
+<li><code>isSource</code>： <strong>定义数据可能从何处流出</strong></li>
+<li><code>isSink</code>： <strong>定义数据可能流向的位置</strong></li>
+<li><code>isBarrier</code>： 可选，限制数据流</li>
+<li><code>isBarrierGuard</code>： 可选，限制数据流</li>
+<li><code>isAdditionalFlowStep</code>： 可选，添加其他流程步骤</li>
+</ul>
+<p>在特征谓词<code>MyDataFlowConfiguration()</code>中定义了当前<code>Configuration</code>的名称，因此内部的<code>&quot;MyDataFlowConfiguration&quot;</code>需要替换成自己的名称。</p>
+<p>使用谓词<code>hasFlow(DataFlow::Node source, DataFlow::Node sink)</code>来执行全局数据流分析</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">from MyDataFlowConfiguration dataflow, DataFlow::Node source, DataFlow::Node sink</span><br><span class="line">where dataflow.hasFlow(source, sink)</span><br><span class="line"><span class="keyword">select</span> <span class="keyword">source</span>, <span class="string">"Data flow to $@."</span>, sink, sink.toString()</span><br></pre></td></tr></table></figure>
+<h4 id="b-使用全局污点追踪">b. 使用全局污点追踪</h4>
+<p>与局部污点追踪类似，全局污点追踪针对的是全局数据流。全局污点追踪通过其他不保留值的步骤来扩展了全局数据流。</p>
+<p>通过继承<code>TaintTracking::Configuration</code>类以使用全局污点追踪的库函数。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">import semmle.code.cpp.dataflow.TaintTracking</span><br><span class="line"></span><br><span class="line">class MyTaintTrackingConfiguration extends TaintTracking::Configuration &#123;</span><br><span class="line">  MyTaintTrackingConfiguration() &#123; this = "MyTaintTrackingConfiguration" &#125;</span><br><span class="line"></span><br><span class="line">  override predicate isSource(DataFlow::Node source) &#123;</span><br><span class="line">    ...</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  override predicate isSink(DataFlow::Node sink) &#123;</span><br><span class="line">    ...</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在配置中定义了以下谓词：</p>
+<ul>
+<li><code>isSource</code>：定义污点可能从何处流出</li>
+<li><code>isSink</code>：定义污点可能流入的地方</li>
+<li><code>isSanitizer</code>：可选，限制污点流</li>
+<li><code>isSanitizerGuard</code>：可选，限制污点流</li>
+<li><code>isAdditionalTaintStep</code>：可选，添加其他污染步骤</li>
+</ul>
+<p>使用谓词<code>hasFlow(DataFlow::Node source, DataFlow::Node sink)</code>以执行污点追踪分析。</p>
+<h4 id="c-例子-2">c. 例子</h4>
+<ul>
+<li>
+<p>以下数据流分析用于追踪<strong>从环境变量到打开文件</strong>的数据流</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">import semmle.code.cpp.dataflow.DataFlow</span><br><span class="line"></span><br><span class="line">class EnvironmentToFileConfiguration extends DataFlow::Configuration &#123;</span><br><span class="line">  EnvironmentToFileConfiguration() &#123; this = "EnvironmentToFileConfiguration" &#125;</span><br><span class="line"></span><br><span class="line">  override predicate isSource(DataFlow::Node source) &#123;</span><br><span class="line">    exists (Function getenv |</span><br><span class="line">      source.asExpr().(FunctionCall).getTarget() = getenv and</span><br><span class="line">      getenv.hasQualifiedName("getenv")</span><br><span class="line">    )</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  override predicate isSink(DataFlow::Node sink) &#123;</span><br><span class="line">    exists (FunctionCall fc |</span><br><span class="line">      sink.asExpr() = fc.getArgument(0) and</span><br><span class="line">      fc.getTarget().hasQualifiedName("fopen")</span><br><span class="line">    )</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from Expr getenv, Expr fopen, EnvironmentToFileConfiguration config</span><br><span class="line">where config.hasFlow(DataFlow::exprNode(getenv), DataFlow::exprNode(fopen))</span><br><span class="line"><span class="keyword">select</span> fopen, <span class="string">"This 'fopen' uses data from $@."</span>,</span><br><span class="line">  getenv, <span class="string">"call to 'getenv'"</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>以下污点追踪代码用于追踪从调用<code>ntohl</code>到操作数组索引的数据流。该代码使用<code>Guards</code>库以识别经过边界检查的表达式，同时还定义了谓词<code>isSanitizer</code>以避免污点分析经过特定数据，最后定义了<code>isAdditionalTaintStep</code>用于将流从边界循环添加至循环索引。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">import cpp</span><br><span class="line">import semmle.code.cpp.controlflow.Guards</span><br><span class="line">import semmle.code.cpp.dataflow.TaintTracking</span><br><span class="line"></span><br><span class="line">class NetworkToBufferSizeConfiguration extends TaintTracking::Configuration &#123;</span><br><span class="line">  NetworkToBufferSizeConfiguration() &#123; this = "NetworkToBufferSizeConfiguration" &#125;</span><br><span class="line"></span><br><span class="line">  override predicate isSource(DataFlow::Node node) &#123;</span><br><span class="line">    node.asExpr().(FunctionCall).getTarget().hasGlobalName("ntohl")</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  override predicate isSink(DataFlow::Node node) &#123;</span><br><span class="line">    exists(ArrayExpr ae | node.asExpr() = ae.getArrayOffset())</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  override predicate isAdditionalTaintStep(DataFlow::Node pred, DataFlow::Node succ) &#123;</span><br><span class="line">    exists(Loop loop, LoopCounter lc |</span><br><span class="line">      loop = lc.getALoop() and</span><br><span class="line">      loop.getControllingExpr().(RelationalOperation).getGreaterOperand() = pred.asExpr() |</span><br><span class="line">      succ.asExpr() = lc.getVariableAccessInLoop(loop)</span><br><span class="line">    )</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  override predicate isSanitizer(DataFlow::Node node) &#123;</span><br><span class="line">    exists(GuardCondition gc, Variable v |</span><br><span class="line">      gc.getAChild*() = v.getAnAccess() and</span><br><span class="line">      node.asExpr() = v.getAnAccess() and</span><br><span class="line">      gc.controls(node.asExpr().getBasicBlock(), _)</span><br><span class="line">    )</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from DataFlow::Node ntohl, DataFlow::Node offset, NetworkToBufferSizeConfiguration conf</span><br><span class="line">where conf.hasFlow(ntohl, offset)</span><br><span class="line"><span class="keyword">select</span> <span class="keyword">offset</span>, <span class="string">"This array offset may be influenced by $@."</span>, ntohl,</span><br><span class="line">  <span class="string">"converted data from the network"</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
 <h2 id="七、CodeQL-U-Boot-Challenge">七、CodeQL U-Boot Challenge</h2>
 <ul>
 <li>
@@ -416,11 +544,11 @@ var _hmt = _hmt || [];
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">class NetworkByteSwap extends Expr&#123;</span><br><span class="line">    NetworkByteSwap()</span><br><span class="line">    &#123;</span><br><span class="line">        exists(MacroInvocation mi |</span><br><span class="line">            mi.getMacroName().regexpMatch("ntoh(s|l|ll)") and</span><br><span class="line">            this = mi.getExpr()</span><br><span class="line">          )</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from NetworkByteSwap n</span><br><span class="line"><span class="keyword">select</span> n, <span class="string">"Network byte swap"</span></span><br></pre></td></tr></table></figure>
 </li>
 <li>
-<p>Step10：数据流和污点跟踪分析。若<code>memcpy</code>中<code>length</code>直接来自于远程，而不加以验证，那么这将会产生OOB漏洞。以下编写的CodeQL查询针对的就是这类情况，它将查出6个真正的CVE漏洞。</p>
+<p>Step10：数据流分析。若<code>memcpy</code>中<code>length</code>直接来自于远程，而不加以验证，那么这将会产生OOB漏洞。以下编写的CodeQL查询针对的就是这类情况，它将使用全局数据流分析技术，查出真正的CVE漏洞。</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">import cpp</span><br><span class="line">import semmle.code.cpp.dataflow.TaintTracking</span><br><span class="line">import DataFlow::PathGraph</span><br><span class="line"></span><br><span class="line">// 设置用于交换网络数据的类</span><br><span class="line">class NetworkByteSwap extends Expr&#123;</span><br><span class="line">    NetworkByteSwap()    &#123;</span><br><span class="line">        exists(MacroInvocation mi |</span><br><span class="line">            mi.getMacroName().regexpMatch("ntoh(s|l|ll)") and</span><br><span class="line">            this = mi.getExpr()</span><br><span class="line">          )</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">// 设置污点跟踪的分析信息</span><br><span class="line">class Config extends TaintTracking::Configuration&#123;</span><br><span class="line">    Config() &#123; this = "NetworkToMemFuncLength"&#125;</span><br><span class="line">    // 覆盖原先的isSource. 该谓语用于表示满足控制流源头的表达式.</span><br><span class="line">    override predicate isSource(DataFlow::Node source)&#123;</span><br><span class="line">        source.asExpr() instanceof NetworkByteSwap</span><br><span class="line">    &#125;</span><br><span class="line">    // 覆盖原先的isSink, 该谓语用于表示满足控制流尽头的表达式.</span><br><span class="line">    override predicate isSink(DataFlow::Node sink)&#123;</span><br><span class="line">        exists(FunctionCall c | c.getTarget().getName() = "memcpy" and sink.asExpr() = c.getArgument(2))</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">// 查询</span><br><span class="line">from Config cfg, DataFlow::PathNode source, DataFlow::PathNode sink</span><br><span class="line">where cfg.hasFlowPath(source, sink)</span><br><span class="line"><span class="keyword">select</span> sink, <span class="keyword">source</span>, sink, <span class="string">"Network byte swap flows to mmcpy"</span></span><br></pre></td></tr></table></figure>
 </li>
 </ul>
-<h2 id="六、结语">六、结语</h2>
+<h2 id="八、结语">八、结语</h2>
 <ul>
 <li>当我们学习Codeql之后，我们就可以使用CodeQL挖掘特定漏洞模式的漏洞。</li>
 <li>CodeQL入门大致如上所示，更深层次的使用需要翻阅各种QL API来结合使用。</li>
