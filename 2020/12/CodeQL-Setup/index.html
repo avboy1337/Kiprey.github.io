@@ -420,11 +420,11 @@ var _hmt = _hmt || [];
 </ul>
 <h4 id="b-使用局部污点追踪">b. 使用局部污点追踪</h4>
 <ul>
-<li>局部污点追踪通过包括非保留值的流程步骤来扩展了局部数据流，例如以下C++代码</li>
-</ul>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i = tainted_user_input();</span><br><span class="line">some_big_struct *<span class="built_in">array</span> = <span class="built_in">malloc</span>(i * <span class="keyword">sizeof</span>(some_big_struct));</span><br></pre></td></tr></table></figure>
+<li>
+<p>局部污点追踪通过包括非保留值的流程步骤来扩展了局部数据流，例如以下C++代码</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i = tainted_user_input();</span><br><span class="line">some_big_struct *<span class="built_in">array</span> = <span class="built_in">malloc</span>(i * <span class="keyword">sizeof</span>(some_big_struct));</span><br></pre></td></tr></table></figure>
 <p>由于输出的变量<code>i</code>被污染，因此使用变量<code>i</code>的<code>malloc</code>函数参数也被污染。</p>
-<ul>
+</li>
 <li>
 <p>局部污点追踪的库函数主要位于<code>TaintTracking</code>模块中。与局部数据流分析类似，污点追踪同样有谓词<code>localTaintStep(DataFlow::Node nodeFrom, DataFlow::Node nodeTo)</code>用于污点分析，同样有递归版本的<code>localTaint</code>谓词。</p>
 <p>一个简单的例子，查找从参数<code>source</code>到表达式<code>sink</code>的污点传播。</p>
@@ -433,15 +433,15 @@ var _hmt = _hmt || [];
 </ul>
 <h4 id="c-例子">c. 例子</h4>
 <ul>
-<li>这个例子是用于查找传入<code>fopen</code>函数的文件名称</li>
-</ul>
-  <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">from Function fopen, FunctionCall fc</span><br><span class="line">where fopen.hasQualifiedName("fopen")</span><br><span class="line">  and fc.getTarget() = fopen</span><br><span class="line"><span class="keyword">select</span> fc.getArgument(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<li>
+<p>这个例子是用于查找传入<code>fopen</code>函数的文件名称</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">import cpp</span><br><span class="line"></span><br><span class="line">from Function fopen, FunctionCall fc</span><br><span class="line">where fopen.hasQualifiedName("fopen")</span><br><span class="line">  and fc.getTarget() = fopen</span><br><span class="line"><span class="keyword">select</span> fc.getArgument(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
 <p>但上面的ql代码只会将<strong>文件名参数</strong>的表达式输出，而这并不是可能传递给它的值。因此我们需要使用局部数据流分析来找到所有可流入该参数的表达式。</p>
-  <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import semmle.code.cpp.dataflow.DataFlow</span><br><span class="line"></span><br><span class="line">from Function fopen, FunctionCall fc, Expr src</span><br><span class="line">where fopen.hasQualifiedName("fopen")</span><br><span class="line">  and fc.getTarget() = fopen</span><br><span class="line">  and DataFlow::localFlow(DataFlow::exprNode(src), DataFlow::exprNode(fc.getArgument(0)))</span><br><span class="line"><span class="keyword">select</span> src</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import semmle.code.cpp.dataflow.DataFlow</span><br><span class="line"></span><br><span class="line">from Function fopen, FunctionCall fc, Expr src</span><br><span class="line">where fopen.hasQualifiedName("fopen")</span><br><span class="line">  and fc.getTarget() = fopen</span><br><span class="line">  and DataFlow::localFlow(DataFlow::exprNode(src), DataFlow::exprNode(fc.getArgument(0)))</span><br><span class="line"><span class="keyword">select</span> src</span><br></pre></td></tr></table></figure>
 <p>这样它将会输出可能流入<code>fopen</code>文件名参数的<strong>所有变量的表达式</strong>。</p>
 <p>现在我们可以稍微将<code>source</code>改一下，将<code>exprNode</code>改成<code>parameterNode</code>，这样就可以查询出<strong>既是当前函数的参数，又可以作为<code>fopen</code>的文件名参数</strong>的表达式。</p>
-  <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import semmle.code.cpp.dataflow.DataFlow</span><br><span class="line"></span><br><span class="line">from Function fopen, FunctionCall fc, Parameter p</span><br><span class="line">where fopen.hasQualifiedName("fopen")</span><br><span class="line">  and fc.getTarget() = fopen</span><br><span class="line">  and DataFlow::localFlow(DataFlow::parameterNode(p), DataFlow::exprNode(fc.getArgument(0)))</span><br><span class="line"><span class="keyword">select</span> p</span><br></pre></td></tr></table></figure>
-<ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import semmle.code.cpp.dataflow.DataFlow</span><br><span class="line"></span><br><span class="line">from Function fopen, FunctionCall fc, Parameter p</span><br><span class="line">where fopen.hasQualifiedName("fopen")</span><br><span class="line">  and fc.getTarget() = fopen</span><br><span class="line">  and DataFlow::localFlow(DataFlow::parameterNode(p), DataFlow::exprNode(fc.getArgument(0)))</span><br><span class="line"><span class="keyword">select</span> p</span><br></pre></td></tr></table></figure>
+</li>
 <li>
 <p>以下这个例子将会查找<strong>格式字符串中没有被硬编码</strong>的格式化函数的调用。</p>
 <blockquote>
