@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://kiprey.github.io/about/resume.html</loc>
+    
+    <lastmod>2020-12-12T13:55:55.149Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://kiprey.github.io/2020/12/CodeQL-Setup/</loc>
     
     <lastmod>2020-12-10T15:54:00.973Z</lastmod>
@@ -40,13 +47,6 @@
     <loc>https://kiprey.github.io/2020/10/mojo/</loc>
     
     <lastmod>2020-12-07T10:12:02.327Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://kiprey.github.io/about/resume.html</loc>
-    
-    <lastmod>2020-11-23T14:56:13.092Z</lastmod>
     
   </url>
   
@@ -142,14 +142,14 @@
   </url>
   
   <url>
-    <loc>https://kiprey.github.io/2020/04/pwn/</loc>
+    <loc>https://kiprey.github.io/2020/03/pwnable.tw/</loc>
     
     <lastmod>2020-11-19T09:40:10.691Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://kiprey.github.io/2020/03/pwnable.tw/</loc>
+    <loc>https://kiprey.github.io/2020/04/pwn/</loc>
     
     <lastmod>2020-11-19T09:40:10.691Z</lastmod>
     
