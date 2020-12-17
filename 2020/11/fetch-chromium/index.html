@@ -95,7 +95,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">1.5k</span>
+            <span class="post-count">1.6k</span>
         </span>
     </span>
 
@@ -208,6 +208,10 @@ var _hmt = _hmt || [];
 <li>
 <p>之后就和编译chromium一样，先设置git分支，再设置编译参数，最后开始编译</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> v8</span><br><span class="line"><span class="comment"># 如果编译最新版的话，就不用这行命令</span></span><br><span class="line"><span class="comment"># 如果是要调洞的话，就要在这里切到有漏洞的那个commit</span></span><br><span class="line">git reset --hard [commit <span class="built_in">hash</span> with vulnerability]</span><br><span class="line"><span class="comment"># gclient sync 用来下载一些其他需要的东西，</span></span><br><span class="line"><span class="comment"># 这个还需要curl的代理，之前也已经在环境变量配置了</span></span><br><span class="line">gclient sync</span><br><span class="line"><span class="comment"># 设置编译参数</span></span><br><span class="line">tools/dev/v8gen.py x64.debugdebug</span><br><span class="line"><span class="comment"># 编译</span></span><br><span class="line">ninja -C out.gn/x64.</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>如果需要切换特定版本，则使用以下命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这里的&lt;TagName&gt;指的就是version</span></span><br><span class="line"><span class="comment"># 查看对应version/tag是否存在</span></span><br><span class="line">git tag | grep <span class="string">"&lt;TagName&gt;"</span></span><br><span class="line"><span class="comment"># 切换至目标version/tag</span></span><br><span class="line">git checkout &lt;TagName&gt;</span><br><span class="line"><span class="comment"># 下载对应依赖项</span></span><br><span class="line">gclient sync</span><br></pre></td></tr></table></figure>
+</blockquote>
 </li>
 <li>
 <p>编译完成后即可执行v8</p>
