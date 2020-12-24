@@ -1,3 +1,3 @@
-https://kiprey.github.io/2020/12/CodeQL-Setup/
+https://kiprey.github.io/2020/12/secLab-CodeQL-learning/
+https://kiprey.github.io/2020/12/CodeQL-setup/
 https://kiprey.github.io/2020/11/fetch-chromium/
-https://kiprey.github.io/2020/10/CVE-2020-6541/
