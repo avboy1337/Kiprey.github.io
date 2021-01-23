@@ -95,7 +95,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">1.6k</span>
+            <span class="post-count">1.7k</span>
         </span>
     </span>
 
@@ -104,7 +104,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">6 分钟</span>
+            <span class="post-count">7 分钟</span>
         </span>
     </span>
 </div>
@@ -216,6 +216,12 @@ var _hmt = _hmt || [];
 <li>
 <p>编译完成后即可执行v8</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./out.gn/x64.debug/d8</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>v8 还自带了gdb插件，可以让我们更加方便的使用gdb来调试v8。</p>
+<p>在<code>~/.gdbinit</code>内添加以下两行即可使用：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">source</span> /path/to/v8/tools/gdbinit</span><br><span class="line"><span class="built_in">source</span> /path/to/v8/tools/gdb-v8-support.py</span><br></pre></td></tr></table></figure>
+<p>有兴趣的话还可以简单阅读一下这两个文件，这样可以更好的了解 v8 插件的使用方式。</p>
 </li>
 </ul>
 <h2 id="五、参考">五、参考</h2>
