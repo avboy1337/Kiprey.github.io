@@ -170,6 +170,72 @@ var _hmt = _hmt || [];
 
     
     <article
+  id="post-CVE-2021-3156"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/01/CVE-2021-3156/"
+    >CVE-2021-3156分析</a> 
+</h2>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/01/CVE-2021-3156/" class="article-date">
+  <time datetime="2021-01-29T14:38:27.000Z" itemprop="datePublished">2021-01-29</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="一、前言">一、前言</h2>
+<ul>
+<li>
+<p><code>sudo</code>是Linux中一个非常重要的管理权限的软件，它允许用户使用 root 权限来运行程序。而CVE-2021-3156是sudo中存在一个堆溢出漏洞。通过该漏洞，任何没有特权的用户均可使用默认的sudo配置获取root权限。</p>
+</li>
+<li>
+<p>该漏洞可以影响从1.8.2~1.8.31p2下的所有旧版本sudo，以及1.9.0~1.9.5p1的所有稳定版sudo。</p>
+<p>Qualys漏洞团队于<code>2021-01-13</code>联系 sudo 团队、<code>2021-01-26</code>正式披露。</p>
+</li>
+<li>
+<p>由于这个漏洞原理<strong>较为简单</strong>，同时又涉及到<strong>提权</strong>这种高危操作，并且其影响广泛（笔者一台虚拟机、一个WSL以及一台阿里云服务器均可被攻击），相当有趣。所以我们接下来就来简单分析一下这个漏洞。</p> 
+      <a class="article-more-link" href="/2021/01/CVE-2021-3156/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/" rel="tag">linux</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+   
+</article>
+
+    
+    <article
   id="post-v8-turboFan"
   class="article article-type-post"
   itemscope
@@ -639,64 +705,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/chrome/" rel="tag">chrome</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-   
-</article>
-
-    
-    <article
-  id="post-mojo"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/10/mojo/"
-    >Plaid CTF 2020 mojo Writeup</a> 
-</h2>
- 
-
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/10/mojo/" class="article-date">
-  <time datetime="2020-10-03T07:20:22.000Z" itemprop="datePublished">2020-10-03</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/chrome/">chrome</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="1-简介">1. 简介</h2>
-<p>Plaid CTF 2020 <code>mojo</code> 是 chromium sandbox escape 沙箱逃逸的一道基础题，适合用于<code>chrome</code>入门。</p>
-<p>题目来源 - <a href="https://ctftime.org/task/11314" target="_blank" rel="noopener">ctftime - task11314</a></p> 
-      <a class="article-more-link" href="/2020/10/mojo/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/chrome/" rel="tag">chrome</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/sandbox-escape/" rel="tag">sandbox escape</a></li></ul>
 
     </footer>
   </div>
