@@ -93,7 +93,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">15.2k</span>
+            <span class="post-count">15.3k</span>
         </span>
     </span>
 
@@ -426,7 +426,7 @@ var _hmt = _hmt || [];
 <li>
 <p>由于<code>x + 1 + 1 &lt;= x + 2</code>，因此某个<code>NumberAdd</code>结点的<code>Type</code>，也就是<strong>其Range将会小于该结点本身的值</strong> 。例如</p>
 <ul>
-<li><code>9007199254740992</code> 连续两次**+1**后，由于精度丢失，导致最后一个<code>NumberAdd</code>结点的Type为<code>Range(9007199254740992,9007199254740992)</code>。</li>
+<li><code>9007199254740992</code> 连续两次 <strong>+1</strong> 后，由于精度丢失，导致最后一个<code>NumberAdd</code>结点的Type为<code>Range(9007199254740992,9007199254740992)</code>。</li>
 <li>但由于执行了patch中的优化，导致最后一个加法操作实际的结果为<code>9007199254740994</code>，大于Range的最大值。</li>
 <li>因此，如果使用这个结果值来访问数组的话，可能存在越界读写的问题，因为若预期index小于length的最小范围时，checkBounds结点将会被优化，此时比<strong>预期index</strong> 范围更大的 <strong>实际index</strong> 很有可能成功越界。</li>
 </ul>
@@ -468,7 +468,7 @@ var _hmt = _hmt || [];
 <li>
 <p>POC2：<strong>使用<code>Number.MAX_SAFE_INTEGER</code></strong></p>
 <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">f</span>(<span class="params">x</span>)</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">const</span> arr = [<span class="number">1.1</span>, <span class="number">2.2</span>, <span class="number">3.3</span>, <span class="number">4.4</span>, <span class="number">5.5</span>];</span><br><span class="line">    <span class="keyword">let</span> t = (x == <span class="number">1</span> ? <span class="built_in">Number</span>.MAX_SAFE_INTEGER + <span class="number">1</span> </span><br><span class="line">        : <span class="built_in">Number</span>.MAX_SAFE_INTEGER - <span class="number">2</span>);</span><br><span class="line">    t = t + <span class="number">1</span> + <span class="number">1</span>;</span><br><span class="line">    t -= (<span class="built_in">Number</span>.MAX_SAFE_INTEGER - <span class="number">2</span>);</span><br><span class="line">    <span class="keyword">return</span> arr[t];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">console</span>.log(f(<span class="number">1</span>));</span><br><span class="line">%OptimizeFunctionOnNextCall(f);</span><br><span class="line"><span class="built_in">console</span>.log(f(<span class="number">1</span>));</span><br></pre></td></tr></table></figure>
-<p><strong>问题点</strong>：在<code>GraphBuilderPhase</code>中，type feedback推测目标函数的参数只会为<code>1</code>，因此turboFan推测函数中的条件判断式**“恒”成立**，故在<code>InliningPhase</code>中优化<code>merge</code>结点，使得变量<code>t</code>始终为一个常数。</p>
+<p><strong>问题点</strong>：在<code>GraphBuilderPhase</code>中，type feedback推测目标函数的参数只会为<code>1</code>，因此turboFan推测函数中的条件判断式 <strong>“恒”成立</strong> ，故在<code>InliningPhase</code>中优化<code>merge</code>结点，使得变量<code>t</code>始终为一个常数。</p>
 <img src="/2021/01/v8-turboFan/poc2_1.png" class="">
 <p>之后就执行<code>TypedLoweringPhase</code>中的<code>ConstantFoldingReducer</code>再次将其优化为一个常数，以至于无法执行<code>DuplicateAdditionReducer</code>优化。</p>
 <p>通过turbolizer我们可以看出，若判断条件为真，则将优化好的结果输出；若判断条件为假，则说明type feedback出现错误，需要执行deopt。</p>
@@ -498,7 +498,7 @@ var _hmt = _hmt || [];
 <img src="/2021/01/v8-turboFan/poc3_1.png" class="">
 <p><strong>解决方法</strong>：添加修饰词。</p>
 <blockquote>
-<p>为什么修饰词会影响到结点的建立等等？这其中的内容同样也需要进一步的探索。</p>
+<p>因为没有修饰词 let / var 的变量都是全局变量，而 Load Elimination 的优化对作用域有一定的要求，因此全局变量的 LoadField 结点将不会被优化。</p>
 </blockquote>
 </li>
 <li>

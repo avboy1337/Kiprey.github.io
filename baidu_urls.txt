@@ -1,3 +1,3 @@
-https://kiprey.github.io/2021/01/CVE-2021-3156/
-https://kiprey.github.io/2021/01/v8-turboFan/
-https://kiprey.github.io/2020/12/secLab-CodeQL-learning/
+https://kiprey.github.io/2021/02/CVE-2019-5755/
+https://kiprey.github.io/2021/02/CVE-2019-13764/
+https://kiprey.github.io/2021/02/CVE-2020-6468/

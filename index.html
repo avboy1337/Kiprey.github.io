@@ -168,6 +168,199 @@ var _hmt = _hmt || [];
 
     
     <article
+  id="post-CVE-2019-5755"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/02/CVE-2019-5755/"
+    >CVE-2019-5755 分析</a> 
+</h2>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/02/CVE-2019-5755/" class="article-date">
+  <time datetime="2021-02-13T16:00:00.000Z" itemprop="datePublished">2021-02-14</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/v8/">v8</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="一、前言">一、前言</h2>
+<ul>
+<li>
+<p>CVE-2019-5755 是一个位于 v8 turboFan 的类型信息缺失漏洞。该漏洞将导致 SpeculativeSafeIntegerSubtract 的计算结果缺失 MinusZero （即 -0）这种类型。这将允许 turboFan 计算出错误的 Range 并可进一步构造出越界读写原语，乃至执行 shellcode。</p>
+</li>
+<li>
+<p>复现用的 v8 版本为 <code>7.1.302.28</code> （或者commit ID <code>a62e9dd69957d9b1d0a56f825506408960a283fc</code> 前的版本也可）</p>
+</li>
+</ul> 
+      <a class="article-more-link" href="/2021/02/CVE-2019-5755/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+   
+</article>
+
+    
+    <article
+  id="post-CVE-2019-13764"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/02/CVE-2019-13764/"
+    >CVE-2019-13764 分析</a> 
+</h2>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/02/CVE-2019-13764/" class="article-date">
+  <time datetime="2021-02-10T16:00:00.000Z" itemprop="datePublished">2021-02-11</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/v8/">v8</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="一、前言">一、前言</h2>
+<ul>
+<li>
+<p>CVE-2019-13764 是 v8 中的一个位于  JIT TyperPhase  <code>TypeInductionVariablePhi</code> 函数的漏洞。我们可以通过这个例子简单学习一下 TyperPhase 中对 InductionVariablePhi 的处理方式，以及越界读取构造方式。</p>
+</li>
+<li>
+<p>复现用的 v8 版本为 <code>7.8.279.23</code>（chromium 78.0.3904.108） 。</p>
+</li>
+</ul> 
+      <a class="article-more-link" href="/2021/02/CVE-2019-13764/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+   
+</article>
+
+    
+    <article
+  id="post-CVE-2020-6468"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/02/CVE-2020-6468/"
+    >CVE-2020-6468 分析</a> 
+</h2>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/02/CVE-2020-6468/" class="article-date">
+  <time datetime="2021-02-09T16:00:00.000Z" itemprop="datePublished">2021-02-10</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/v8/">v8</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="一、前言">一、前言</h2>
+<ul>
+<li>
+<p>CVE-2020-6468 是 v8 中的一个位于 <code>DeadCodeElimination::ReduceDeoptimizeOrReturnOrTerminateOrTailCall</code> 函数的 JIT 漏洞。通过该漏洞攻击者可<strong>触发类型混淆</strong>并<strong>修改数组的长度</strong>，这会导致<strong>任意越界读写</strong>并可进一步达到 <strong>RCE</strong>。</p>
+<p>具体的说，就是可以在 CheckMaps 结点前向目标对象内部写入 -1，在被认出对象类型前成功修改数组长度。</p>
+</li>
+<li>
+<p>测试用的 v8 版本为 <code>8.1.307</code> 。</p>
+</li>
+</ul> 
+      <a class="article-more-link" href="/2021/02/CVE-2020-6468/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+   
+</article>
+
+    
+    <article
   id="post-CVE-2021-3156"
   class="article article-type-post"
   itemscope
@@ -516,180 +709,6 @@ var _hmt = _hmt || [];
        
   该文章已被加密, 请输入密码查看。 
       <a class="article-more-link" href="/2020/10/CVE-2020-6541/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/chrome/" rel="tag">chrome</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-   
-</article>
-
-    
-    <article
-  id="post-vuln-patterns"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/10/vuln-patterns/"
-    >一些有趣的漏洞模式</a> 
-</h2>
- 
-
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/10/vuln-patterns/" class="article-date">
-  <time datetime="2020-10-25T13:54:35.000Z" itemprop="datePublished">2020-10-25</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%A4%A9%E9%97%AE%E4%B9%8B%E8%B7%AF/">天问之路</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="简介">简介</h2>
-<ul>
-<li>这里会持续记录平常见到的一些漏洞模式</li>
-</ul> 
-      <a class="article-more-link" href="/2020/10/vuln-patterns/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/vuln-patterns/" rel="tag">vuln patterns</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-   
-</article>
-
-    
-    <article
-  id="post-CVE-2020-6549"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/10/CVE-2020-6549/"
-    >CVE-2020-6549分析</a> 
-</h2>
- 
-
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/10/CVE-2020-6549/" class="article-date">
-  <time datetime="2020-10-17T07:24:31.000Z" itemprop="datePublished">2020-10-17</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/chrome/">chrome</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  该文章已被加密, 请输入密码查看。 
-      <a class="article-more-link" href="/2020/10/CVE-2020-6549/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/chrome/" rel="tag">chrome</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-   
-</article>
-
-    
-    <article
-  id="post-CVE-2019-5826"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/10/CVE-2019-5826/"
-    >CVE-2019-5826分析</a> 
-</h2>
- 
-
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/10/CVE-2019-5826/" class="article-date">
-  <time datetime="2020-10-11T14:38:27.000Z" itemprop="datePublished">2020-10-11</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/chrome/">chrome</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="简介">简介</h2>
-<ul>
-<li>
-<p>CVE-2019-5826是Google Chrome里IndexedDB中的Use-after-free漏洞，在版本73.0.3683.86之前该漏洞允许攻击者通过<strong>搭配render的RCE漏洞</strong>来造成UAF并<strong>沙箱逃逸</strong>。</p> 
-      <a class="article-more-link" href="/2020/10/CVE-2019-5826/"
         >阅读更多...</a
       >
        
