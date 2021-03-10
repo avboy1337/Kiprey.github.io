@@ -168,6 +168,64 @@ var _hmt = _hmt || [];
 
     
     <article
+  id="post-CVE-2018-16065"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/03/CVE-2018-16065/"
+    >CVE-2018-16065 分析</a> 
+</h2>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/03/CVE-2018-16065/" class="article-date">
+  <time datetime="2021-03-03T16:00:00.000Z" itemprop="datePublished">2021-03-04</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/v8/">v8</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="一、前言">一、前言</h2>
+<p>CVE-2018-16065 是 v8 中 <code>EmitBigTypedArrayElementStore</code> 函数内部的一个漏洞。该漏洞在检查相应 ArrayBuffer 是否被 Detach（即是否是<code>neutered</code>）之后，执行了一个带有<strong>副作用</strong>的（即<strong>可调用用户 JS callback 代码</strong>的） <code>ToBigInt</code> 函数。而用户可在对应回调函数中将原先通过上述检查的 BigIntArray （即<strong>不是 neutered 的 TypedArray</strong>）重新变成 <code>neutered</code>。</p>
+<p>这将使一部分数据被非法写入至一块已经 Detached 的 ArrayBuffer上。如果 GC 试图回收该 ArrayBuffer 的 backing store ，则会触发 CRASH。</p> 
+      <a class="article-more-link" href="/2021/03/CVE-2018-16065/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+   
+</article>
+
+    
+    <article
   id="post-CVE-2019-5755"
   class="article article-type-post"
   itemscope
@@ -666,62 +724,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/chrome/" rel="tag">chrome</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-   
-</article>
-
-    
-    <article
-  id="post-CVE-2020-6541"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/10/CVE-2020-6541/"
-    >CVE-2020-6541分析</a> 
-</h2>
- 
-
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/10/CVE-2020-6541/" class="article-date">
-  <time datetime="2020-10-26T07:24:31.000Z" itemprop="datePublished">2020-10-26</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/chrome/">chrome</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  该文章已被加密, 请输入密码查看。 
-      <a class="article-more-link" href="/2020/10/CVE-2020-6541/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/chrome/" rel="tag">chrome</a></li></ul>
 
     </footer>
   </div>
