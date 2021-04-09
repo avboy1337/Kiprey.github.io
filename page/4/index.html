@@ -20,19 +20,12 @@
   
 <link rel="stylesheet" href="/dist/main.css">
 
-  
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
-
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
   
 <link rel="stylesheet" href="/css/custom.css">
 
   
-  
-<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
-
-  
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/themes/black/pace-theme-big-counter.css">
-
+  <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
   
   
 
@@ -98,9 +91,9 @@ var _hmt = _hmt || [];
         strings: ['半夏时光，半支离歌', '', ''],
         startDelay: 1000,
         typeSpeed: 200,
-        loop: false,
+        loop: true,
         backSpeed: 100,
-        showCursor: false
+        showCursor: true
       });
     } catch (err) {
       console.log(err)
@@ -109,6 +102,60 @@ var _hmt = _hmt || [];
   
 <div id="main">
   <section class="outer">
+  
+  <ul class="ads">
+    
+        <li>
+            <a href="">
+                <img src="" width="0" alt="">
+            </a>
+        </li>
+    
+</ul>
+  
+  
+  
+
+<div class="notice" style="margin-top:50px">
+    <i class="ri-heart-fill"></i>
+    <div class="notice-content" id="broad"></div>
+</div>
+<script type="text/javascript">
+    fetch('https://v1.hitokoto.cn')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("broad").innerHTML = data.hitokoto;
+        })
+        .catch(console.error)
+</script>
+
+<style>
+    .notice {
+        padding: 20px;
+        border: 1px dashed #e6e6e6;
+        color: #969696;
+        position: relative;
+        display: inline-block;
+        width: 100%;
+        background: #fbfbfb50;
+        border-radius: 10px;
+    }
+
+    .notice i {
+        float: left;
+        color: #999;
+        font-size: 16px;
+        padding-right: 10px;
+        vertical-align: middle;
+        margin-top: -2px;
+    }
+
+    .notice-content {
+        display: initial;
+        vertical-align: middle;
+    }
+</style>
+  
   <article class="articles">
     
     
@@ -131,6 +178,7 @@ var _hmt = _hmt || [];
 </h2>
  
 
+      
     </header>
      
     <div class="article-meta">
@@ -174,7 +222,7 @@ var _hmt = _hmt || [];
 
     
  
-   
+    
 </article>
 
     
@@ -195,6 +243,7 @@ var _hmt = _hmt || [];
 </h2>
  
 
+      
     </header>
      
     <div class="article-meta">
@@ -236,7 +285,7 @@ var _hmt = _hmt || [];
 
     
  
-   
+    
 </article>
 
     
@@ -257,6 +306,7 @@ var _hmt = _hmt || [];
 </h2>
  
 
+      
     </header>
      
     <div class="article-meta">
@@ -302,7 +352,7 @@ var _hmt = _hmt || [];
 
     
  
-   
+    
 </article>
 
     
@@ -323,6 +373,7 @@ var _hmt = _hmt || [];
 </h2>
  
 
+      
     </header>
      
     <div class="article-meta">
@@ -367,7 +418,7 @@ var _hmt = _hmt || [];
 
     
  
-   
+    
 </article>
 
     
@@ -388,6 +439,7 @@ var _hmt = _hmt || [];
 </h2>
  
 
+      
     </header>
      
     <div class="article-meta">
@@ -439,7 +491,7 @@ var _hmt = _hmt || [];
 
     
  
-   
+    
 </article>
 
     
@@ -460,6 +512,7 @@ var _hmt = _hmt || [];
 </h2>
  
 
+      
     </header>
      
     <div class="article-meta">
@@ -505,7 +558,7 @@ var _hmt = _hmt || [];
 
     
  
-   
+    
 </article>
 
     
@@ -526,6 +579,7 @@ var _hmt = _hmt || [];
 </h2>
  
 
+      
     </header>
      
     <div class="article-meta">
@@ -576,7 +630,7 @@ var _hmt = _hmt || [];
 
     
  
-   
+    
 </article>
 
     
@@ -597,6 +651,7 @@ var _hmt = _hmt || [];
 </h2>
  
 
+      
     </header>
      
     <div class="article-meta">
@@ -644,7 +699,7 @@ var _hmt = _hmt || [];
 
     
  
-   
+    
 </article>
 
     
@@ -665,6 +720,7 @@ var _hmt = _hmt || [];
 </h2>
  
 
+      
     </header>
      
     <div class="article-meta">
@@ -714,12 +770,12 @@ var _hmt = _hmt || [];
 
     
  
-   
+    
 </article>
 
     
     <article
-  id="post-heap-10-_int_free_process"
+  id="post-heap-11-malloc_consolidate"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -730,23 +786,42 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/2020/05/heap-10-_int_free_process/"
-    >heap - 10 - _int_free的相关操作</a> 
+  <a class="article-title" href="/2020/05/heap-11-malloc_consolidate/"
+    >heap - 11 - malloc_consolidate 源码及其部分分析</a> 
 </h2>
  
 
+      
     </header>
      
     <div class="article-meta">
-      <a href="/2020/05/heap-10-_int_free_process/" class="article-date">
+      <a href="/2020/05/heap-11-malloc_consolidate/" class="article-date">
   <time datetime="2020-05-03T16:00:00.000Z" itemprop="datePublished">2020-05-04</time>
 </a>    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>_int_free的一系列操作</p> 
-      <a class="article-more-link" href="/2020/05/heap-10-_int_free_process/"
+  <p>fast chunk的内存整合</p>
+<h2 id="1-介绍">1. 介绍</h2>
+<ul>
+<li>
+<p>看了之前关于malloc和free的相关源码</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (have_fastchunks (av))</span><br><span class="line">    malloc_consolidate (av);</span><br></pre></td></tr></table></figure>
+<p>就算不看malloc_consolidate的源码，也猜得出来其功能<br>
+该函数是对 <strong>fast chunk</strong> 进行内存整合</p>
+<blockquote>
+<p>但为什么该函数取名为malloc_consolidate呢？真误导人呀 :-(</p>
+</blockquote>
+</li>
+<li>
+<p>但即便如此，该函数还起到了一个堆的初始化作用</p>
+<blockquote>
+<p>感到奇怪？ 看源码咯~</p>
+</blockquote>
+</li>
+</ul> 
+      <a class="article-more-link" href="/2020/05/heap-11-malloc_consolidate/"
         >阅读更多...</a
       >
        
@@ -766,7 +841,7 @@ var _hmt = _hmt || [];
 
     
  
-   
+    
 </article>
 
     
@@ -812,6 +887,9 @@ var _hmt = _hmt || [];
       
     </ul>
     <ul>
+      
+    </ul>
+    <ul>
       <li>
         <!-- cnzz统计 -->
         
@@ -849,11 +927,15 @@ var _hmt = _hmt || [];
     </li>
     
     <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
       <a class="nav-item-link" href="/tags">标签</a>
     </li>
     
     <li class="nav-item">
-      <a class="nav-item-link" href="/categories">分类</a>
+      <a class="nav-item-link" href="/friends">友链</a>
     </li>
     
     <li class="nav-item">
@@ -896,7 +978,7 @@ var _hmt = _hmt || [];
 <!-- #reward -->
 <div id="reward">
   <span class="close"><i class="ri-close-line"></i></span>
-  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯奶茶吧~</p>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
   <div class="reward-box">
     
     

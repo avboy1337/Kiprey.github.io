@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://kiprey.github.io/"/>
-  <updated>2021-04-09T01:53:28.398Z</updated>
+  <updated>2021-04-09T05:22:13.057Z</updated>
   <id>https://kiprey.github.io/</id>
   
   <author>
@@ -21,7 +21,7 @@
     <link href="https://kiprey.github.io/2021/04/kb_reports/"/>
     <id>https://kiprey.github.io/2021/04/kb_reports/</id>
     <published>2021-04-01T16:00:00.000Z</published>
-    <updated>2021-04-09T01:53:28.398Z</updated>
+    <updated>2021-04-09T05:22:13.057Z</updated>
     
     <content type="html"><![CDATA[<blockquote><p>前置说明：该文章与博主无关，是 <strong>开博</strong> 委托发布。</p></blockquote><p>我做了模型机实验，上传报告留作备份和学习，并附上 <a href="/2021/04/kb_reports/report.pdf" title="下载链接">下载链接</a></p>]]></content>
     
@@ -232,9 +232,9 @@
       <category term="chrome" scheme="https://kiprey.github.io/categories/chrome/"/>
     
     
-      <category term="v8" scheme="https://kiprey.github.io/tags/v8/"/>
-    
       <category term="CTF" scheme="https://kiprey.github.io/tags/CTF/"/>
+    
+      <category term="v8" scheme="https://kiprey.github.io/tags/v8/"/>
     
   </entry>
   
@@ -1392,37 +1392,6 @@
   </entry>
   
   <entry>
-    <title>CTF Pwn 的杂项笔记</title>
-    <link href="https://kiprey.github.io/2020/04/pwn/"/>
-    <id>https://kiprey.github.io/2020/04/pwn/</id>
-    <published>2020-04-15T16:00:00.000Z</published>
-    <updated>2020-11-19T09:40:10.691Z</updated>
-    
-    <content type="html"><![CDATA[<p>这里是笔者记录的一些内容较少、不便于整理出一篇博客的<strong>Pwn杂项</strong>知识点。</p><h2 id="1-docker-使用-使用手册">1. docker 使用 - <a href="http://www.docker.org.cn/index.html" target="_blank" rel="noopener">使用手册</a></h2><h2 id="2-漏洞">2. 漏洞</h2><ol><li><p>格式化字符串</p> <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// %lln 四字 / %ln 双字 / %hn 单字 / %hhn 字节</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%(n-1)$[format]"</span>); <span class="comment">// -&gt; 第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%&#123;n-1&#125;$n"</span>); <span class="comment">// -&gt; 将输出的字符个数写入第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%nc"</span>); <span class="comment">// -&gt; 输出对应参数n个字符</span></span><br></pre></td></tr></table></figure></li></ol><a id="more"></a><h2 id="3-绕过防护的手段">3. 绕过防护的手段</h2><ol><li>NX ------ 使用 ROPgadget 搜索可利用的小片段代码</li><li>Canary – 读取 Canary 值并在 payload 中使用</li><li>PIE ------ 由于相对偏移量不变，尝试泄露出任意一个基地址即可绕过</li></ol><h2 id="4-pwntools-docs">4. pwntools - <a href="http://docs.pwntools.com/en/stable/" target="_blank" rel="noopener">docs</a></h2><ol><li><p>DynELF 类 - 用于泄露 libc - <a href="http://docs.pwntools.com/en/stable/dynelf.html" target="_blank" rel="noopener">docs</a></p><ol><li><blockquote><p>注意：构建leak函数时，必要时刻需要重置栈<br>防止因为部分关键数据被覆盖而导致leak失败陷入死循环</p></blockquote></li></ol></li><li><p>Fmtstr 类 - 对 printf 漏洞构造恶意 format - <a href="http://docs.pwntools.com/en/stable/fmtstr.html" target="_blank" rel="noopener">docs</a></p><ol><li>较常使用的功能是<br><code>fmtstr_payload(offset,{address:data}, numbwritten=0, write_size=’byte’)</code>。<blockquote><p>第一个参数 offset 是第一个可控的栈偏移(不包含格式化字符串参数)<br>第二个字典看名字就可以理解，<br>numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 printf(“Hello [var]”)，此时在可控变量之前已经输出了“Hello ”共计六个字符，应该设置参数值为 6。<br>第四个选择用 %hhn(byte),%hn(word)还是%n(dword).在我们的例子里就可以写成 fmtstr_payload(5, {printf_got:system_plt})</p></blockquote></li></ol></li><li><p>shellcraft 类 - shellcode 生成器</p><ol><li><p>使用前需先指定平台</p> <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">context(os=<span class="string">"linux"</span>, arch=<span class="string">"amd64"</span>, bits=<span class="number">64</span>)</span><br></pre></td></tr></table></figure></li></ol></li><li><p>部分函数声明</p><ol><li>log<ol><li><code>log.success()</code></li><li><code>log.info()</code></li><li><code>log.error()</code></li><li><code>log.failure()</code></li><li><code>context.level</code> = ‘debug’/‘error’</li></ol></li><li><code>p64(int)</code> —— 传入值，传出 bytes</li><li><code>u64(bytes)</code> —— 与 p64 相反</li><li><code>ELF(elf_path_str)</code> —— 读取 ELF 文件（可执行文件，.so 共享库…）</li><li><code>process(path_str)</code> —— 执行传入文件路径上的程序</li><li><code>remote(ip_str, port_int</code>)` —— 传入格式为字符串的 ip 地址，以及格式为值的端口，连接并得到 IO 对象</li><li><code>send(bytes)</code> —— 发送数据，不带 0x0A</li><li><code>sendline(bytes)</code> —— 发送数据，结尾带 0x0A(’\n’)</li><li><code>recv(int)</code> —— 参数可选，接收 n 个字节的数据</li><li><code>recvline()</code> —— 接收数据，在没有接收到换行符的情况下一直阻塞</li><li><code>recvuntil(Str)</code> —— 一直读取输出的信息，直到读取到传入的字符串</li></ol></li><li><p>有时候可能会因为缓冲区的问题阻塞一部分数据，加上 sleep 调整可能会得到改善</p></li></ol><h2 id="5-One-gadget-github">5. One_gadget - <a href="https://github.com/david942j/one_gadget" target="_blank" rel="noopener">github</a></h2><h2 id="6-ROPgadget">6. ROPgadget</h2><ol><li><pre><code class="language-bash"> # 查找字符串 ROPgadget --binary ./pwn --string &quot;/bin/sh&quot; # 查找全部的gadget，并通过管道将信息发送到grep进行筛选 ROPgadget --binary ./pwn1_64 | grep &quot;pop rdi&quot; #筛选出有pop或ret的片段 ROPgadget --binary ./pwn1_64 --only &quot;pop|ret&quot; <figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">2. &gt; 注意：构建超长ROP链时，必要时刻需要重置栈  </span><br><span class="line">    &gt; 防止因为部分关键数据被覆盖而导致调用syscall的函数无法使用  </span><br><span class="line">    &gt; 例子: hgame2020 ROP_LEVEL0 构建 open-read-puts 链</span><br><span class="line"></span><br><span class="line"><span class="comment">## 7. GDB</span></span><br><span class="line"></span><br><span class="line">```bash</span><br><span class="line"><span class="comment">#输出system函数的内存地址</span></span><br><span class="line">gdb-peda$ <span class="builtin-name">print</span> system</span><br><span class="line"><span class="comment">#显示某个地址上的值，x表示examine，s表示string</span></span><br><span class="line">db-peda$ x/s 0x7FFFF7F7ECEE</span><br></pre></td></tr></table></figure></code></pre></li></ol><h2 id="8-libc-相关">8. libc 相关</h2><ol><li><p><a href="https://github.com/matrix1001/glibc-all-in-one" target="_blank" rel="noopener">glibc-all-in-one</a></p></li><li><p>pwn 题给出的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p><ol><li>可用于得到 system 函数和&quot;/bin/bash&quot;相对于库基址的偏移量</li><li>在程序中得到某个函数泄露出的地址之后，例如 write 函数的 GOT 地址，即可通过偏移量调用 system(&quot;/bin/bash&quot;)</li></ol></li><li><p>libc-database : 通过某些函数的地址来查询 libc 的版本 - <a href="https://libc.blukat.me/" target="_blank" rel="noopener">在线工具</a></p></li><li><p>更换加载的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p><ol><li><p><a href="https://www.mankier.com/1/patchelf#--force-rpath" target="_blank" rel="noopener">patchelf 手册页</a></p> <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">patchelf --<span class="built_in">set</span>-interpreter &lt;libc_ld&gt; &lt;elf_name&gt; <span class="comment"># 设置链接器</span></span><br><span class="line">patchelf --<span class="built_in">set</span>-rpath &lt;libc_parent_folder&gt;:/&lt;libc_name&gt; &lt;elf_name&gt;</span><br><span class="line"><span class="comment"># patchelf --add-needed # 添加libc.so</span></span><br><span class="line"><span class="comment"># patchelf --replace-needed # 替换libc.so</span></span><br></pre></td></tr></table></figure></li><li><p><a href="https://bbs.pediy.com/thread-225849.htm" target="_blank" rel="noopener">关于不同版本 glibc 强行加载的方法</a></p></li></ol><blockquote><p>注意，更换使用的libc时，一定要同时更换对应版本的<code>ld.so</code>链接器，否则会无法正常使用libc而导致段错误</p></blockquote></li></ol><h2 id="9-shellcode">9.  shellcode</h2><ol><li><p><a href="http://shell-storm.org/shellcode" target="_blank" rel="noopener">shellcode 数据库</a></p></li><li><p>常用 shellcode</p> <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Linux x86-64 29 bytes</span></span><br><span class="line"><span class="keyword">char</span> code[] = <span class="string">"\x31\xc0\x48\xbb\xd1\x9d\x96\x91\xd0\x8c\x97\xff\x48\xf7\xdb\x53\x54\x5f\x99\x52\x57\x54\x5e\xb0\x3b\x0f\x05"</span>;</span><br><span class="line"><span class="comment">// Linux x86 21 bytes</span></span><br><span class="line"><span class="keyword">char</span> shellcode[] =</span><br><span class="line"><span class="string">"\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80"</span>;</span><br></pre></td></tr></table></figure></li><li><p>生成特定格式的 shellcode - msfven</p> <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python -c <span class="string">'import sys; sys.stdout.write("\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80")'</span> |  msfvenom -p - -e x86/alpha_mixed -a linux -f raw -a x86 --platform linux BufferRegister=EAX -o output.txt</span><br></pre></td></tr></table></figure></li></ol><h2 id="10-Linux-Syscall-Reference">10. Linux Syscall Reference</h2><ol><li><a href="http://syscalls.kernelgrok.com/" target="_blank" rel="noopener">x86</a><blockquote><p>int <code>execve</code>(const char *<code>pathname</code>, char *const <code>argv</code>[], char *const <code>envp</code>[]);<br><code>sys_exec</code> : <code>eax</code> = 0xB, <code>ebx</code> = path_str_addr, <code>ecx</code> = NULL, <code>edx</code> = NULL</p></blockquote></li><li><a href="http://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/" target="_blank" rel="noopener">x64</a></li></ol>]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;这里是笔者记录的一些内容较少、不便于整理出一篇博客的&lt;strong&gt;Pwn杂项&lt;/strong&gt;知识点。&lt;/p&gt;
-&lt;h2 id=&quot;1-docker-使用-使用手册&quot;&gt;1. docker 使用 - &lt;a href=&quot;http://www.docker.org.cn/index.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;使用手册&lt;/a&gt;&lt;/h2&gt;
-&lt;h2 id=&quot;2-漏洞&quot;&gt;2. 漏洞&lt;/h2&gt;
-&lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;格式化字符串&lt;/p&gt;
- &lt;figure class=&quot;highlight c&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;// %lln 四字 / %ln 双字 / %hn 单字 / %hhn 字节&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;printf&lt;/span&gt;(&lt;span class=&quot;string&quot;&gt;&quot;%(n-1)$[format]&quot;&lt;/span&gt;); &lt;span class=&quot;comment&quot;&gt;// -&amp;gt; 第n个参数&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;printf&lt;/span&gt;(&lt;span class=&quot;string&quot;&gt;&quot;%&amp;#123;n-1&amp;#125;$n&quot;&lt;/span&gt;); &lt;span class=&quot;comment&quot;&gt;// -&amp;gt; 将输出的字符个数写入第n个参数&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;printf&lt;/span&gt;(&lt;span class=&quot;string&quot;&gt;&quot;%nc&quot;&lt;/span&gt;); &lt;span class=&quot;comment&quot;&gt;// -&amp;gt; 输出对应参数n个字符&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-    
-    </summary>
-    
-    
-    
-      <category term="CTF" scheme="https://kiprey.github.io/tags/CTF/"/>
-    
-      <category term="Pwn" scheme="https://kiprey.github.io/tags/Pwn/"/>
-    
-  </entry>
-  
-  <entry>
     <title>CTF Crypto 的笔记</title>
     <link href="https://kiprey.github.io/2020/04/crypto/"/>
     <id>https://kiprey.github.io/2020/04/crypto/</id>
@@ -1466,6 +1435,40 @@
   </entry>
   
   <entry>
+    <title>CTF Reverse 的笔记</title>
+    <link href="https://kiprey.github.io/2020/04/reverse/"/>
+    <id>https://kiprey.github.io/2020/04/reverse/</id>
+    <published>2020-04-15T16:00:00.000Z</published>
+    <updated>2020-11-19T09:40:10.694Z</updated>
+    
+    <content type="html"><![CDATA[<ul><li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li><li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li></ul><h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2><p>迷宫问题有以下特点:</p><ul><li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li><li>将用户输入限制在少数几个字符范围内.</li><li>一般只有一个迷宫入口和一个迷宫出口</li></ul><p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p><a id="more"></a>]]></content>
+    
+    <summary type="html">
+    
+      &lt;ul&gt;
+&lt;li&gt;笔者会把一些曾经遇到过的Reverse知识点记录在这里。&lt;/li&gt;
+&lt;li&gt;但笔者并非主攻二进制逆向，故逆向笔记会相对较少。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;1-迷宫问题（maze）&quot;&gt;1. 迷宫问题（maze）&lt;/h2&gt;
+&lt;p&gt;迷宫问题有以下特点:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;在内存中布置一张 “地图”，这个地图可能是字符（例如&lt;code&gt;#&lt;/code&gt;之类的），也可能是一些数字的二进制&lt;/li&gt;
+&lt;li&gt;将用户输入限制在少数几个字符范围内.&lt;/li&gt;
+&lt;li&gt;一般只有一个迷宫入口和一个迷宫出口&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;详情&lt;a href=&quot;https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;CTF-Wiki&lt;/a&gt;&lt;/p&gt;
+    
+    </summary>
+    
+    
+    
+      <category term="CTF" scheme="https://kiprey.github.io/tags/CTF/"/>
+    
+      <category term="Reverse" scheme="https://kiprey.github.io/tags/Reverse/"/>
+    
+  </entry>
+  
+  <entry>
     <title>CTF Misc 的笔记</title>
     <link href="https://kiprey.github.io/2020/04/misc/"/>
     <id>https://kiprey.github.io/2020/04/misc/</id>
@@ -1500,28 +1503,25 @@
   </entry>
   
   <entry>
-    <title>CTF Reverse 的笔记</title>
-    <link href="https://kiprey.github.io/2020/04/reverse/"/>
-    <id>https://kiprey.github.io/2020/04/reverse/</id>
+    <title>CTF Pwn 的杂项笔记</title>
+    <link href="https://kiprey.github.io/2020/04/pwn/"/>
+    <id>https://kiprey.github.io/2020/04/pwn/</id>
     <published>2020-04-15T16:00:00.000Z</published>
-    <updated>2020-11-19T09:40:10.694Z</updated>
+    <updated>2020-11-19T09:40:10.691Z</updated>
     
-    <content type="html"><![CDATA[<ul><li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li><li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li></ul><h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2><p>迷宫问题有以下特点:</p><ul><li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li><li>将用户输入限制在少数几个字符范围内.</li><li>一般只有一个迷宫入口和一个迷宫出口</li></ul><p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p><a id="more"></a>]]></content>
+    <content type="html"><![CDATA[<p>这里是笔者记录的一些内容较少、不便于整理出一篇博客的<strong>Pwn杂项</strong>知识点。</p><h2 id="1-docker-使用-使用手册">1. docker 使用 - <a href="http://www.docker.org.cn/index.html" target="_blank" rel="noopener">使用手册</a></h2><h2 id="2-漏洞">2. 漏洞</h2><ol><li><p>格式化字符串</p> <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// %lln 四字 / %ln 双字 / %hn 单字 / %hhn 字节</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%(n-1)$[format]"</span>); <span class="comment">// -&gt; 第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%&#123;n-1&#125;$n"</span>); <span class="comment">// -&gt; 将输出的字符个数写入第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%nc"</span>); <span class="comment">// -&gt; 输出对应参数n个字符</span></span><br></pre></td></tr></table></figure></li></ol><a id="more"></a><h2 id="3-绕过防护的手段">3. 绕过防护的手段</h2><ol><li>NX ------ 使用 ROPgadget 搜索可利用的小片段代码</li><li>Canary – 读取 Canary 值并在 payload 中使用</li><li>PIE ------ 由于相对偏移量不变，尝试泄露出任意一个基地址即可绕过</li></ol><h2 id="4-pwntools-docs">4. pwntools - <a href="http://docs.pwntools.com/en/stable/" target="_blank" rel="noopener">docs</a></h2><ol><li><p>DynELF 类 - 用于泄露 libc - <a href="http://docs.pwntools.com/en/stable/dynelf.html" target="_blank" rel="noopener">docs</a></p><ol><li><blockquote><p>注意：构建leak函数时，必要时刻需要重置栈<br>防止因为部分关键数据被覆盖而导致leak失败陷入死循环</p></blockquote></li></ol></li><li><p>Fmtstr 类 - 对 printf 漏洞构造恶意 format - <a href="http://docs.pwntools.com/en/stable/fmtstr.html" target="_blank" rel="noopener">docs</a></p><ol><li>较常使用的功能是<br><code>fmtstr_payload(offset,{address:data}, numbwritten=0, write_size=’byte’)</code>。<blockquote><p>第一个参数 offset 是第一个可控的栈偏移(不包含格式化字符串参数)<br>第二个字典看名字就可以理解，<br>numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 printf(“Hello [var]”)，此时在可控变量之前已经输出了“Hello ”共计六个字符，应该设置参数值为 6。<br>第四个选择用 %hhn(byte),%hn(word)还是%n(dword).在我们的例子里就可以写成 fmtstr_payload(5, {printf_got:system_plt})</p></blockquote></li></ol></li><li><p>shellcraft 类 - shellcode 生成器</p><ol><li><p>使用前需先指定平台</p> <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">context(os=<span class="string">"linux"</span>, arch=<span class="string">"amd64"</span>, bits=<span class="number">64</span>)</span><br></pre></td></tr></table></figure></li></ol></li><li><p>部分函数声明</p><ol><li>log<ol><li><code>log.success()</code></li><li><code>log.info()</code></li><li><code>log.error()</code></li><li><code>log.failure()</code></li><li><code>context.level</code> = ‘debug’/‘error’</li></ol></li><li><code>p64(int)</code> —— 传入值，传出 bytes</li><li><code>u64(bytes)</code> —— 与 p64 相反</li><li><code>ELF(elf_path_str)</code> —— 读取 ELF 文件（可执行文件，.so 共享库…）</li><li><code>process(path_str)</code> —— 执行传入文件路径上的程序</li><li><code>remote(ip_str, port_int</code>)` —— 传入格式为字符串的 ip 地址，以及格式为值的端口，连接并得到 IO 对象</li><li><code>send(bytes)</code> —— 发送数据，不带 0x0A</li><li><code>sendline(bytes)</code> —— 发送数据，结尾带 0x0A(’\n’)</li><li><code>recv(int)</code> —— 参数可选，接收 n 个字节的数据</li><li><code>recvline()</code> —— 接收数据，在没有接收到换行符的情况下一直阻塞</li><li><code>recvuntil(Str)</code> —— 一直读取输出的信息，直到读取到传入的字符串</li></ol></li><li><p>有时候可能会因为缓冲区的问题阻塞一部分数据，加上 sleep 调整可能会得到改善</p></li></ol><h2 id="5-One-gadget-github">5. One_gadget - <a href="https://github.com/david942j/one_gadget" target="_blank" rel="noopener">github</a></h2><h2 id="6-ROPgadget">6. ROPgadget</h2><ol><li><pre><code class="language-bash"> # 查找字符串 ROPgadget --binary ./pwn --string &quot;/bin/sh&quot; # 查找全部的gadget，并通过管道将信息发送到grep进行筛选 ROPgadget --binary ./pwn1_64 | grep &quot;pop rdi&quot; #筛选出有pop或ret的片段 ROPgadget --binary ./pwn1_64 --only &quot;pop|ret&quot; <figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">2. &gt; 注意：构建超长ROP链时，必要时刻需要重置栈  </span><br><span class="line">    &gt; 防止因为部分关键数据被覆盖而导致调用syscall的函数无法使用  </span><br><span class="line">    &gt; 例子: hgame2020 ROP_LEVEL0 构建 open-read-puts 链</span><br><span class="line"></span><br><span class="line"><span class="comment">## 7. GDB</span></span><br><span class="line"></span><br><span class="line">```bash</span><br><span class="line"><span class="comment">#输出system函数的内存地址</span></span><br><span class="line">gdb-peda$ <span class="builtin-name">print</span> system</span><br><span class="line"><span class="comment">#显示某个地址上的值，x表示examine，s表示string</span></span><br><span class="line">db-peda$ x/s 0x7FFFF7F7ECEE</span><br></pre></td></tr></table></figure></code></pre></li></ol><h2 id="8-libc-相关">8. libc 相关</h2><ol><li><p><a href="https://github.com/matrix1001/glibc-all-in-one" target="_blank" rel="noopener">glibc-all-in-one</a></p></li><li><p>pwn 题给出的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p><ol><li>可用于得到 system 函数和&quot;/bin/bash&quot;相对于库基址的偏移量</li><li>在程序中得到某个函数泄露出的地址之后，例如 write 函数的 GOT 地址，即可通过偏移量调用 system(&quot;/bin/bash&quot;)</li></ol></li><li><p>libc-database : 通过某些函数的地址来查询 libc 的版本 - <a href="https://libc.blukat.me/" target="_blank" rel="noopener">在线工具</a></p></li><li><p>更换加载的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p><ol><li><p><a href="https://www.mankier.com/1/patchelf#--force-rpath" target="_blank" rel="noopener">patchelf 手册页</a></p> <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">patchelf --<span class="built_in">set</span>-interpreter &lt;libc_ld&gt; &lt;elf_name&gt; <span class="comment"># 设置链接器</span></span><br><span class="line">patchelf --<span class="built_in">set</span>-rpath &lt;libc_parent_folder&gt;:/&lt;libc_name&gt; &lt;elf_name&gt;</span><br><span class="line"><span class="comment"># patchelf --add-needed # 添加libc.so</span></span><br><span class="line"><span class="comment"># patchelf --replace-needed # 替换libc.so</span></span><br></pre></td></tr></table></figure></li><li><p><a href="https://bbs.pediy.com/thread-225849.htm" target="_blank" rel="noopener">关于不同版本 glibc 强行加载的方法</a></p></li></ol><blockquote><p>注意，更换使用的libc时，一定要同时更换对应版本的<code>ld.so</code>链接器，否则会无法正常使用libc而导致段错误</p></blockquote></li></ol><h2 id="9-shellcode">9.  shellcode</h2><ol><li><p><a href="http://shell-storm.org/shellcode" target="_blank" rel="noopener">shellcode 数据库</a></p></li><li><p>常用 shellcode</p> <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Linux x86-64 29 bytes</span></span><br><span class="line"><span class="keyword">char</span> code[] = <span class="string">"\x31\xc0\x48\xbb\xd1\x9d\x96\x91\xd0\x8c\x97\xff\x48\xf7\xdb\x53\x54\x5f\x99\x52\x57\x54\x5e\xb0\x3b\x0f\x05"</span>;</span><br><span class="line"><span class="comment">// Linux x86 21 bytes</span></span><br><span class="line"><span class="keyword">char</span> shellcode[] =</span><br><span class="line"><span class="string">"\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80"</span>;</span><br></pre></td></tr></table></figure></li><li><p>生成特定格式的 shellcode - msfven</p> <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python -c <span class="string">'import sys; sys.stdout.write("\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80")'</span> |  msfvenom -p - -e x86/alpha_mixed -a linux -f raw -a x86 --platform linux BufferRegister=EAX -o output.txt</span><br></pre></td></tr></table></figure></li></ol><h2 id="10-Linux-Syscall-Reference">10. Linux Syscall Reference</h2><ol><li><a href="http://syscalls.kernelgrok.com/" target="_blank" rel="noopener">x86</a><blockquote><p>int <code>execve</code>(const char *<code>pathname</code>, char *const <code>argv</code>[], char *const <code>envp</code>[]);<br><code>sys_exec</code> : <code>eax</code> = 0xB, <code>ebx</code> = path_str_addr, <code>ecx</code> = NULL, <code>edx</code> = NULL</p></blockquote></li><li><a href="http://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/" target="_blank" rel="noopener">x64</a></li></ol>]]></content>
     
     <summary type="html">
     
-      &lt;ul&gt;
-&lt;li&gt;笔者会把一些曾经遇到过的Reverse知识点记录在这里。&lt;/li&gt;
-&lt;li&gt;但笔者并非主攻二进制逆向，故逆向笔记会相对较少。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&quot;1-迷宫问题（maze）&quot;&gt;1. 迷宫问题（maze）&lt;/h2&gt;
-&lt;p&gt;迷宫问题有以下特点:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;在内存中布置一张 “地图”，这个地图可能是字符（例如&lt;code&gt;#&lt;/code&gt;之类的），也可能是一些数字的二进制&lt;/li&gt;
-&lt;li&gt;将用户输入限制在少数几个字符范围内.&lt;/li&gt;
-&lt;li&gt;一般只有一个迷宫入口和一个迷宫出口&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;详情&lt;a href=&quot;https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;CTF-Wiki&lt;/a&gt;&lt;/p&gt;
+      &lt;p&gt;这里是笔者记录的一些内容较少、不便于整理出一篇博客的&lt;strong&gt;Pwn杂项&lt;/strong&gt;知识点。&lt;/p&gt;
+&lt;h2 id=&quot;1-docker-使用-使用手册&quot;&gt;1. docker 使用 - &lt;a href=&quot;http://www.docker.org.cn/index.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;使用手册&lt;/a&gt;&lt;/h2&gt;
+&lt;h2 id=&quot;2-漏洞&quot;&gt;2. 漏洞&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;格式化字符串&lt;/p&gt;
+ &lt;figure class=&quot;highlight c&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;// %lln 四字 / %ln 双字 / %hn 单字 / %hhn 字节&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;printf&lt;/span&gt;(&lt;span class=&quot;string&quot;&gt;&quot;%(n-1)$[format]&quot;&lt;/span&gt;); &lt;span class=&quot;comment&quot;&gt;// -&amp;gt; 第n个参数&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;printf&lt;/span&gt;(&lt;span class=&quot;string&quot;&gt;&quot;%&amp;#123;n-1&amp;#125;$n&quot;&lt;/span&gt;); &lt;span class=&quot;comment&quot;&gt;// -&amp;gt; 将输出的字符个数写入第n个参数&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;printf&lt;/span&gt;(&lt;span class=&quot;string&quot;&gt;&quot;%nc&quot;&lt;/span&gt;); &lt;span class=&quot;comment&quot;&gt;// -&amp;gt; 输出对应参数n个字符&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
     
     </summary>
     
@@ -1529,7 +1529,7 @@
     
       <category term="CTF" scheme="https://kiprey.github.io/tags/CTF/"/>
     
-      <category term="Reverse" scheme="https://kiprey.github.io/tags/Reverse/"/>
+      <category term="Pwn" scheme="https://kiprey.github.io/tags/Pwn/"/>
     
   </entry>
   
@@ -1622,6 +1622,31 @@
   </entry>
   
   <entry>
+    <title>heap - 4 - _int_malloc的相关操作</title>
+    <link href="https://kiprey.github.io/2020/04/heap-4-_int_malloc_process/"/>
+    <id>https://kiprey.github.io/2020/04/heap-4-_int_malloc_process/</id>
+    <published>2020-04-03T16:00:00.000Z</published>
+    <updated>2020-11-19T09:40:10.667Z</updated>
+    
+    <content type="html"><![CDATA[<p>_int_malloc的一系列操作</p><a id="more"></a><blockquote><p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p></blockquote><h2 id="1-判断arena是否为空">1. 判断arena是否为空</h2><ul><li>如果是，则调用sysmalloc分配所需内存，<strong>返回并退出</strong></li></ul><h2 id="2-判断所申请的chunk大小是否小于fast-chunk的最大值">2. 判断所申请的chunk大小是否小于fast chunk的最大值</h2><ul><li>如果是，则尝试取出fast bin里的第一个chunk(<code>fastbin-&gt;fd</code>)</li><li>如果该chunk不为空，则检查该chunk是否出错、 <strong>返回该chunk用户地址并退出</strong></li></ul><h2 id="3-判断所申请的chunk大小是否小于small-chunk的最大值">3. 判断所申请的chunk大小是否小于small chunk的最大值</h2><ul><li>如果是，并且指向small bin最后一个chunk的指针（<code>smallbin-&gt;bk</code>）不指向small bin自己，则判断该指针是否为NULL<ul><li>如果是，则说明此时是第一次执行该部分代码，则执行<code>malloc_consolidate</code>函数</li><li>否则，则说明small bin上存在可用chunk，检查该chunk是否出错、将该chunk取出， <strong>返回该chunk用户地址并退出</strong></li></ul></li></ul><h2 id="4-取出largebin的索引，并判断是否有空闲的fastchunk">4. 取出largebin的索引，并判断是否有空闲的fastchunk</h2><ul><li>如果有，则执行<code>malloc_consolidate</code>函数</li></ul><h2 id="5-进入大型循环——for循环">5. 进入大型循环——for循环</h2><h3 id="1-遍历unsortedbin里的chunk最多10000次，并执行以下操作">1. 遍历unsortedbin里的chunk最多10000次，并执行以下操作</h3><ol><li>检测该chunk的大小是否非常小或非常大<ul><li>如果是，输出错误信息并 <strong>退出</strong></li></ul></li><li>判断用户申请的大小是否同时满足以下3个条件<ol><li>在smallchunk的范围内</li><li>unsorted bin里只有一个chunk</li><li>并且该chunk是last_remainder</li></ol><ul><li>如果是，则切割last_remainder,并将剩余remainder放回unsortedbin里、重设last_remainder、检查chunk，最后 <strong>返回该chunk的用户地址并退出</strong></li></ul></li><li>如果这块chunk刚好与所申请的chunk大小相等，则取出该chunk、检查chunk、 <strong>返回该chunk的用户地址并退出</strong></li><li>将遍历到的chunk根据大小放置进small bin或large bin里</li></ol><h3 id="2-尝试在large-bin里搜索可用的chunk">2. 尝试在large bin里搜索可用的chunk</h3><ul><li>如果large bin里，size最大的chunk，其size小于所申请的内存大小<ol><li>取出large bin里，size最接近所申请chunk的chunk</li><li>判断该chunk和所申请内存大小相差是否小于MINSIZE<ul><li>如果是，则多出的这块内存一并附赠给用户</li><li>否则，分割这块chunk，将剩余的chunk放入unsorted bin里、检查目标chunk、<strong>返回该chunk的用户地址并退出</strong></li></ul></li></ol></li></ul><h3 id="3-在其他free-chunks大小更大的bin里找更大的内存">3. 在其他free chunks大小更大的bin里找更大的内存</h3><ul><li>由于fastbin、smallbin、largebin上的freechunk是分组的，所以可能出现目标组别上的freechunk无法满足大小，此时使用binmap，去其他更大的bins里查找freechunk</li></ul><h3 id="4-如果执行到了这里，那就真是什么freechunk都找不到了，则判断top-chunk是否够用">4. 如果执行到了这里，那就真是什么freechunk都找不到了，则判断top chunk是否够用</h3><ol><li>如果够用，切割top chunk并使用</li><li>否则，则判断是否有fast chunk空闲<ul><li>如果有，则执行<code>malloc_consolidate</code>函数，然后 <strong>返回for循环起点，重新执行相关代码</strong></li><li>否则，调用sysmalloc申请内存，<strong>返回该chunk的用户地址并退出</strong></li></ul></li></ol>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;_int_malloc的一系列操作&lt;/p&gt;
+    
+    </summary>
+    
+    
+    
+      <category term="CTF" scheme="https://kiprey.github.io/tags/CTF/"/>
+    
+      <category term="Pwn" scheme="https://kiprey.github.io/tags/Pwn/"/>
+    
+      <category term="Heap" scheme="https://kiprey.github.io/tags/Heap/"/>
+    
+  </entry>
+  
+  <entry>
     <title>heap - 5 - malloc、free函数相关的宏定义</title>
     <link href="https://kiprey.github.io/2020/04/heap-5-heap_definitions/"/>
     <id>https://kiprey.github.io/2020/04/heap-5-heap_definitions/</id>
@@ -1650,31 +1675,6 @@
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-    
-    </summary>
-    
-    
-    
-      <category term="CTF" scheme="https://kiprey.github.io/tags/CTF/"/>
-    
-      <category term="Pwn" scheme="https://kiprey.github.io/tags/Pwn/"/>
-    
-      <category term="Heap" scheme="https://kiprey.github.io/tags/Heap/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>heap - 4 - _int_malloc的相关操作</title>
-    <link href="https://kiprey.github.io/2020/04/heap-4-_int_malloc_process/"/>
-    <id>https://kiprey.github.io/2020/04/heap-4-_int_malloc_process/</id>
-    <published>2020-04-03T16:00:00.000Z</published>
-    <updated>2020-11-19T09:40:10.667Z</updated>
-    
-    <content type="html"><![CDATA[<p>_int_malloc的一系列操作</p><a id="more"></a><blockquote><p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p></blockquote><h2 id="1-判断arena是否为空">1. 判断arena是否为空</h2><ul><li>如果是，则调用sysmalloc分配所需内存，<strong>返回并退出</strong></li></ul><h2 id="2-判断所申请的chunk大小是否小于fast-chunk的最大值">2. 判断所申请的chunk大小是否小于fast chunk的最大值</h2><ul><li>如果是，则尝试取出fast bin里的第一个chunk(<code>fastbin-&gt;fd</code>)</li><li>如果该chunk不为空，则检查该chunk是否出错、 <strong>返回该chunk用户地址并退出</strong></li></ul><h2 id="3-判断所申请的chunk大小是否小于small-chunk的最大值">3. 判断所申请的chunk大小是否小于small chunk的最大值</h2><ul><li>如果是，并且指向small bin最后一个chunk的指针（<code>smallbin-&gt;bk</code>）不指向small bin自己，则判断该指针是否为NULL<ul><li>如果是，则说明此时是第一次执行该部分代码，则执行<code>malloc_consolidate</code>函数</li><li>否则，则说明small bin上存在可用chunk，检查该chunk是否出错、将该chunk取出， <strong>返回该chunk用户地址并退出</strong></li></ul></li></ul><h2 id="4-取出largebin的索引，并判断是否有空闲的fastchunk">4. 取出largebin的索引，并判断是否有空闲的fastchunk</h2><ul><li>如果有，则执行<code>malloc_consolidate</code>函数</li></ul><h2 id="5-进入大型循环——for循环">5. 进入大型循环——for循环</h2><h3 id="1-遍历unsortedbin里的chunk最多10000次，并执行以下操作">1. 遍历unsortedbin里的chunk最多10000次，并执行以下操作</h3><ol><li>检测该chunk的大小是否非常小或非常大<ul><li>如果是，输出错误信息并 <strong>退出</strong></li></ul></li><li>判断用户申请的大小是否同时满足以下3个条件<ol><li>在smallchunk的范围内</li><li>unsorted bin里只有一个chunk</li><li>并且该chunk是last_remainder</li></ol><ul><li>如果是，则切割last_remainder,并将剩余remainder放回unsortedbin里、重设last_remainder、检查chunk，最后 <strong>返回该chunk的用户地址并退出</strong></li></ul></li><li>如果这块chunk刚好与所申请的chunk大小相等，则取出该chunk、检查chunk、 <strong>返回该chunk的用户地址并退出</strong></li><li>将遍历到的chunk根据大小放置进small bin或large bin里</li></ol><h3 id="2-尝试在large-bin里搜索可用的chunk">2. 尝试在large bin里搜索可用的chunk</h3><ul><li>如果large bin里，size最大的chunk，其size小于所申请的内存大小<ol><li>取出large bin里，size最接近所申请chunk的chunk</li><li>判断该chunk和所申请内存大小相差是否小于MINSIZE<ul><li>如果是，则多出的这块内存一并附赠给用户</li><li>否则，分割这块chunk，将剩余的chunk放入unsorted bin里、检查目标chunk、<strong>返回该chunk的用户地址并退出</strong></li></ul></li></ol></li></ul><h3 id="3-在其他free-chunks大小更大的bin里找更大的内存">3. 在其他free chunks大小更大的bin里找更大的内存</h3><ul><li>由于fastbin、smallbin、largebin上的freechunk是分组的，所以可能出现目标组别上的freechunk无法满足大小，此时使用binmap，去其他更大的bins里查找freechunk</li></ul><h3 id="4-如果执行到了这里，那就真是什么freechunk都找不到了，则判断top-chunk是否够用">4. 如果执行到了这里，那就真是什么freechunk都找不到了，则判断top chunk是否够用</h3><ol><li>如果够用，切割top chunk并使用</li><li>否则，则判断是否有fast chunk空闲<ul><li>如果有，则执行<code>malloc_consolidate</code>函数，然后 <strong>返回for循环起点，重新执行相关代码</strong></li><li>否则，调用sysmalloc申请内存，<strong>返回该chunk的用户地址并退出</strong></li></ul></li></ol>]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;_int_malloc的一系列操作&lt;/p&gt;
     
     </summary>
     
