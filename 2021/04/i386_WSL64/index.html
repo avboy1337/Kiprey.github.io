@@ -83,7 +83,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">537</span>
+            <span class="post-count">854</span>
         </span>
     </span>
 
@@ -92,23 +92,26 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">2 分钟</span>
+            <span class="post-count">3 分钟</span>
         </span>
     </span>
 </div>
  
     </div>
       
+    <div class="tocbot"></div>
+
 
 
 
   
     <div class="article-entry" itemprop="articleBody">
        
-  <p>WSL64 下执行 x86 程序较为困难，需要进行较多步骤，并且存在局限性。</p>
-<p>这里是笔者学习总结的一点笔记。</p>
+  <p>WSL1 下执行 x86 程序较为困难，需要进行较多步骤，并且存在局限性;</p>
+<p>WSL2 下可以直接执行 x86 程序，但需要从 WSL1 中升级上去。</p>
+<p>两种操作均较为麻烦，因此这里记录了一点笔者走过的弯路。</p>
 <a id="more"></a>
-<hr>
+<h2 id="1-WSL1">1. WSL1</h2>
 <ul>
 <li>
 <p>直接复制以下指令至 wsl 中，执行完成之后 gcc / g++ 就<strong>可以成功编译 32 位程序并运行</strong>。</p>
@@ -132,6 +135,36 @@ var _hmt = _hmt || [];
 <ul>
 <li><a href="https://blog.csdn.net/qq_40827990/article/details/83216139" target="_blank" rel="noopener">Linux64位子系统运行32位程序 - CSDN</a></li>
 <li><a href="https://www.codeleading.com/article/24462195544/" target="_blank" rel="noopener">Win 64位Linux子系统运行32位elf程序(简洁明了/亲测可用) - 代码先锋网</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="2-WSL2">2. WSL2</h2>
+<ul>
+<li>
+<p><strong>WSL2可以直接运行 32 位程序</strong>（感谢 <a href="https://mundi-xu.github.io/" target="_blank" rel="noopener">@mudi-xu</a> 的提醒），因此我们希望 WSL1 最好能在不重装原先 Ubuntu 系统的情况下，直接升级到 WSL2。</p>
+</li>
+<li>
+<p>但需要注意的是：WSL2只能在<strong>18917</strong> 之后的版本中才有。请自行运行命令 <code>winver</code> 以查看 <strong>OS 内部版本</strong>，如果版本低了，则需要升级一下 Windows OS。（现在我准备升级 windows 了 呜呜呜）</p>
+</li>
+<li>
+<p>具体操作如下</p>
+<ul>
+<li>首先，执行<code>dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart</code> 以<strong>启用“虚拟机平台”可选功能</strong>，之后<strong>重新启动</strong>计算机。</li>
+<li>计算机重启后，执行 <code>wsl --list --verbose</code>  以查看当前的 WSL 镜像及其版本。</li>
+<li>之后，执行 <code>wsl --set-version &lt;SubSystemName&gt; 2</code> 以升级 WSL1 至 WSL2。这可能需要几分钟的时间。</li>
+<li>待升级完成后，可以再次执行 <code>wsl --list --verbose</code>以查看当前的 WSL 镜像 &amp; 版本。</li>
+<li>最后执行 <code>wsl --set-default-version 2</code> 以设置之后安装的 Linux 子系统都安装到 WSL2 中。</li>
+</ul>
+</li>
+<li>
+<p>参考</p>
+<ul>
+<li>
+<p><a href="https://docs.microsoft.com/zh-cn/windows/wsl/install-win10" target="_blank" rel="noopener">适用于 Linux 的 Windows 子系统安装指南 (Windows 10) - microsoft docs</a></p>
+</li>
+<li>
+<p><a href="https://blog.csdn.net/weixin_40955163/article/details/100555823" target="_blank" rel="noopener">WSL安装及升级WSL2 - CSDN</a></p>
+</li>
 </ul>
 </li>
 </ul>
