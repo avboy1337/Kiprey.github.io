@@ -7,11 +7,11 @@
 <head>
   <meta charset="utf-8" />
    
-  <meta name="keywords" content="漏洞挖掘, 调试, 代码, 计算机科学, Kiprey, Blog, 二进制，信息安全" />
+  <meta name="keywords" content="wsl, i386,漏洞挖掘, 调试, 代码, 计算机科学, Kiprey, Blog, 二进制，信息安全" />
    
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>
-    归档: 2020/5 |  Kiprey&#39;s Blog
+    WSL64 运行 32 位程序 |  Kiprey&#39;s Blog
   </title>
   <meta name="generator" content="hexo-theme-ayer">
   
@@ -55,67 +55,202 @@ var _hmt = _hmt || [];
       
     <main class="content on">
       <section class="outer">
-  
-  <ul class="ads">
+  <article
+  id="post-i386_WSL64"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
     
-        <li>
-            <a href="">
-                <img src="" width="0" alt="">
-            </a>
-        </li>
-    
-</ul>
-  
-  
-  <article class="articles">
-    
-    
-    <h1 class="page-type-title">2020/5</h1>
-    
-    
-  
-  
-  
-  
-  
-  
-  <div class="archives-wrap">
-    <div class="archive-year-wrap">
-      <a href="/archives/2020" class="archive-year">2020</a>
-    </div>
-    <div class="archives">
-      
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2020/05/heap-9-__int_free_source/" class="archive-article-date">
-  <time datetime="2020-05-03T16:00:00.000Z" itemprop="datePublished">05/04</time>
-</a>
+    <header class="article-header">
        
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2020/05/heap-9-__int_free_source/"
-    >heap - 9 - _int_free 源码及其部分分析</a> 
-</h2>
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  WSL64 运行 32 位程序
+</h1>
  
 
+      
     </header>
-    
-    
-  </div>
-</article>
-      
-      
+     
+    <div class="article-meta">
+      <a href="/2021/04/i386_WSL64/" class="article-date">
+  <time datetime="2021-04-27T16:00:00.000Z" itemprop="datePublished">2021-04-28</time>
+</a>   
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">537</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">2 分钟</span>
+        </span>
+    </span>
+</div>
+ 
     </div>
-  </div>
-  
-  
+      
+
+
 
   
-  <nav class="page-nav">
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>WSL64 下执行 x86 程序较为困难，需要进行较多步骤，并且存在局限性。</p>
+<p>这里是笔者学习总结的一点笔记。</p>
+<a id="more"></a>
+<hr>
+<ul>
+<li>
+<p>直接复制以下指令至 wsl 中，执行完成之后 gcc / g++ 就<strong>可以成功编译 32 位程序并运行</strong>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 启动32位支持层</span></span><br><span class="line">sudo dpkg --add-architecture i386</span><br><span class="line">sudo apt-get update</span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装 qemu</span></span><br><span class="line">sudo apt install qemu-user-static</span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置 x86 elf 在 qemu 中运行</span></span><br><span class="line">sudo update-binfmts --install i386 /usr/bin/qemu-i386-static --magic <span class="string">'\x7fELF\x01\x01\x01\x03\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x03\x00\x01\x00\x00\x00'</span> --mask <span class="string">'\xff\xff\xff\xff\xff\xff\xff\xfc\xff\xff\xff\xff\xff\xff\xff\xff\xf8\xff\xff\xff\xff\xff\xff\xff'</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动服务</span></span><br><span class="line">sudo service binfmt-support start</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将启动服务命令别名 32 写入 .zshrc，并重新加载配置文件</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"alias 32='sudo service binfmt-support start'"</span> &gt;&gt; ~/.zshrc</span><br><span class="line"><span class="built_in">source</span> ~/.zshrc</span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装一些基本x86库</span></span><br><span class="line">sudo apt-get install g++-multilib libc6:i386 libgcc1:i386 gcc-9-base:i386 libstdc++6:i386</span><br><span class="line">sudo apt autoremove</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>但是，即便可以编译并运行32位程序，但<strong>仍然无法被 gdb 调试</strong>，即 64位的 gdb 无法调试 32 位的程序。</p>
+<p>报错提示所选体系结构 i386 与报告的目标体系结构 i386:x86-64 不兼容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">warning: Selected architecture i386 is not compatible with reported target architecture i386:x86-64</span><br><span class="line">warning: Architecture rejected target-supplied description</span><br></pre></td></tr></table></figure>
+<p>此时就必须折中，使用以下这种方法:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在 qemu 中启动调试，端口号为 1234</span></span><br><span class="line">qemu-i386-static -g 1234 &lt;process&gt;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新开一个终端，启动gdb</span></span><br><span class="line">gdb</span><br><span class="line"><span class="comment"># 在 gdb 中设置架构为 i386（不设置貌似也没事？）</span></span><br><span class="line">pwndbg&gt; <span class="built_in">set</span> architecture i386</span><br><span class="line"><span class="comment"># 连接至本地 1234 的 qemu 端口</span></span><br><span class="line">pwndbg&gt; target remote 127.0.0.1:1234</span><br><span class="line"><span class="comment"># 试图加载符号</span></span><br><span class="line">pwndbg&gt; file &lt;process&gt;</span><br></pre></td></tr></table></figure>
+<p>不过这种方法有局限性，没办法将符号加载出来。</p>
+<p>再一种更硬核的方式就是下载 gdb 源码并编译，不过暂且还没试过。</p>
+<blockquote>
+<p>直到目前为止，WSL64 下运行与调试 32 位程序仍然存在较大的困难。</p>
+<p>所以我选择在 VM 里调试 32 位程序 XD。</p>
+</blockquote>
+</li>
+<li>
+<p>参考：</p>
+<ul>
+<li><a href="https://blog.csdn.net/qq_40827990/article/details/83216139" target="_blank" rel="noopener">Linux64位子系统运行32位程序 - CSDN</a></li>
+<li><a href="https://www.codeleading.com/article/24462195544/" target="_blank" rel="noopener">Win 64位Linux子系统运行32位elf程序(简洁明了/亲测可用) - 代码先锋网</a></li>
+</ul>
+</li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
     
-    <a class="extend prev" rel="prev" href="/archives/2020/05/">上一页</a><a class="page-number" href="/archives/2020/05/">1</a><span class="page-number current">2</span>
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://kiprey.github.io/2021/04/i386_WSL64/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wsl/" rel="tag">wsl</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/2021/03/CVE-2018-16065/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">CVE-2018-16065 分析</div>
+      </a>
+    
   </nav>
-  
+
+   
+ 
+   
+<div class="gitalk" id="gitalk-container"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
+
+
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script>
+
+<script type="text/javascript">
+  var gitalk = new Gitalk({
+    clientID: '5f6c407f4cb8963d03ac',
+    clientSecret: '1d6faa663a735dbfd671990187d6e62b32498560',
+    repo: 'kiprey.github.io',
+    owner: 'kiprey',
+    admin: ['kiprey'],
+    // id: location.pathname,      // Ensure uniqueness and length less than 50
+    id: md5(location.pathname),
+    distractionFreeMode: false,  // Facebook-like distraction free mode
+    pagerDirection: 'last'
+  })
+
+  gitalk.render('gitalk-container')
+</script>
+     
+</article>
+
 </section>
       <footer class="footer">
   <div class="outer">
@@ -251,6 +386,23 @@ var _hmt = _hmt || [];
 <script src="/js/lazyload.min.js"></script>
 
 <!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
