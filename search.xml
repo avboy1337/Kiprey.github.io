@@ -63,6 +63,13 @@
 </ul>
 </li>
 <li>
+<p>注意点：WSL2 与 VMware 15 <strong>不兼容</strong>。如果需要两者兼得则务必升级 VMware 至 <strong>16 版本</strong>。</p>
+<blockquote>
+<p>升级VMware时无需卸载之前的版本，可以直接双击新安装包升级。</p>
+<p>升级时，务必勾选<strong>启用 Windows Hypervisor Platform</strong>，以支持 WSL2 和 VMware 的兼容。</p>
+</blockquote>
+</li>
+<li>
 <p>参考</p>
 <ul>
 <li>
@@ -13043,6 +13050,78 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
       </tags>
   </entry>
   <entry>
+    <title>heap - 10 - _int_free的相关操作</title>
+    <url>/2020/05/heap-10-_int_free_process/</url>
+    <content><![CDATA[<p>_int_free的一系列操作</p>
+<a id="more"></a>
+<blockquote>
+<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
+</blockquote>
+<h2 id="1-判断当前chunk的大小是否异常小或者异常大-内存有无对齐">1. 判断当前chunk的大小是否异常小或者异常大,内存有无对齐</h2>
+<ul>
+<li>如果是，则 <strong>报错退出</strong></li>
+</ul>
+<h2 id="2-如果当前chunk大小-小于-fast-chunk的最大值">2. 如果当前chunk大小 小于 fast chunk的最大值</h2>
+<ul>
+<li>判断下一个内存相邻chunk的size是否异常大或异常小，如果是，则 <strong>报错退出</strong></li>
+<li>判断当前fastbin链头的chunk是否为当前chunk(防止 <strong>连续的</strong> double free)。如果是，则 <strong>报错退出</strong></li>
+<li>将当前chunk放入fastbin链头</li>
+<li>如果实际放入的fast bin，其index与当前chunk的预期index不同，则 <strong>报错退出</strong></li>
+<li>如果上面的都没出错的话，则函数执行结束，<strong>函数返回</strong></li>
+</ul>
+<h2 id="3-判断当前chunk是否是调用mmap分配的">3. 判断当前chunk是否是调用mmap分配的</h2>
+<ul>
+<li>如果是，则
+<ul>
+<li>如果当前chunk为top chunk，则意味着double free， <strong>报错退出</strong>。因为top chunk为free chunk，不可再被free</li>
+<li>如果当前chunk的下一个内存相邻chunk(next chunk)，其内存起始地址超过了top chunk的最大内存地址，则 <strong>报错退出</strong></li>
+<li>如果当前chunk是inuse的，则 <strong>报错退出</strong></li>
+<li>如果next chunk的size异常大或者异常小，则 <strong>报错退出</strong></li>
+<li>如果上一个内存相邻chunk是free chunk，则将上一个chunk unlink，并与当前chunk合并</li>
+<li>判断next chunk是否为top chunk
+<ul>
+<li>如果不是
+<ul>
+<li>判断next chunk是否是空闲的（inuse）
+<ul>
+<li>如果是，则与当前待释放chunk合并</li>
+<li>否则，清空其PREV_INUSE标志位</li>
+</ul>
+</li>
+<li>将当前待释放chunk放入unsorted bin里</li>
+</ul>
+</li>
+<li>如果是
+<ul>
+<li>则当前chunk与top chunk合并</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>如果当前chunk的size大于某个临界点（临界点大小默认65535bytes/64KB）
+<ul>
+<li>如果存在fast chunk，则进行malloc_consolidate</li>
+<li>判断当前arena是否为main_arena
+<ul>
+<li>如果是，并且top chunk的大小超过某个临界点，则调用systrim返还多余内存</li>
+<li>否则，调用heap_trim返还内存给操作系统</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>函数执行结束，<strong>函数返回</strong></li>
+</ul>
+</li>
+<li>如果不是，则调用munmap函数释放当前chunk的内存，函数执行结束，<strong>函数返回</strong></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Pwn</tag>
+        <tag>Heap</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>heap - 9 - _int_free 源码及其部分分析</title>
     <url>/2020/05/heap-9-__int_free_source/</url>
     <content><![CDATA[<p><code>__int_free</code> —— 核心内存释放函数</p>
@@ -13124,78 +13203,6 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
 <p>所有的分析都以注释的形式添加进源代码中，方便阅读</p>
 </blockquote>
 <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  ------------------------- malloc_consolidate -------------------------</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">  malloc_consolidate is a specialized version of free() that tears</span></span><br><span class="line"><span class="comment">  down chunks held in fastbins.  Free itself cannot be used for this</span></span><br><span class="line"><span class="comment">  purpose since, among other things, it might place chunks back onto</span></span><br><span class="line"><span class="comment">  fastbins.  So, instead, we need to use a minor variant of the same</span></span><br><span class="line"><span class="comment">  code.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">  Also, because this routine needs to be called the first time through</span></span><br><span class="line"><span class="comment">  malloc anyway, it turns out to be the perfect place to trigger</span></span><br><span class="line"><span class="comment">  initialization code.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">malloc_consolidate</span><span class="params">(mstate av)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  mfastbinptr*    fb;                 <span class="comment">/* current fastbin being consolidated */</span></span><br><span class="line">  mfastbinptr*    maxfb;              <span class="comment">/* last fastbin (for loop control) */</span></span><br><span class="line">  mchunkptr       p;                  <span class="comment">/* current chunk being consolidated */</span></span><br><span class="line">  mchunkptr       nextp;              <span class="comment">/* next chunk to consolidate */</span></span><br><span class="line">  mchunkptr       unsorted_bin;       <span class="comment">/* bin header */</span></span><br><span class="line">  mchunkptr       first_unsorted;     <span class="comment">/* chunk to link to */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* These have same use as in free() */</span></span><br><span class="line">  mchunkptr       nextchunk;</span><br><span class="line">  INTERNAL_SIZE_T size;</span><br><span class="line">  INTERNAL_SIZE_T nextsize;</span><br><span class="line">  INTERNAL_SIZE_T prevsize;</span><br><span class="line">  <span class="keyword">int</span>             nextinuse;</span><br><span class="line">  mchunkptr       bck;</span><br><span class="line">  mchunkptr       fwd;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    If max_fast is 0, we know that av hasn't</span></span><br><span class="line"><span class="comment">    yet been initialized, in which case do so below</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (get_max_fast () != <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// 清空arena上关于fastbin的标志位</span></span><br><span class="line">    clear_fastchunks(av);</span><br><span class="line"></span><br><span class="line">    unsorted_bin = unsorted_chunks(av);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">      Remove each chunk from fast bin and consolidate it, placing it</span></span><br><span class="line"><span class="comment">      then in unsorted bin. Among other reasons for doing this,</span></span><br><span class="line"><span class="comment">      placing in unsorted bin avoids needing to calculate actual bins</span></span><br><span class="line"><span class="comment">      until malloc is sure that chunks aren't immediately going to be</span></span><br><span class="line"><span class="comment">      reused anyway.</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line"></span><br><span class="line">    maxfb = &amp;fastbin (av, NFASTBINS - <span class="number">1</span>);</span><br><span class="line">    fb = &amp;fastbin (av, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">      <span class="comment">// 依次遍历fastbins的各个index的链头</span></span><br><span class="line">      p = atomic_exchange_acq (fb, <span class="number">0</span>);</span><br><span class="line">      <span class="comment">// 如果当前遍历到的index，其链上存在fast chunk</span></span><br><span class="line">      <span class="keyword">if</span> (p != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">          check_inuse_chunk(av, p);</span><br><span class="line">          nextp = p-&gt;fd;</span><br><span class="line"></span><br><span class="line">          <span class="comment">/* Slightly streamlined version of consolidation code in free() */</span></span><br><span class="line">          size = p-&gt;size &amp; ~(PREV_INUSE|NON_MAIN_ARENA);</span><br><span class="line">          nextchunk = chunk_at_offset(p, size);</span><br><span class="line">          nextsize = chunksize(nextchunk);</span><br><span class="line">          <span class="comment">// 如果上一个内存相邻chunk为free chunk，则与当前chunk合并</span></span><br><span class="line">          <span class="keyword">if</span> (!prev_inuse(p)) &#123;</span><br><span class="line">            prevsize = p-&gt;prev_size;</span><br><span class="line">            size += prevsize;</span><br><span class="line">            p = chunk_at_offset(p, -((<span class="keyword">long</span>) prevsize));</span><br><span class="line">            unlink(av, p, bck, fwd);</span><br><span class="line">          &#125;</span><br><span class="line"></span><br><span class="line">          <span class="comment">// 如果下一个内存相邻chunk不为top chunk</span></span><br><span class="line">          <span class="keyword">if</span> (nextchunk != av-&gt;top) &#123;</span><br><span class="line">            nextinuse = inuse_bit_at_offset(nextchunk, nextsize);</span><br><span class="line">            <span class="comment">// 如果下一个内存相邻chunk为free chunk，则与当前chunk合并</span></span><br><span class="line">            <span class="keyword">if</span> (!nextinuse) &#123;</span><br><span class="line">              size += nextsize;</span><br><span class="line">              unlink(av, nextchunk, bck, fwd);</span><br><span class="line">            &#125; <span class="keyword">else</span></span><br><span class="line">              clear_inuse_bit_at_offset(nextchunk, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 将（已经合并了相邻chunk的）当前chunk放入unsorted bin里</span></span><br><span class="line">            first_unsorted = unsorted_bin-&gt;fd;</span><br><span class="line">            unsorted_bin-&gt;fd = p;</span><br><span class="line">            first_unsorted-&gt;bk = p;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (!in_smallbin_range (size)) &#123;</span><br><span class="line">              p-&gt;fd_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">              p-&gt;bk_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            set_head(p, size | PREV_INUSE);</span><br><span class="line">            p-&gt;bk = unsorted_bin;</span><br><span class="line">            p-&gt;fd = first_unsorted;</span><br><span class="line">            set_foot(p, size);</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="comment">// 如果下一个内存相邻chunk是top chunk</span></span><br><span class="line">          <span class="comment">// 当前fast chunk与top chunk合并</span></span><br><span class="line">          <span class="keyword">else</span> &#123;</span><br><span class="line">            size += nextsize;</span><br><span class="line">            set_head(p, size | PREV_INUSE);</span><br><span class="line">            av-&gt;top = p;</span><br><span class="line">          &#125;</span><br><span class="line">        <span class="comment">// 一直遍历，直到当前fastbin链上的所有chunk全部放入unsorted bin里</span></span><br><span class="line">        &#125; <span class="keyword">while</span> ( (p = nextp) != <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// 一直遍历，直到所有fastbin链全部遍历完成</span></span><br><span class="line">    &#125; <span class="keyword">while</span> (fb++ != maxfb);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 初始时 fastchunk的最大值为0，此时需要对heap进行初始化</span></span><br><span class="line">    malloc_init_state(av);</span><br><span class="line">    check_malloc_state(av);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-        <tag>Heap</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>heap - 10 - _int_free的相关操作</title>
-    <url>/2020/05/heap-10-_int_free_process/</url>
-    <content><![CDATA[<p>_int_free的一系列操作</p>
-<a id="more"></a>
-<blockquote>
-<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
-</blockquote>
-<h2 id="1-判断当前chunk的大小是否异常小或者异常大-内存有无对齐">1. 判断当前chunk的大小是否异常小或者异常大,内存有无对齐</h2>
-<ul>
-<li>如果是，则 <strong>报错退出</strong></li>
-</ul>
-<h2 id="2-如果当前chunk大小-小于-fast-chunk的最大值">2. 如果当前chunk大小 小于 fast chunk的最大值</h2>
-<ul>
-<li>判断下一个内存相邻chunk的size是否异常大或异常小，如果是，则 <strong>报错退出</strong></li>
-<li>判断当前fastbin链头的chunk是否为当前chunk(防止 <strong>连续的</strong> double free)。如果是，则 <strong>报错退出</strong></li>
-<li>将当前chunk放入fastbin链头</li>
-<li>如果实际放入的fast bin，其index与当前chunk的预期index不同，则 <strong>报错退出</strong></li>
-<li>如果上面的都没出错的话，则函数执行结束，<strong>函数返回</strong></li>
-</ul>
-<h2 id="3-判断当前chunk是否是调用mmap分配的">3. 判断当前chunk是否是调用mmap分配的</h2>
-<ul>
-<li>如果是，则
-<ul>
-<li>如果当前chunk为top chunk，则意味着double free， <strong>报错退出</strong>。因为top chunk为free chunk，不可再被free</li>
-<li>如果当前chunk的下一个内存相邻chunk(next chunk)，其内存起始地址超过了top chunk的最大内存地址，则 <strong>报错退出</strong></li>
-<li>如果当前chunk是inuse的，则 <strong>报错退出</strong></li>
-<li>如果next chunk的size异常大或者异常小，则 <strong>报错退出</strong></li>
-<li>如果上一个内存相邻chunk是free chunk，则将上一个chunk unlink，并与当前chunk合并</li>
-<li>判断next chunk是否为top chunk
-<ul>
-<li>如果不是
-<ul>
-<li>判断next chunk是否是空闲的（inuse）
-<ul>
-<li>如果是，则与当前待释放chunk合并</li>
-<li>否则，清空其PREV_INUSE标志位</li>
-</ul>
-</li>
-<li>将当前待释放chunk放入unsorted bin里</li>
-</ul>
-</li>
-<li>如果是
-<ul>
-<li>则当前chunk与top chunk合并</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>如果当前chunk的size大于某个临界点（临界点大小默认65535bytes/64KB）
-<ul>
-<li>如果存在fast chunk，则进行malloc_consolidate</li>
-<li>判断当前arena是否为main_arena
-<ul>
-<li>如果是，并且top chunk的大小超过某个临界点，则调用systrim返还多余内存</li>
-<li>否则，调用heap_trim返还内存给操作系统</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>函数执行结束，<strong>函数返回</strong></li>
-</ul>
-</li>
-<li>如果不是，则调用munmap函数释放当前chunk的内存，函数执行结束，<strong>函数返回</strong></li>
-</ul>
 ]]></content>
       <tags>
         <tag>CTF</tag>
@@ -13313,6 +13320,189 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
         <tag>Pwn</tag>
         <tag>Heap</tag>
         <tag>pwnable.tw</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CTF Reverse 的笔记</title>
+    <url>/2020/04/reverse/</url>
+    <content><![CDATA[<ul>
+<li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li>
+<li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li>
+</ul>
+<h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2>
+<p>迷宫问题有以下特点:</p>
+<ul>
+<li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li>
+<li>将用户输入限制在少数几个字符范围内.</li>
+<li>一般只有一个迷宫入口和一个迷宫出口</li>
+</ul>
+<p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p>
+<a id="more"></a>]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Reverse</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CTF Misc 的笔记</title>
+    <url>/2020/04/misc/</url>
+    <content><![CDATA[<p>一点点曾经整理的Misc笔记，数量较少。</p>
+<h2 id="1-git">1. git</h2>
+<ol>
+<li>
+<p>查找所有 commit - <a href="https://www.cnblogs.com/Tkitn/p/11648456.html" target="_blank" rel="noopener">参考链接</a></p>
+ <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 查看所有commit，包括已撤回的提交</span></span><br><span class="line">git <span class="built_in">log</span> --reflog</span><br><span class="line"><span class="comment"># 重置commit头</span></span><br><span class="line">git reset --hard [commit-Hash]</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查看 git 提交的文件内容 - <a href="https://blog.csdn.net/daguanjia11/article/details/73309026" target="_blank" rel="noopener">git 对象库</a></p>
+ <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 查看所有提交log（包括已撤回的提交）</span></span><br><span class="line">git <span class="built_in">log</span> --pretty=raw</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的类型</span></span><br><span class="line">git cat-file -t [Hash]</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的内容</span></span><br><span class="line">git cat-file -p [tree/file-Hash]</span><br><span class="line"><span class="comment"># 查看树的内容</span></span><br><span class="line">git ls-tree [-r是否递归][-t输出更完整的信息（包括子树）] [commit/tree-hash]</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<a id="more"></a>
+<h2 id="2-隐藏文件">2. 隐藏文件</h2>
+<ol>
+<li>
+<p>Binwalk - <a href="https://www.cnblogs.com/2f28/p/9736902.html" target="_blank" rel="noopener">帮助</a></p>
+<ol>
+<li>
+<p>查看隐藏的文件</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">binwalk -I xxxx</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>提取所有隐藏文件</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">binwalk -e xxxx</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="3-各种神奇的编码">3. 各种神奇的编码</h2>
+<ol>
+<li>
+<p>编码方式</p>
+<ol>
+<li><a href="https://tool.bugku.com/" target="_blank" rel="noopener">CTF 编码小工具</a></li>
+<li>培根密码 - <a href="https://tool.bugku.com/peigen/" target="_blank" rel="noopener">在线工具</a> - <a href="https://baike.baidu.com/item/%E5%9F%B9%E6%A0%B9%E5%AF%86%E7%A0%81/2134182?fr=aladdin" target="_blank" rel="noopener">百度百科</a></li>
+<li>栅栏密码 - <a href="https://www.qqxiuzi.cn/bianma/zhalanmima.php" target="_blank" rel="noopener">在线工具</a> - <a href="https://baike.baidu.com/item/%E6%A0%85%E6%A0%8F%E5%AF%86%E7%A0%81/228209?fr=aladdin" target="_blank" rel="noopener">百度百科</a></li>
+<li>Ook! - <a href="https://tool.bugku.com/brainfuck/" target="_blank" rel="noopener">在线工具</a></li>
+<li>base32 - <a href="https://www.qqxiuzi.cn/bianma/base.php" target="_blank" rel="noopener">在线工具</a></li>
+<li>base64 - <a href="https://base64.supfree.net/" target="_blank" rel="noopener">在线工具</a></li>
+<li>base64 &lt;==&gt;图片 - <a href="http://www.vgot.net/test/image2base64.php" target="_blank" rel="noopener">在线转换</a></li>
+</ol>
+</li>
+<li>
+<p>编码集</p>
+<ol>
+<li>Unicode
+<ol>
+<li>Unicode 编码格式为&quot;\uXXXX&quot;
+<ol>
+<li>倘若遇上&quot;\uXX&quot;，需要将其补 0 至 4 个 Hex 值</li>
+</ol>
+</li>
+<li>可用 python 直接 Unicode 转 string</li>
+</ol>
+</li>
+<li>base 编码 - <a href="https://blog.csdn.net/qq_40836885/article/details/83793972" target="_blank" rel="noopener">Base64，Base32，Base16 的区别</a>
+<ol>
+<li>Base64：包含大写字母（A-Z）,小写字母（a-z），数字（0-9）以及+/
+<ol>
+<li>当 ASCll 用 Base 加密达不到所对应的位数的时候用=号补齐</li>
+<li><strong>Base64隐写</strong><br>
+先看图 <img src="/2020/04/misc/base64steganography.png" class="">
+<ul>
+<li>注意红色的 0, base64解码时将其丢弃了, 所以这里的值不会影响解码. 故我们可以在这进行隐写。</li>
+<li>为什么等号的那部分 0 不能用于隐写? 因为修改那里的二进制值会导致等号数量变化, 解码的第 1 步会受影响. 自然也就破坏了源字符串。</li>
+<li>而红色部分的 0 是作为最后一个字符二进制的组成部分, 还原时只用到了最后一个字符二进制的前部分, 后面的部分就不会影响还原。</li>
+<li>唯一的影响就是最后一个字符会变化，请自己看看上图</li>
+</ul>
+</li>
+</ol>
+</li>
+<li>Base32: 包含大写字母（A-Z），数字（2-7）</li>
+<li>Base16: 就是 16 进制，范围是数字(0-9)，字母（A-F）</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="4-图片">4. 图片</h2>
+<ol>
+<li>二维码解码 - <a href="https://jiema.wwei.cn/" target="_blank" rel="noopener">在线工具</a></li>
+<li>PNG 文件头&quot;‰PNG&quot;(Hex:89504E47)</li>
+<li>Stegsolve 解 LSB隐写</li>
+<li>双图对比（<code>beyond compare</code>命令对比）</li>
+<li>steghide 提取文件</li>
+</ol>
+<h2 id="5-压缩包">5. 压缩包</h2>
+<ol>
+<li>ZIP 文件以“PK”开头（Hex：504B0304）</li>
+<li>ZIP 伪加密 - <a href="https://blog.csdn.net/kajweb/article/details/76474476" target="_blank" rel="noopener">CSDN</a></li>
+<li>明文攻击 =&gt; 加密压缩包
+<ul>
+<li>在已经得到压缩包的部分文件的情况下使用，</li>
+<li>需要将这部分文件使用被加密压缩包 <strong>相同的压缩算法</strong> 进行压缩</li>
+</ul>
+</li>
+<li>CRC32碰撞
+<ul>
+<li>在压缩包文件大小较小的情况下可以优先考虑</li>
+</ul>
+</li>
+</ol>
+<h2 id="6-音频">6. 音频</h2>
+<ol>
+<li>频谱图隐写</li>
+<li>波形谱隐写（转二进制）</li>
+</ol>
+<h2 id="7-内存取证">7. 内存取证</h2>
+<ol>
+<li>volatility</li>
+</ol>
+<h2 id="8-游戏存档修改">8. 游戏存档修改</h2>
+<ol>
+<li><a href="http://www.saveeditonline.com/" target="_blank" rel="noopener">在线存档修改</a></li>
+</ol>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Misc</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CTF Crypto 的笔记</title>
+    <url>/2020/04/crypto/</url>
+    <content><![CDATA[<p>一点点Crypto的笔记，真的只有一点点。</p>
+<h2 id="1-RSA">1. RSA</h2>
+<ol>
+<li>RSA 算法原理
+<ol>
+<li><a href="https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/" target="_blank" rel="noopener">CTF-Wiki</a></li>
+<li><a href="https://www.kancloud.cn/kancloud/rsa_algorithm/48484" target="_blank" rel="noopener">看云</a></li>
+</ol>
+</li>
+<li>分解质数
+<ol>
+<li>
+<p>命令行分解 - <a href="https://github.com/ryosan-470/factordb-pycli" target="_blank" rel="noopener">Github</a></p>
+ <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo pip install factordb-pycli</span><br><span class="line">factordb [-h] [--json] number</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>在线解两质数相乘 - <a href="http://factordb.com/index.php" target="_blank" rel="noopener">网址</a></p>
+</li>
+</ol>
+</li>
+</ol>
+<a id="more"></a>
+<ol start="3">
+<li>
+<p>常用exp</p>
+ <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> gmpy</span><br><span class="line"><span class="keyword">from</span> Crypto.Util <span class="keyword">import</span> number</span><br><span class="line"></span><br><span class="line">n=<span class="number">1606938044309278499168642398192229212629290234347717645487123</span></span><br><span class="line">p == <span class="number">1267650600235241044365044382487</span></span><br><span class="line">q == <span class="number">1267650600260888172240281085029</span></span><br><span class="line"></span><br><span class="line">r = (p<span class="number">-1</span>) * (q<span class="number">-1</span>)</span><br><span class="line"></span><br><span class="line">e=<span class="number">0x10001</span></span><br><span class="line">cipher=<span class="number">1206101155741464091016050901578054614292420649123909371122176</span></span><br><span class="line"></span><br><span class="line">d = gmpy.invert(e, r)</span><br><span class="line">m = pow(cipher, d, n)</span><br><span class="line">print(number.long_to_bytes(m))</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Crypto</tag>
       </tags>
   </entry>
   <entry>
@@ -13472,43 +13662,6 @@ numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 pr
       <tags>
         <tag>CTF</tag>
         <tag>Pwn</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CTF Crypto 的笔记</title>
-    <url>/2020/04/crypto/</url>
-    <content><![CDATA[<p>一点点Crypto的笔记，真的只有一点点。</p>
-<h2 id="1-RSA">1. RSA</h2>
-<ol>
-<li>RSA 算法原理
-<ol>
-<li><a href="https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/" target="_blank" rel="noopener">CTF-Wiki</a></li>
-<li><a href="https://www.kancloud.cn/kancloud/rsa_algorithm/48484" target="_blank" rel="noopener">看云</a></li>
-</ol>
-</li>
-<li>分解质数
-<ol>
-<li>
-<p>命令行分解 - <a href="https://github.com/ryosan-470/factordb-pycli" target="_blank" rel="noopener">Github</a></p>
- <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo pip install factordb-pycli</span><br><span class="line">factordb [-h] [--json] number</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>在线解两质数相乘 - <a href="http://factordb.com/index.php" target="_blank" rel="noopener">网址</a></p>
-</li>
-</ol>
-</li>
-</ol>
-<a id="more"></a>
-<ol start="3">
-<li>
-<p>常用exp</p>
- <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> gmpy</span><br><span class="line"><span class="keyword">from</span> Crypto.Util <span class="keyword">import</span> number</span><br><span class="line"></span><br><span class="line">n=<span class="number">1606938044309278499168642398192229212629290234347717645487123</span></span><br><span class="line">p == <span class="number">1267650600235241044365044382487</span></span><br><span class="line">q == <span class="number">1267650600260888172240281085029</span></span><br><span class="line"></span><br><span class="line">r = (p<span class="number">-1</span>) * (q<span class="number">-1</span>)</span><br><span class="line"></span><br><span class="line">e=<span class="number">0x10001</span></span><br><span class="line">cipher=<span class="number">1206101155741464091016050901578054614292420649123909371122176</span></span><br><span class="line"></span><br><span class="line">d = gmpy.invert(e, r)</span><br><span class="line">m = pow(cipher, d, n)</span><br><span class="line">print(number.long_to_bytes(m))</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Crypto</tag>
       </tags>
   </entry>
   <entry>
@@ -13702,152 +13855,6 @@ ipconfig/flusdns<br>
       <tags>
         <tag>CTF</tag>
         <tag>Web</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CTF Reverse 的笔记</title>
-    <url>/2020/04/reverse/</url>
-    <content><![CDATA[<ul>
-<li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li>
-<li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li>
-</ul>
-<h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2>
-<p>迷宫问题有以下特点:</p>
-<ul>
-<li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li>
-<li>将用户输入限制在少数几个字符范围内.</li>
-<li>一般只有一个迷宫入口和一个迷宫出口</li>
-</ul>
-<p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p>
-<a id="more"></a>]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Reverse</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CTF Misc 的笔记</title>
-    <url>/2020/04/misc/</url>
-    <content><![CDATA[<p>一点点曾经整理的Misc笔记，数量较少。</p>
-<h2 id="1-git">1. git</h2>
-<ol>
-<li>
-<p>查找所有 commit - <a href="https://www.cnblogs.com/Tkitn/p/11648456.html" target="_blank" rel="noopener">参考链接</a></p>
- <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 查看所有commit，包括已撤回的提交</span></span><br><span class="line">git <span class="built_in">log</span> --reflog</span><br><span class="line"><span class="comment"># 重置commit头</span></span><br><span class="line">git reset --hard [commit-Hash]</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>查看 git 提交的文件内容 - <a href="https://blog.csdn.net/daguanjia11/article/details/73309026" target="_blank" rel="noopener">git 对象库</a></p>
- <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 查看所有提交log（包括已撤回的提交）</span></span><br><span class="line">git <span class="built_in">log</span> --pretty=raw</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的类型</span></span><br><span class="line">git cat-file -t [Hash]</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的内容</span></span><br><span class="line">git cat-file -p [tree/file-Hash]</span><br><span class="line"><span class="comment"># 查看树的内容</span></span><br><span class="line">git ls-tree [-r是否递归][-t输出更完整的信息（包括子树）] [commit/tree-hash]</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<a id="more"></a>
-<h2 id="2-隐藏文件">2. 隐藏文件</h2>
-<ol>
-<li>
-<p>Binwalk - <a href="https://www.cnblogs.com/2f28/p/9736902.html" target="_blank" rel="noopener">帮助</a></p>
-<ol>
-<li>
-<p>查看隐藏的文件</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">binwalk -I xxxx</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>提取所有隐藏文件</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">binwalk -e xxxx</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-</li>
-</ol>
-<h2 id="3-各种神奇的编码">3. 各种神奇的编码</h2>
-<ol>
-<li>
-<p>编码方式</p>
-<ol>
-<li><a href="https://tool.bugku.com/" target="_blank" rel="noopener">CTF 编码小工具</a></li>
-<li>培根密码 - <a href="https://tool.bugku.com/peigen/" target="_blank" rel="noopener">在线工具</a> - <a href="https://baike.baidu.com/item/%E5%9F%B9%E6%A0%B9%E5%AF%86%E7%A0%81/2134182?fr=aladdin" target="_blank" rel="noopener">百度百科</a></li>
-<li>栅栏密码 - <a href="https://www.qqxiuzi.cn/bianma/zhalanmima.php" target="_blank" rel="noopener">在线工具</a> - <a href="https://baike.baidu.com/item/%E6%A0%85%E6%A0%8F%E5%AF%86%E7%A0%81/228209?fr=aladdin" target="_blank" rel="noopener">百度百科</a></li>
-<li>Ook! - <a href="https://tool.bugku.com/brainfuck/" target="_blank" rel="noopener">在线工具</a></li>
-<li>base32 - <a href="https://www.qqxiuzi.cn/bianma/base.php" target="_blank" rel="noopener">在线工具</a></li>
-<li>base64 - <a href="https://base64.supfree.net/" target="_blank" rel="noopener">在线工具</a></li>
-<li>base64 &lt;==&gt;图片 - <a href="http://www.vgot.net/test/image2base64.php" target="_blank" rel="noopener">在线转换</a></li>
-</ol>
-</li>
-<li>
-<p>编码集</p>
-<ol>
-<li>Unicode
-<ol>
-<li>Unicode 编码格式为&quot;\uXXXX&quot;
-<ol>
-<li>倘若遇上&quot;\uXX&quot;，需要将其补 0 至 4 个 Hex 值</li>
-</ol>
-</li>
-<li>可用 python 直接 Unicode 转 string</li>
-</ol>
-</li>
-<li>base 编码 - <a href="https://blog.csdn.net/qq_40836885/article/details/83793972" target="_blank" rel="noopener">Base64，Base32，Base16 的区别</a>
-<ol>
-<li>Base64：包含大写字母（A-Z）,小写字母（a-z），数字（0-9）以及+/
-<ol>
-<li>当 ASCll 用 Base 加密达不到所对应的位数的时候用=号补齐</li>
-<li><strong>Base64隐写</strong><br>
-先看图 <img src="/2020/04/misc/base64steganography.png" class="">
-<ul>
-<li>注意红色的 0, base64解码时将其丢弃了, 所以这里的值不会影响解码. 故我们可以在这进行隐写。</li>
-<li>为什么等号的那部分 0 不能用于隐写? 因为修改那里的二进制值会导致等号数量变化, 解码的第 1 步会受影响. 自然也就破坏了源字符串。</li>
-<li>而红色部分的 0 是作为最后一个字符二进制的组成部分, 还原时只用到了最后一个字符二进制的前部分, 后面的部分就不会影响还原。</li>
-<li>唯一的影响就是最后一个字符会变化，请自己看看上图</li>
-</ul>
-</li>
-</ol>
-</li>
-<li>Base32: 包含大写字母（A-Z），数字（2-7）</li>
-<li>Base16: 就是 16 进制，范围是数字(0-9)，字母（A-F）</li>
-</ol>
-</li>
-</ol>
-</li>
-</ol>
-<h2 id="4-图片">4. 图片</h2>
-<ol>
-<li>二维码解码 - <a href="https://jiema.wwei.cn/" target="_blank" rel="noopener">在线工具</a></li>
-<li>PNG 文件头&quot;‰PNG&quot;(Hex:89504E47)</li>
-<li>Stegsolve 解 LSB隐写</li>
-<li>双图对比（<code>beyond compare</code>命令对比）</li>
-<li>steghide 提取文件</li>
-</ol>
-<h2 id="5-压缩包">5. 压缩包</h2>
-<ol>
-<li>ZIP 文件以“PK”开头（Hex：504B0304）</li>
-<li>ZIP 伪加密 - <a href="https://blog.csdn.net/kajweb/article/details/76474476" target="_blank" rel="noopener">CSDN</a></li>
-<li>明文攻击 =&gt; 加密压缩包
-<ul>
-<li>在已经得到压缩包的部分文件的情况下使用，</li>
-<li>需要将这部分文件使用被加密压缩包 <strong>相同的压缩算法</strong> 进行压缩</li>
-</ul>
-</li>
-<li>CRC32碰撞
-<ul>
-<li>在压缩包文件大小较小的情况下可以优先考虑</li>
-</ul>
-</li>
-</ol>
-<h2 id="6-音频">6. 音频</h2>
-<ol>
-<li>频谱图隐写</li>
-<li>波形谱隐写（转二进制）</li>
-</ol>
-<h2 id="7-内存取证">7. 内存取证</h2>
-<ol>
-<li>volatility</li>
-</ol>
-<h2 id="8-游戏存档修改">8. 游戏存档修改</h2>
-<ol>
-<li><a href="http://www.saveeditonline.com/" target="_blank" rel="noopener">在线存档修改</a></li>
-</ol>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Misc</tag>
       </tags>
   </entry>
   <entry>

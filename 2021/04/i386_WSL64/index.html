@@ -83,7 +83,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">880</span>
+            <span class="post-count">954</span>
         </span>
     </span>
 
@@ -156,6 +156,13 @@ var _hmt = _hmt || [];
 <li>待升级完成后，可以再次执行 <code>wsl --list --verbose</code>以查看当前的 WSL 镜像 &amp; 版本。</li>
 <li>最后执行 <code>wsl --set-default-version 2</code> 以设置之后安装的 Linux 子系统都安装到 WSL2 中。</li>
 </ul>
+</li>
+<li>
+<p>注意点：WSL2 与 VMware 15 <strong>不兼容</strong>。如果需要两者兼得则务必升级 VMware 至 <strong>16 版本</strong>。</p>
+<blockquote>
+<p>升级VMware时无需卸载之前的版本，可以直接双击新安装包升级。</p>
+<p>升级时，务必勾选<strong>启用 Windows Hypervisor Platform</strong>，以支持 WSL2 和 VMware 的兼容。</p>
+</blockquote>
 </li>
 <li>
 <p>参考</p>
