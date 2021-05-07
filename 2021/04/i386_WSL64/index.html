@@ -83,7 +83,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">954</span>
+            <span class="post-count">1.2k</span>
         </span>
     </span>
 
@@ -92,7 +92,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">3 分钟</span>
+            <span class="post-count">4 分钟</span>
         </span>
     </span>
 </div>
@@ -165,14 +165,31 @@ var _hmt = _hmt || [];
 </blockquote>
 </li>
 <li>
-<p>参考</p>
+<p>WSL2在使用过程中，可能报错：  <strong>参考的对象类型不支持尝试的操作</strong>。</p>
+<img src="/2021/04/i386_WSL64/image-20210430132003438.png" class="">
+<p>有两种解决方法：</p>
 <ul>
 <li>
-<p><a href="https://docs.microsoft.com/zh-cn/windows/wsl/install-win10" target="_blank" rel="noopener">适用于 Linux 的 Windows 子系统安装指南 (Windows 10) - microsoft docs</a></p>
+<p>第一种（不推荐）：执行 <code>netsh winsock reset</code>，重置 winsock，并重启。但这种方法只能是临时性质的。</p>
 </li>
 <li>
-<p><a href="https://blog.csdn.net/weixin_40955163/article/details/100555823" target="_blank" rel="noopener">WSL安装及升级WSL2 - CSDN</a></p>
+<p>第二种（推荐）：下载 <a href="/2021/04/i386_WSL64/NoLsp.exe" title="NoLsp.exe">NoLsp.exe</a>，并以管理员权限执行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">NoLsp.exe c:\windows\system32\wsl.exe</span><br></pre></td></tr></table></figure>
+<p>等到出现 <code>Success!</code>之后就可以正常使用 WSL2了。</p>
+<img src="/2021/04/i386_WSL64/image-20210430132628877.png" class="">
 </li>
+</ul>
+<p>为什么解法2的方式如此独特呢？Proxifier 开发者发现：如果Winsock LSP DLL被加载到其进程中，则wsl.exe将显示此错误。因此最简单的解决方案是使用WSCSetApplicationCategory WinAPI调用wsl.exe来防止这种情况。</p>
+<p>这个调用在<code>HKEY LOCAL MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters\AppId Catalog</code>创建了一个wsl.exe的条目：</p>
+<img src="/2021/04/i386_WSL64/image-20210430132755231.png" class="">
+<p>而这就是解法2的具体技术细节。</p>
+</li>
+<li>
+<p>参考</p>
+<ul>
+<li><a href="https://docs.microsoft.com/zh-cn/windows/wsl/install-win10" target="_blank" rel="noopener">适用于 Linux 的 Windows 子系统安装指南 (Windows 10) - microsoft docs</a></li>
+<li><a href="https://blog.csdn.net/weixin_40955163/article/details/100555823" target="_blank" rel="noopener">WSL安装及升级WSL2 - CSDN</a></li>
+<li><a href="https://github.com/microsoft/WSL/issues/4177#issuecomment-597736482" target="_blank" rel="noopener">Winsock module breaks WSL2 - WSL github issue</a></li>
 </ul>
 </li>
 </ul>
@@ -252,6 +269,15 @@ var _hmt = _hmt || [];
 
    
   <nav class="article-nav">
+    
+      <a href="/2021/04/v8TurboFan_IR_intro/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            V8 TurboFan 生成图简析
+          
+        </div>
+      </a>
     
     
       <a href="/2021/03/CVE-2018-16065/" class="article-nav-link">
