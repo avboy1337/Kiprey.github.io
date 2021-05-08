@@ -15,19 +15,12 @@
     <content><![CDATA[<h2 id="一、前言">一、前言</h2>
 <p>WebServer V1.0 简单实现了一个最基础的版本。在该版本中，主要实现了以下重要内容：</p>
 <ul>
-<li>
-<p>线程互斥锁的实现</p>
-</li>
-<li>
-<p>线程池的设计，以支持并发</p>
-</li>
-<li>
-<p>基础网络连接的实现</p>
-</li>
-<li>
-<p>http 协议的简略支持</p>
-</li>
+<li>线程互斥锁的实现</li>
+<li>线程池的设计，以支持并发</li>
+<li>基础网络连接的实现</li>
+<li>http 协议的简略支持</li>
 </ul>
+<a id="more"></a>
 <h2 id="二、线程池">二、线程池</h2>
 <h3 id="1-概述">1. 概述</h3>
 <ul>
@@ -13806,165 +13799,6 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
       </tags>
   </entry>
   <entry>
-    <title>CTF Pwn 的杂项笔记</title>
-    <url>/2020/04/pwn/</url>
-    <content><![CDATA[<p>这里是笔者记录的一些内容较少、不便于整理出一篇博客的<strong>Pwn杂项</strong>知识点。</p>
-<h2 id="1-docker-使用-使用手册">1. docker 使用 - <a href="http://www.docker.org.cn/index.html" target="_blank" rel="noopener">使用手册</a></h2>
-<h2 id="2-漏洞">2. 漏洞</h2>
-<ol>
-<li>
-<p>格式化字符串</p>
- <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// %lln 四字 / %ln 双字 / %hn 单字 / %hhn 字节</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%(n-1)$[format]"</span>); <span class="comment">// -&gt; 第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%&#123;n-1&#125;$n"</span>); <span class="comment">// -&gt; 将输出的字符个数写入第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%nc"</span>); <span class="comment">// -&gt; 输出对应参数n个字符</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<a id="more"></a>
-<h2 id="3-绕过防护的手段">3. 绕过防护的手段</h2>
-<ol>
-<li>NX ------ 使用 ROPgadget 搜索可利用的小片段代码</li>
-<li>Canary – 读取 Canary 值并在 payload 中使用</li>
-<li>PIE ------ 由于相对偏移量不变，尝试泄露出任意一个基地址即可绕过</li>
-</ol>
-<h2 id="4-pwntools-docs">4. pwntools - <a href="http://docs.pwntools.com/en/stable/" target="_blank" rel="noopener">docs</a></h2>
-<ol>
-<li>
-<p>DynELF 类 - 用于泄露 libc - <a href="http://docs.pwntools.com/en/stable/dynelf.html" target="_blank" rel="noopener">docs</a></p>
-<ol>
-<li>
-<blockquote>
-<p>注意：构建leak函数时，必要时刻需要重置栈<br>
-防止因为部分关键数据被覆盖而导致leak失败陷入死循环</p>
-</blockquote>
-</li>
-</ol>
-</li>
-<li>
-<p>Fmtstr 类 - 对 printf 漏洞构造恶意 format - <a href="http://docs.pwntools.com/en/stable/fmtstr.html" target="_blank" rel="noopener">docs</a></p>
-<ol>
-<li>较常使用的功能是<br>
-<code>fmtstr_payload(offset,{address:data}, numbwritten=0, write_size=’byte’)</code>。
-<blockquote>
-<p>第一个参数 offset 是第一个可控的栈偏移(不包含格式化字符串参数)<br>
-第二个字典看名字就可以理解，<br>
-numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 printf(“Hello [var]”)，此时在可控变量之前已经输出了“Hello ”共计六个字符，应该设置参数值为 6。<br>
-第四个选择用 %hhn(byte),%hn(word)还是%n(dword).在我们的例子里就可以写成 fmtstr_payload(5, {printf_got:system_plt})</p>
-</blockquote>
-</li>
-</ol>
-</li>
-<li>
-<p>shellcraft 类 - shellcode 生成器</p>
-<ol>
-<li>
-<p>使用前需先指定平台</p>
- <figure class="highlight python"><table><tr><td class="code"><pre><span class="line">context(os=<span class="string">"linux"</span>, arch=<span class="string">"amd64"</span>, bits=<span class="number">64</span>)</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-</li>
-<li>
-<p>部分函数声明</p>
-<ol>
-<li>log
-<ol>
-<li><code>log.success()</code></li>
-<li><code>log.info()</code></li>
-<li><code>log.error()</code></li>
-<li><code>log.failure()</code></li>
-<li><code>context.level</code> = ‘debug’/‘error’</li>
-</ol>
-</li>
-<li><code>p64(int)</code> —— 传入值，传出 bytes</li>
-<li><code>u64(bytes)</code> —— 与 p64 相反</li>
-<li><code>ELF(elf_path_str)</code> —— 读取 ELF 文件（可执行文件，.so 共享库…）</li>
-<li><code>process(path_str)</code> —— 执行传入文件路径上的程序</li>
-<li><code>remote(ip_str, port_int</code>)` —— 传入格式为字符串的 ip 地址，以及格式为值的端口，连接并得到 IO 对象</li>
-<li><code>send(bytes)</code> —— 发送数据，不带 0x0A</li>
-<li><code>sendline(bytes)</code> —— 发送数据，结尾带 0x0A(’\n’)</li>
-<li><code>recv(int)</code> —— 参数可选，接收 n 个字节的数据</li>
-<li><code>recvline()</code> —— 接收数据，在没有接收到换行符的情况下一直阻塞</li>
-<li><code>recvuntil(Str)</code> —— 一直读取输出的信息，直到读取到传入的字符串</li>
-</ol>
-</li>
-<li>
-<p>有时候可能会因为缓冲区的问题阻塞一部分数据，加上 sleep 调整可能会得到改善</p>
-</li>
-</ol>
-<h2 id="5-One-gadget-github">5. One_gadget - <a href="https://github.com/david942j/one_gadget" target="_blank" rel="noopener">github</a></h2>
-<h2 id="6-ROPgadget">6. ROPgadget</h2>
-<ol>
-<li>
-<pre><code class="language-bash"> # 查找字符串
- ROPgadget --binary ./pwn --string &quot;/bin/sh&quot;
- # 查找全部的gadget，并通过管道将信息发送到grep进行筛选
- ROPgadget --binary ./pwn1_64 | grep &quot;pop rdi&quot;
- #筛选出有pop或ret的片段
- ROPgadget --binary ./pwn1_64 --only &quot;pop|ret&quot;
- <figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">2. &gt; 注意：构建超长ROP链时，必要时刻需要重置栈  </span><br><span class="line">    &gt; 防止因为部分关键数据被覆盖而导致调用syscall的函数无法使用  </span><br><span class="line">    &gt; 例子: hgame2020 ROP_LEVEL0 构建 open-read-puts 链</span><br><span class="line"></span><br><span class="line"><span class="comment">## 7. GDB</span></span><br><span class="line"></span><br><span class="line">```bash</span><br><span class="line"><span class="comment">#输出system函数的内存地址</span></span><br><span class="line">gdb-peda$ <span class="builtin-name">print</span> system</span><br><span class="line"><span class="comment">#显示某个地址上的值，x表示examine，s表示string</span></span><br><span class="line">db-peda$ x/s 0x7FFFF7F7ECEE</span><br></pre></td></tr></table></figure>
-
-</code></pre>
-</li>
-</ol>
-<h2 id="8-libc-相关">8. libc 相关</h2>
-<ol>
-<li>
-<p><a href="https://github.com/matrix1001/glibc-all-in-one" target="_blank" rel="noopener">glibc-all-in-one</a></p>
-</li>
-<li>
-<p>pwn 题给出的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p>
-<ol>
-<li>可用于得到 system 函数和&quot;/bin/bash&quot;相对于库基址的偏移量</li>
-<li>在程序中得到某个函数泄露出的地址之后，例如 write 函数的 GOT 地址，即可通过偏移量调用 system(&quot;/bin/bash&quot;)</li>
-</ol>
-</li>
-<li>
-<p>libc-database : 通过某些函数的地址来查询 libc 的版本 - <a href="https://libc.blukat.me/" target="_blank" rel="noopener">在线工具</a></p>
-</li>
-<li>
-<p>更换加载的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p>
-<ol>
-<li>
-<p><a href="https://www.mankier.com/1/patchelf#--force-rpath" target="_blank" rel="noopener">patchelf 手册页</a></p>
- <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">patchelf --<span class="built_in">set</span>-interpreter &lt;libc_ld&gt; &lt;elf_name&gt; <span class="comment"># 设置链接器</span></span><br><span class="line">patchelf --<span class="built_in">set</span>-rpath &lt;libc_parent_folder&gt;:/&lt;libc_name&gt; &lt;elf_name&gt;</span><br><span class="line"><span class="comment"># patchelf --add-needed # 添加libc.so</span></span><br><span class="line"><span class="comment"># patchelf --replace-needed # 替换libc.so</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p><a href="https://bbs.pediy.com/thread-225849.htm" target="_blank" rel="noopener">关于不同版本 glibc 强行加载的方法</a></p>
-</li>
-</ol>
-<blockquote>
-<p>注意，更换使用的libc时，一定要同时更换对应版本的<code>ld.so</code>链接器，否则会无法正常使用libc而导致段错误</p>
-</blockquote>
-</li>
-</ol>
-<h2 id="9-shellcode">9.  shellcode</h2>
-<ol>
-<li>
-<p><a href="http://shell-storm.org/shellcode" target="_blank" rel="noopener">shellcode 数据库</a></p>
-</li>
-<li>
-<p>常用 shellcode</p>
- <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Linux x86-64 29 bytes</span></span><br><span class="line"><span class="keyword">char</span> code[] = <span class="string">"\x31\xc0\x48\xbb\xd1\x9d\x96\x91\xd0\x8c\x97\xff\x48\xf7\xdb\x53\x54\x5f\x99\x52\x57\x54\x5e\xb0\x3b\x0f\x05"</span>;</span><br><span class="line"><span class="comment">// Linux x86 21 bytes</span></span><br><span class="line"><span class="keyword">char</span> shellcode[] =</span><br><span class="line"><span class="string">"\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80"</span>;</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>生成特定格式的 shellcode - msfven</p>
- <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python -c <span class="string">'import sys; sys.stdout.write("\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80")'</span> |  msfvenom -p - -e x86/alpha_mixed -a linux -f raw -a x86 --platform linux BufferRegister=EAX -o output.txt</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<h2 id="10-Linux-Syscall-Reference">10. Linux Syscall Reference</h2>
-<ol>
-<li><a href="http://syscalls.kernelgrok.com/" target="_blank" rel="noopener">x86</a>
-<blockquote>
-<p>int <code>execve</code>(const char *<code>pathname</code>, char *const <code>argv</code>[], char *const <code>envp</code>[]);<br>
-<code>sys_exec</code> : <code>eax</code> = 0xB, <code>ebx</code> = path_str_addr, <code>ecx</code> = NULL, <code>edx</code> = NULL</p>
-</blockquote>
-</li>
-<li><a href="http://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/" target="_blank" rel="noopener">x64</a></li>
-</ol>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>CTF Web 的笔记</title>
     <url>/2020/04/CTF_web/</url>
     <content><![CDATA[<p>一点点曾经整理的Web笔记，篇幅会相对较小一点。</p>
@@ -14158,6 +13992,43 @@ ipconfig/flusdns<br>
       </tags>
   </entry>
   <entry>
+    <title>CTF Crypto 的笔记</title>
+    <url>/2020/04/crypto/</url>
+    <content><![CDATA[<p>一点点Crypto的笔记，真的只有一点点。</p>
+<h2 id="1-RSA">1. RSA</h2>
+<ol>
+<li>RSA 算法原理
+<ol>
+<li><a href="https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/" target="_blank" rel="noopener">CTF-Wiki</a></li>
+<li><a href="https://www.kancloud.cn/kancloud/rsa_algorithm/48484" target="_blank" rel="noopener">看云</a></li>
+</ol>
+</li>
+<li>分解质数
+<ol>
+<li>
+<p>命令行分解 - <a href="https://github.com/ryosan-470/factordb-pycli" target="_blank" rel="noopener">Github</a></p>
+ <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo pip install factordb-pycli</span><br><span class="line">factordb [-h] [--json] number</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>在线解两质数相乘 - <a href="http://factordb.com/index.php" target="_blank" rel="noopener">网址</a></p>
+</li>
+</ol>
+</li>
+</ol>
+<a id="more"></a>
+<ol start="3">
+<li>
+<p>常用exp</p>
+ <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> gmpy</span><br><span class="line"><span class="keyword">from</span> Crypto.Util <span class="keyword">import</span> number</span><br><span class="line"></span><br><span class="line">n=<span class="number">1606938044309278499168642398192229212629290234347717645487123</span></span><br><span class="line">p == <span class="number">1267650600235241044365044382487</span></span><br><span class="line">q == <span class="number">1267650600260888172240281085029</span></span><br><span class="line"></span><br><span class="line">r = (p<span class="number">-1</span>) * (q<span class="number">-1</span>)</span><br><span class="line"></span><br><span class="line">e=<span class="number">0x10001</span></span><br><span class="line">cipher=<span class="number">1206101155741464091016050901578054614292420649123909371122176</span></span><br><span class="line"></span><br><span class="line">d = gmpy.invert(e, r)</span><br><span class="line">m = pow(cipher, d, n)</span><br><span class="line">print(number.long_to_bytes(m))</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Crypto</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>CTF Misc 的笔记</title>
     <url>/2020/04/misc/</url>
     <content><![CDATA[<p>一点点曾经整理的Misc笔记，数量较少。</p>
@@ -14283,40 +14154,162 @@ ipconfig/flusdns<br>
       </tags>
   </entry>
   <entry>
-    <title>CTF Crypto 的笔记</title>
-    <url>/2020/04/crypto/</url>
-    <content><![CDATA[<p>一点点Crypto的笔记，真的只有一点点。</p>
-<h2 id="1-RSA">1. RSA</h2>
-<ol>
-<li>RSA 算法原理
-<ol>
-<li><a href="https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/" target="_blank" rel="noopener">CTF-Wiki</a></li>
-<li><a href="https://www.kancloud.cn/kancloud/rsa_algorithm/48484" target="_blank" rel="noopener">看云</a></li>
-</ol>
-</li>
-<li>分解质数
+    <title>CTF Pwn 的杂项笔记</title>
+    <url>/2020/04/pwn/</url>
+    <content><![CDATA[<p>这里是笔者记录的一些内容较少、不便于整理出一篇博客的<strong>Pwn杂项</strong>知识点。</p>
+<h2 id="1-docker-使用-使用手册">1. docker 使用 - <a href="http://www.docker.org.cn/index.html" target="_blank" rel="noopener">使用手册</a></h2>
+<h2 id="2-漏洞">2. 漏洞</h2>
 <ol>
 <li>
-<p>命令行分解 - <a href="https://github.com/ryosan-470/factordb-pycli" target="_blank" rel="noopener">Github</a></p>
- <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo pip install factordb-pycli</span><br><span class="line">factordb [-h] [--json] number</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>在线解两质数相乘 - <a href="http://factordb.com/index.php" target="_blank" rel="noopener">网址</a></p>
-</li>
-</ol>
+<p>格式化字符串</p>
+ <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// %lln 四字 / %ln 双字 / %hn 单字 / %hhn 字节</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%(n-1)$[format]"</span>); <span class="comment">// -&gt; 第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%&#123;n-1&#125;$n"</span>); <span class="comment">// -&gt; 将输出的字符个数写入第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%nc"</span>); <span class="comment">// -&gt; 输出对应参数n个字符</span></span><br></pre></td></tr></table></figure>
 </li>
 </ol>
 <a id="more"></a>
-<ol start="3">
+<h2 id="3-绕过防护的手段">3. 绕过防护的手段</h2>
+<ol>
+<li>NX ------ 使用 ROPgadget 搜索可利用的小片段代码</li>
+<li>Canary – 读取 Canary 值并在 payload 中使用</li>
+<li>PIE ------ 由于相对偏移量不变，尝试泄露出任意一个基地址即可绕过</li>
+</ol>
+<h2 id="4-pwntools-docs">4. pwntools - <a href="http://docs.pwntools.com/en/stable/" target="_blank" rel="noopener">docs</a></h2>
+<ol>
 <li>
-<p>常用exp</p>
- <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> gmpy</span><br><span class="line"><span class="keyword">from</span> Crypto.Util <span class="keyword">import</span> number</span><br><span class="line"></span><br><span class="line">n=<span class="number">1606938044309278499168642398192229212629290234347717645487123</span></span><br><span class="line">p == <span class="number">1267650600235241044365044382487</span></span><br><span class="line">q == <span class="number">1267650600260888172240281085029</span></span><br><span class="line"></span><br><span class="line">r = (p<span class="number">-1</span>) * (q<span class="number">-1</span>)</span><br><span class="line"></span><br><span class="line">e=<span class="number">0x10001</span></span><br><span class="line">cipher=<span class="number">1206101155741464091016050901578054614292420649123909371122176</span></span><br><span class="line"></span><br><span class="line">d = gmpy.invert(e, r)</span><br><span class="line">m = pow(cipher, d, n)</span><br><span class="line">print(number.long_to_bytes(m))</span><br></pre></td></tr></table></figure>
+<p>DynELF 类 - 用于泄露 libc - <a href="http://docs.pwntools.com/en/stable/dynelf.html" target="_blank" rel="noopener">docs</a></p>
+<ol>
+<li>
+<blockquote>
+<p>注意：构建leak函数时，必要时刻需要重置栈<br>
+防止因为部分关键数据被覆盖而导致leak失败陷入死循环</p>
+</blockquote>
 </li>
+</ol>
+</li>
+<li>
+<p>Fmtstr 类 - 对 printf 漏洞构造恶意 format - <a href="http://docs.pwntools.com/en/stable/fmtstr.html" target="_blank" rel="noopener">docs</a></p>
+<ol>
+<li>较常使用的功能是<br>
+<code>fmtstr_payload(offset,{address:data}, numbwritten=0, write_size=’byte’)</code>。
+<blockquote>
+<p>第一个参数 offset 是第一个可控的栈偏移(不包含格式化字符串参数)<br>
+第二个字典看名字就可以理解，<br>
+numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 printf(“Hello [var]”)，此时在可控变量之前已经输出了“Hello ”共计六个字符，应该设置参数值为 6。<br>
+第四个选择用 %hhn(byte),%hn(word)还是%n(dword).在我们的例子里就可以写成 fmtstr_payload(5, {printf_got:system_plt})</p>
+</blockquote>
+</li>
+</ol>
+</li>
+<li>
+<p>shellcraft 类 - shellcode 生成器</p>
+<ol>
+<li>
+<p>使用前需先指定平台</p>
+ <figure class="highlight python"><table><tr><td class="code"><pre><span class="line">context(os=<span class="string">"linux"</span>, arch=<span class="string">"amd64"</span>, bits=<span class="number">64</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+<li>
+<p>部分函数声明</p>
+<ol>
+<li>log
+<ol>
+<li><code>log.success()</code></li>
+<li><code>log.info()</code></li>
+<li><code>log.error()</code></li>
+<li><code>log.failure()</code></li>
+<li><code>context.level</code> = ‘debug’/‘error’</li>
+</ol>
+</li>
+<li><code>p64(int)</code> —— 传入值，传出 bytes</li>
+<li><code>u64(bytes)</code> —— 与 p64 相反</li>
+<li><code>ELF(elf_path_str)</code> —— 读取 ELF 文件（可执行文件，.so 共享库…）</li>
+<li><code>process(path_str)</code> —— 执行传入文件路径上的程序</li>
+<li><code>remote(ip_str, port_int</code>)` —— 传入格式为字符串的 ip 地址，以及格式为值的端口，连接并得到 IO 对象</li>
+<li><code>send(bytes)</code> —— 发送数据，不带 0x0A</li>
+<li><code>sendline(bytes)</code> —— 发送数据，结尾带 0x0A(’\n’)</li>
+<li><code>recv(int)</code> —— 参数可选，接收 n 个字节的数据</li>
+<li><code>recvline()</code> —— 接收数据，在没有接收到换行符的情况下一直阻塞</li>
+<li><code>recvuntil(Str)</code> —— 一直读取输出的信息，直到读取到传入的字符串</li>
+</ol>
+</li>
+<li>
+<p>有时候可能会因为缓冲区的问题阻塞一部分数据，加上 sleep 调整可能会得到改善</p>
+</li>
+</ol>
+<h2 id="5-One-gadget-github">5. One_gadget - <a href="https://github.com/david942j/one_gadget" target="_blank" rel="noopener">github</a></h2>
+<h2 id="6-ROPgadget">6. ROPgadget</h2>
+<ol>
+<li>
+<pre><code class="language-bash"> # 查找字符串
+ ROPgadget --binary ./pwn --string &quot;/bin/sh&quot;
+ # 查找全部的gadget，并通过管道将信息发送到grep进行筛选
+ ROPgadget --binary ./pwn1_64 | grep &quot;pop rdi&quot;
+ #筛选出有pop或ret的片段
+ ROPgadget --binary ./pwn1_64 --only &quot;pop|ret&quot;
+ <figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">2. &gt; 注意：构建超长ROP链时，必要时刻需要重置栈  </span><br><span class="line">    &gt; 防止因为部分关键数据被覆盖而导致调用syscall的函数无法使用  </span><br><span class="line">    &gt; 例子: hgame2020 ROP_LEVEL0 构建 open-read-puts 链</span><br><span class="line"></span><br><span class="line"><span class="comment">## 7. GDB</span></span><br><span class="line"></span><br><span class="line">```bash</span><br><span class="line"><span class="comment">#输出system函数的内存地址</span></span><br><span class="line">gdb-peda$ <span class="builtin-name">print</span> system</span><br><span class="line"><span class="comment">#显示某个地址上的值，x表示examine，s表示string</span></span><br><span class="line">db-peda$ x/s 0x7FFFF7F7ECEE</span><br></pre></td></tr></table></figure>
+
+</code></pre>
+</li>
+</ol>
+<h2 id="8-libc-相关">8. libc 相关</h2>
+<ol>
+<li>
+<p><a href="https://github.com/matrix1001/glibc-all-in-one" target="_blank" rel="noopener">glibc-all-in-one</a></p>
+</li>
+<li>
+<p>pwn 题给出的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p>
+<ol>
+<li>可用于得到 system 函数和&quot;/bin/bash&quot;相对于库基址的偏移量</li>
+<li>在程序中得到某个函数泄露出的地址之后，例如 write 函数的 GOT 地址，即可通过偏移量调用 system(&quot;/bin/bash&quot;)</li>
+</ol>
+</li>
+<li>
+<p>libc-database : 通过某些函数的地址来查询 libc 的版本 - <a href="https://libc.blukat.me/" target="_blank" rel="noopener">在线工具</a></p>
+</li>
+<li>
+<p>更换加载的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p>
+<ol>
+<li>
+<p><a href="https://www.mankier.com/1/patchelf#--force-rpath" target="_blank" rel="noopener">patchelf 手册页</a></p>
+ <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">patchelf --<span class="built_in">set</span>-interpreter &lt;libc_ld&gt; &lt;elf_name&gt; <span class="comment"># 设置链接器</span></span><br><span class="line">patchelf --<span class="built_in">set</span>-rpath &lt;libc_parent_folder&gt;:/&lt;libc_name&gt; &lt;elf_name&gt;</span><br><span class="line"><span class="comment"># patchelf --add-needed # 添加libc.so</span></span><br><span class="line"><span class="comment"># patchelf --replace-needed # 替换libc.so</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><a href="https://bbs.pediy.com/thread-225849.htm" target="_blank" rel="noopener">关于不同版本 glibc 强行加载的方法</a></p>
+</li>
+</ol>
+<blockquote>
+<p>注意，更换使用的libc时，一定要同时更换对应版本的<code>ld.so</code>链接器，否则会无法正常使用libc而导致段错误</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="9-shellcode">9.  shellcode</h2>
+<ol>
+<li>
+<p><a href="http://shell-storm.org/shellcode" target="_blank" rel="noopener">shellcode 数据库</a></p>
+</li>
+<li>
+<p>常用 shellcode</p>
+ <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Linux x86-64 29 bytes</span></span><br><span class="line"><span class="keyword">char</span> code[] = <span class="string">"\x31\xc0\x48\xbb\xd1\x9d\x96\x91\xd0\x8c\x97\xff\x48\xf7\xdb\x53\x54\x5f\x99\x52\x57\x54\x5e\xb0\x3b\x0f\x05"</span>;</span><br><span class="line"><span class="comment">// Linux x86 21 bytes</span></span><br><span class="line"><span class="keyword">char</span> shellcode[] =</span><br><span class="line"><span class="string">"\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80"</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>生成特定格式的 shellcode - msfven</p>
+ <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python -c <span class="string">'import sys; sys.stdout.write("\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80")'</span> |  msfvenom -p - -e x86/alpha_mixed -a linux -f raw -a x86 --platform linux BufferRegister=EAX -o output.txt</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="10-Linux-Syscall-Reference">10. Linux Syscall Reference</h2>
+<ol>
+<li><a href="http://syscalls.kernelgrok.com/" target="_blank" rel="noopener">x86</a>
+<blockquote>
+<p>int <code>execve</code>(const char *<code>pathname</code>, char *const <code>argv</code>[], char *const <code>envp</code>[]);<br>
+<code>sys_exec</code> : <code>eax</code> = 0xB, <code>ebx</code> = path_str_addr, <code>ecx</code> = NULL, <code>edx</code> = NULL</p>
+</blockquote>
+</li>
+<li><a href="http://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/" target="_blank" rel="noopener">x64</a></li>
 </ol>
 ]]></content>
       <tags>
         <tag>CTF</tag>
-        <tag>Crypto</tag>
+        <tag>Pwn</tag>
       </tags>
   </entry>
   <entry>
@@ -15386,40 +15379,6 @@ bins --> large[Large bins]</pre>
       </tags>
   </entry>
   <entry>
-    <title>heap - 1 - arena</title>
-    <url>/2020/03/heap-1-arena/</url>
-    <content><![CDATA[<p>堆的 <strong>管理者</strong></p>
-<h2 id="1-什么是-arena">1. 什么是 arena</h2>
-<p>堆，是内存分配所用的内存，在计算机世界中是一种比较复杂的部件，里面有大量的信息需要被管理<br>
-而<code>arena</code>，就是管理堆的一个结构</p>
-<h2 id="2-arena-的特点">2. arena 的特点</h2>
-<p>一个线程只有一个<code>arena</code>，这些<code>arena</code>是互不相同的。<br>
-主线程的<code>arena</code>称为<code>main_arena</code>，子线程的<code>arena</code>称为<code>thread_arena</code>。</p>
-<a id="more"></a>
-<h2 id="3-arena-的数量限制">3. arena 的数量限制</h2>
-<p>并不是每个线程都有一个<code>arena</code>，其个数是有限制的。</p>
-<blockquote>
-<p>由于笔者在写这篇文章时，所涉猎的堆漏洞类型暂时没有涉及arena的其他知识，故此处留坑。</p>
-</blockquote>
-<h2 id="4-arena-的实现">4. arena 的实现</h2>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">   ----------- Internal state representation and initialization -----------</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="comment">/* Serialize access.  */</span></span><br><span class="line">  <span class="keyword">mutex_t</span> mutex;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Flags (formerly in max_fast).  */</span></span><br><span class="line">  <span class="keyword">int</span> flags;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Fastbins */</span></span><br><span class="line">  mfastbinptr fastbinsY[NFASTBINS];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Base of the topmost chunk -- not otherwise kept in a bin */</span></span><br><span class="line">  mchunkptr top;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* The remainder from the most recent split of a small request */</span></span><br><span class="line">  mchunkptr last_remainder;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Normal bins packed as described above */</span></span><br><span class="line">  mchunkptr bins[NBINS * <span class="number">2</span> - <span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Bitmap of bins */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> binmap[BINMAPSIZE];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list for free arenas.  Access to this field is serialized</span></span><br><span class="line"><span class="comment">     by free_list_lock in arena.c.  */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next_free</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Number of threads attached to this arena.  0 if the arena is on</span></span><br><span class="line"><span class="comment">     the free list.  Access to this field is serialized by</span></span><br><span class="line"><span class="comment">     free_list_lock in arena.c.  */</span></span><br><span class="line">  INTERNAL_SIZE_T attached_threads;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Memory allocated from the system in this arena.  */</span></span><br><span class="line">  INTERNAL_SIZE_T system_mem;</span><br><span class="line">  INTERNAL_SIZE_T max_system_mem;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<ul>
-<li>glibc中的<code>arena</code>使用的就是此结构体。</li>
-<li>该结构体包含了各种信息，例如<code>bin</code>链的头地址、<code>topchunk</code>的地址以及<code>last remainder</code>地址等等</li>
-<li>成员binmap用于记录bin的相关信息，例如某个bin是否为空
-<ul>
-<li>当需要遍历bin时，可以转而遍历binmap，以减小直接遍历bin时的 <strong>内存页载入、搜索、切换到下一个内存页等等</strong> 所带来的时间消耗</li>
-</ul>
-</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-        <tag>Heap</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>heap - 2 - chunk的分类</title>
     <url>/2020/03/heap-2-chunks/</url>
     <content><![CDATA[<p>堆块最小分配的单位 —— malloc_chunk !</p>
@@ -15491,6 +15450,40 @@ bins --> large[Large bins]</pre>
 <ul>
 <li>当用户请求的是一个small chunk，并且该请求无法被small bin和unsorted bin满足</li>
 <li>此时查找最合适的chunk，并把该chunk切割，剩余部分放入unsorted bin里并成为新的last remainder</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Pwn</tag>
+        <tag>Heap</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>heap - 1 - arena</title>
+    <url>/2020/03/heap-1-arena/</url>
+    <content><![CDATA[<p>堆的 <strong>管理者</strong></p>
+<h2 id="1-什么是-arena">1. 什么是 arena</h2>
+<p>堆，是内存分配所用的内存，在计算机世界中是一种比较复杂的部件，里面有大量的信息需要被管理<br>
+而<code>arena</code>，就是管理堆的一个结构</p>
+<h2 id="2-arena-的特点">2. arena 的特点</h2>
+<p>一个线程只有一个<code>arena</code>，这些<code>arena</code>是互不相同的。<br>
+主线程的<code>arena</code>称为<code>main_arena</code>，子线程的<code>arena</code>称为<code>thread_arena</code>。</p>
+<a id="more"></a>
+<h2 id="3-arena-的数量限制">3. arena 的数量限制</h2>
+<p>并不是每个线程都有一个<code>arena</code>，其个数是有限制的。</p>
+<blockquote>
+<p>由于笔者在写这篇文章时，所涉猎的堆漏洞类型暂时没有涉及arena的其他知识，故此处留坑。</p>
+</blockquote>
+<h2 id="4-arena-的实现">4. arena 的实现</h2>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">   ----------- Internal state representation and initialization -----------</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="comment">/* Serialize access.  */</span></span><br><span class="line">  <span class="keyword">mutex_t</span> mutex;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Flags (formerly in max_fast).  */</span></span><br><span class="line">  <span class="keyword">int</span> flags;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Fastbins */</span></span><br><span class="line">  mfastbinptr fastbinsY[NFASTBINS];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Base of the topmost chunk -- not otherwise kept in a bin */</span></span><br><span class="line">  mchunkptr top;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* The remainder from the most recent split of a small request */</span></span><br><span class="line">  mchunkptr last_remainder;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Normal bins packed as described above */</span></span><br><span class="line">  mchunkptr bins[NBINS * <span class="number">2</span> - <span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Bitmap of bins */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> binmap[BINMAPSIZE];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list for free arenas.  Access to this field is serialized</span></span><br><span class="line"><span class="comment">     by free_list_lock in arena.c.  */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next_free</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Number of threads attached to this arena.  0 if the arena is on</span></span><br><span class="line"><span class="comment">     the free list.  Access to this field is serialized by</span></span><br><span class="line"><span class="comment">     free_list_lock in arena.c.  */</span></span><br><span class="line">  INTERNAL_SIZE_T attached_threads;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Memory allocated from the system in this arena.  */</span></span><br><span class="line">  INTERNAL_SIZE_T system_mem;</span><br><span class="line">  INTERNAL_SIZE_T max_system_mem;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>glibc中的<code>arena</code>使用的就是此结构体。</li>
+<li>该结构体包含了各种信息，例如<code>bin</code>链的头地址、<code>topchunk</code>的地址以及<code>last remainder</code>地址等等</li>
+<li>成员binmap用于记录bin的相关信息，例如某个bin是否为空
+<ul>
+<li>当需要遍历bin时，可以转而遍历binmap，以减小直接遍历bin时的 <strong>内存页载入、搜索、切换到下一个内存页等等</strong> 所带来的时间消耗</li>
+</ul>
+</li>
 </ul>
 ]]></content>
       <tags>
