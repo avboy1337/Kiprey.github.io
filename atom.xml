@@ -1509,37 +1509,28 @@
   </entry>
   
   <entry>
-    <title>CTF Crypto 的笔记</title>
-    <link href="https://kiprey.github.io/2020/04/crypto/"/>
-    <id>https://kiprey.github.io/2020/04/crypto/</id>
+    <title>CTF Reverse 的笔记</title>
+    <link href="https://kiprey.github.io/2020/04/reverse/"/>
+    <id>https://kiprey.github.io/2020/04/reverse/</id>
     <published>2020-04-15T16:00:00.000Z</published>
-    <updated>2020-11-19T09:40:10.580Z</updated>
+    <updated>2020-11-19T09:40:10.694Z</updated>
     
-    <content type="html"><![CDATA[<p>一点点Crypto的笔记，真的只有一点点。</p><h2 id="1-RSA">1. RSA</h2><ol><li>RSA 算法原理<ol><li><a href="https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/" target="_blank" rel="noopener">CTF-Wiki</a></li><li><a href="https://www.kancloud.cn/kancloud/rsa_algorithm/48484" target="_blank" rel="noopener">看云</a></li></ol></li><li>分解质数<ol><li><p>命令行分解 - <a href="https://github.com/ryosan-470/factordb-pycli" target="_blank" rel="noopener">Github</a></p> <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo pip install factordb-pycli</span><br><span class="line">factordb [-h] [--json] number</span><br></pre></td></tr></table></figure></li><li><p>在线解两质数相乘 - <a href="http://factordb.com/index.php" target="_blank" rel="noopener">网址</a></p></li></ol></li></ol><a id="more"></a><ol start="3"><li><p>常用exp</p> <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> gmpy</span><br><span class="line"><span class="keyword">from</span> Crypto.Util <span class="keyword">import</span> number</span><br><span class="line"></span><br><span class="line">n=<span class="number">1606938044309278499168642398192229212629290234347717645487123</span></span><br><span class="line">p == <span class="number">1267650600235241044365044382487</span></span><br><span class="line">q == <span class="number">1267650600260888172240281085029</span></span><br><span class="line"></span><br><span class="line">r = (p<span class="number">-1</span>) * (q<span class="number">-1</span>)</span><br><span class="line"></span><br><span class="line">e=<span class="number">0x10001</span></span><br><span class="line">cipher=<span class="number">1206101155741464091016050901578054614292420649123909371122176</span></span><br><span class="line"></span><br><span class="line">d = gmpy.invert(e, r)</span><br><span class="line">m = pow(cipher, d, n)</span><br><span class="line">print(number.long_to_bytes(m))</span><br></pre></td></tr></table></figure></li></ol>]]></content>
+    <content type="html"><![CDATA[<ul><li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li><li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li></ul><h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2><p>迷宫问题有以下特点:</p><ul><li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li><li>将用户输入限制在少数几个字符范围内.</li><li>一般只有一个迷宫入口和一个迷宫出口</li></ul><p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p><a id="more"></a>]]></content>
     
     <summary type="html">
     
-      &lt;p&gt;一点点Crypto的笔记，真的只有一点点。&lt;/p&gt;
-&lt;h2 id=&quot;1-RSA&quot;&gt;1. RSA&lt;/h2&gt;
-&lt;ol&gt;
-&lt;li&gt;RSA 算法原理
-&lt;ol&gt;
-&lt;li&gt;&lt;a href=&quot;https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;CTF-Wiki&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.kancloud.cn/kancloud/rsa_algorithm/48484&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;看云&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/li&gt;
-&lt;li&gt;分解质数
-&lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;命令行分解 - &lt;a href=&quot;https://github.com/ryosan-470/factordb-pycli&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Github&lt;/a&gt;&lt;/p&gt;
- &lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;sudo pip install factordb-pycli&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;factordb [-h] [--json] number&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;在线解两质数相乘 - &lt;a href=&quot;http://factordb.com/index.php&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;网址&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
+      &lt;ul&gt;
+&lt;li&gt;笔者会把一些曾经遇到过的Reverse知识点记录在这里。&lt;/li&gt;
+&lt;li&gt;但笔者并非主攻二进制逆向，故逆向笔记会相对较少。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;1-迷宫问题（maze）&quot;&gt;1. 迷宫问题（maze）&lt;/h2&gt;
+&lt;p&gt;迷宫问题有以下特点:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;在内存中布置一张 “地图”，这个地图可能是字符（例如&lt;code&gt;#&lt;/code&gt;之类的），也可能是一些数字的二进制&lt;/li&gt;
+&lt;li&gt;将用户输入限制在少数几个字符范围内.&lt;/li&gt;
+&lt;li&gt;一般只有一个迷宫入口和一个迷宫出口&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;详情&lt;a href=&quot;https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;CTF-Wiki&lt;/a&gt;&lt;/p&gt;
     
     </summary>
     
@@ -1547,7 +1538,7 @@
     
       <category term="CTF" scheme="https://kiprey.github.io/tags/CTF/"/>
     
-      <category term="Crypto" scheme="https://kiprey.github.io/tags/Crypto/"/>
+      <category term="Reverse" scheme="https://kiprey.github.io/tags/Reverse/"/>
     
   </entry>
   
@@ -1590,28 +1581,37 @@
   </entry>
   
   <entry>
-    <title>CTF Reverse 的笔记</title>
-    <link href="https://kiprey.github.io/2020/04/reverse/"/>
-    <id>https://kiprey.github.io/2020/04/reverse/</id>
+    <title>CTF Crypto 的笔记</title>
+    <link href="https://kiprey.github.io/2020/04/crypto/"/>
+    <id>https://kiprey.github.io/2020/04/crypto/</id>
     <published>2020-04-15T16:00:00.000Z</published>
-    <updated>2020-11-19T09:40:10.694Z</updated>
+    <updated>2020-11-19T09:40:10.580Z</updated>
     
-    <content type="html"><![CDATA[<ul><li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li><li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li></ul><h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2><p>迷宫问题有以下特点:</p><ul><li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li><li>将用户输入限制在少数几个字符范围内.</li><li>一般只有一个迷宫入口和一个迷宫出口</li></ul><p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p><a id="more"></a>]]></content>
+    <content type="html"><![CDATA[<p>一点点Crypto的笔记，真的只有一点点。</p><h2 id="1-RSA">1. RSA</h2><ol><li>RSA 算法原理<ol><li><a href="https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/" target="_blank" rel="noopener">CTF-Wiki</a></li><li><a href="https://www.kancloud.cn/kancloud/rsa_algorithm/48484" target="_blank" rel="noopener">看云</a></li></ol></li><li>分解质数<ol><li><p>命令行分解 - <a href="https://github.com/ryosan-470/factordb-pycli" target="_blank" rel="noopener">Github</a></p> <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo pip install factordb-pycli</span><br><span class="line">factordb [-h] [--json] number</span><br></pre></td></tr></table></figure></li><li><p>在线解两质数相乘 - <a href="http://factordb.com/index.php" target="_blank" rel="noopener">网址</a></p></li></ol></li></ol><a id="more"></a><ol start="3"><li><p>常用exp</p> <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> gmpy</span><br><span class="line"><span class="keyword">from</span> Crypto.Util <span class="keyword">import</span> number</span><br><span class="line"></span><br><span class="line">n=<span class="number">1606938044309278499168642398192229212629290234347717645487123</span></span><br><span class="line">p == <span class="number">1267650600235241044365044382487</span></span><br><span class="line">q == <span class="number">1267650600260888172240281085029</span></span><br><span class="line"></span><br><span class="line">r = (p<span class="number">-1</span>) * (q<span class="number">-1</span>)</span><br><span class="line"></span><br><span class="line">e=<span class="number">0x10001</span></span><br><span class="line">cipher=<span class="number">1206101155741464091016050901578054614292420649123909371122176</span></span><br><span class="line"></span><br><span class="line">d = gmpy.invert(e, r)</span><br><span class="line">m = pow(cipher, d, n)</span><br><span class="line">print(number.long_to_bytes(m))</span><br></pre></td></tr></table></figure></li></ol>]]></content>
     
     <summary type="html">
     
-      &lt;ul&gt;
-&lt;li&gt;笔者会把一些曾经遇到过的Reverse知识点记录在这里。&lt;/li&gt;
-&lt;li&gt;但笔者并非主攻二进制逆向，故逆向笔记会相对较少。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&quot;1-迷宫问题（maze）&quot;&gt;1. 迷宫问题（maze）&lt;/h2&gt;
-&lt;p&gt;迷宫问题有以下特点:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;在内存中布置一张 “地图”，这个地图可能是字符（例如&lt;code&gt;#&lt;/code&gt;之类的），也可能是一些数字的二进制&lt;/li&gt;
-&lt;li&gt;将用户输入限制在少数几个字符范围内.&lt;/li&gt;
-&lt;li&gt;一般只有一个迷宫入口和一个迷宫出口&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;详情&lt;a href=&quot;https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;CTF-Wiki&lt;/a&gt;&lt;/p&gt;
+      &lt;p&gt;一点点Crypto的笔记，真的只有一点点。&lt;/p&gt;
+&lt;h2 id=&quot;1-RSA&quot;&gt;1. RSA&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;RSA 算法原理
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&quot;https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;CTF-Wiki&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.kancloud.cn/kancloud/rsa_algorithm/48484&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;看云&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;li&gt;分解质数
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;命令行分解 - &lt;a href=&quot;https://github.com/ryosan-470/factordb-pycli&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Github&lt;/a&gt;&lt;/p&gt;
+ &lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;sudo pip install factordb-pycli&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;factordb [-h] [--json] number&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;在线解两质数相乘 - &lt;a href=&quot;http://factordb.com/index.php&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;网址&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
     
     </summary>
     
@@ -1619,7 +1619,7 @@
     
       <category term="CTF" scheme="https://kiprey.github.io/tags/CTF/"/>
     
-      <category term="Reverse" scheme="https://kiprey.github.io/tags/Reverse/"/>
+      <category term="Crypto" scheme="https://kiprey.github.io/tags/Crypto/"/>
     
   </entry>
   
@@ -1780,33 +1780,6 @@
   </entry>
   
   <entry>
-    <title>heap - 2 - chunk的分类</title>
-    <link href="https://kiprey.github.io/2020/03/heap-2-chunks/"/>
-    <id>https://kiprey.github.io/2020/03/heap-2-chunks/</id>
-    <published>2020-03-28T16:00:00.000Z</published>
-    <updated>2020-11-19T09:40:10.665Z</updated>
-    
-    <content type="html"><![CDATA[<p>堆块最小分配的单位 —— malloc_chunk !</p><h2 id="1-chunk的结构体">1. chunk的结构体</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span> &#123;</span></span><br><span class="line"></span><br><span class="line">  INTERNAL_SIZE_T      prev_size;  <span class="comment">/* Size of previous chunk (if free).  */</span></span><br><span class="line">  INTERNAL_SIZE_T      size;       <span class="comment">/* Size in bytes, including overhead. */</span></span><br><span class="line"></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">fd</span>;</span>         <span class="comment">/* double links -- used only if free. */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">bk</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Only used for large blocks: pointer to next larger size.  */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">fd_nextsize</span>;</span> <span class="comment">/* double links -- used only if free. */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">bk_nextsize</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><a id="more"></a><ul><li>结构成员<ul><li>通用结构成员<ul><li><code>struct malloc_chunk</code>是每次分配堆块的基本单位</li><li><code>prev_size</code> 为上一个 <strong>空闲</strong> 相邻堆块（<strong>虚拟</strong> 内存中相邻，<strong>非</strong> bin链中相邻，下同）的chunk大小<ul><li>如果上一个相邻堆块 <strong>不空闲</strong> ，则该变量无用</li><li>那么，该变量的空间可以给上一个堆块使用，即 <strong>空间复用</strong></li></ul></li><li><code>size</code>为当前chunk的大小（该变量可 <strong>&amp;</strong> 上各种标志位以记录数据，例如PREV_INUSE标志位）</li><li>指针<code>fd</code>指向下一个chunk（当该chunk位于链尾时指向<code>arena</code>）</li><li>指针<code>bk</code>指向上一个chunk（当该chunk位于链头时指向<code>arena</code>，fast chunks除外）</li></ul></li><li>当这个chunk为 <strong>large chunk</strong> 时，才会使用以下结构成员<ul><li><code>fd_nextsize</code>指向大于当前chunk大小、且位于相同large bin链的chunk</li><li><code>bk_nextsize</code>指向小于当前chunk大小、且位于相同large bin链的chunk</li></ul></li></ul></li></ul><h2 id="2-allocated-chunk">2. allocated chunk</h2><ul><li><p>为便于称呼，我们称，已被分配给用户的chunk为allocated chunk</p></li><li><p>当free chunk被分配时，返回给用户的指针为 <strong>该chunk首地址 + 2 x SIZE_SZ</strong><br>即该chunk的成员fd指针的地址</p><ul><li><code>SIZE_SZ</code>为<code>size_t</code>的大小<br>在32位程序中<code>SIZE_SE</code>为4字节、64位程序中为8字节<ul><li><p>其代码为</p><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> INTERNAL_SIZE_T</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INTERNAL_SIZE_T size_t</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* The corresponding word size */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIZE_SZ                (sizeof(INTERNAL_SIZE_T))</span></span><br></pre></td></tr></table></figure></li></ul></li></ul></li><li><p>当chunk被分配时，指针fd、bk、fd_nextsize、bk_nextsize 无用，故该部分空间被分配给用户使用，用户所得到内存空间从指针fd的内存地址开始</p></li></ul><h2 id="2-free-chunk">2. free chunk</h2><ul><li><strong>free chunk</strong>， 指的是已经被操作系统释放的空闲chunk</li><li>不同于allocated chunk，此时该free chunk的指针fd、bk等有作用，不可被随意覆盖、</li></ul><h2 id="3-top-chunk">3. top chunk</h2><ul><li>地址最高、位于堆顶的的free chunk，称为top chunk</li><li>该 chunk <strong>不属于</strong> 任何bin，只由arena直接管理</li><li>当所有free chunk都无法满足用户需求时，如果top chunk够大，则top chunk将会被切割为两部分，第一部分分配给用户，第二部分会成为新的top chunk</li></ul><h2 id="4-last-remainder-chunk">4. last remainder chunk</h2><ul><li>当用户请求的是一个small chunk，并且该请求无法被small bin和unsorted bin满足</li><li>此时查找最合适的chunk，并把该chunk切割，剩余部分放入unsorted bin里并成为新的last remainder</li></ul>]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;堆块最小分配的单位 —— malloc_chunk !&lt;/p&gt;
-&lt;h2 id=&quot;1-chunk的结构体&quot;&gt;1. chunk的结构体&lt;/h2&gt;
-&lt;figure class=&quot;highlight cpp&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;malloc_chunk&lt;/span&gt; &amp;#123;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  INTERNAL_SIZE_T      prev_size;  &lt;span class=&quot;comment&quot;&gt;/* Size of previous chunk (if free).  */&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  INTERNAL_SIZE_T      size;       &lt;span class=&quot;comment&quot;&gt;/* Size in bytes, including overhead. */&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;malloc_chunk&lt;/span&gt;* &lt;span class=&quot;title&quot;&gt;fd&lt;/span&gt;;&lt;/span&gt;         &lt;span class=&quot;comment&quot;&gt;/* double links -- used only if free. */&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;malloc_chunk&lt;/span&gt;* &lt;span class=&quot;title&quot;&gt;bk&lt;/span&gt;;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;comment&quot;&gt;/* Only used for large blocks: pointer to next larger size.  */&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;malloc_chunk&lt;/span&gt;* &lt;span class=&quot;title&quot;&gt;fd_nextsize&lt;/span&gt;;&lt;/span&gt; &lt;span class=&quot;comment&quot;&gt;/* double links -- used only if free. */&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;malloc_chunk&lt;/span&gt;* &lt;span class=&quot;title&quot;&gt;bk_nextsize&lt;/span&gt;;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&amp;#125;;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-    
-    </summary>
-    
-    
-    
-      <category term="CTF" scheme="https://kiprey.github.io/tags/CTF/"/>
-    
-      <category term="Pwn" scheme="https://kiprey.github.io/tags/Pwn/"/>
-    
-      <category term="Heap" scheme="https://kiprey.github.io/tags/Heap/"/>
-    
-  </entry>
-  
-  <entry>
     <title>heap - 1 - arena</title>
     <link href="https://kiprey.github.io/2020/03/heap-1-arena/"/>
     <id>https://kiprey.github.io/2020/03/heap-1-arena/</id>
@@ -1824,6 +1797,33 @@
 &lt;h2 id=&quot;2-arena-的特点&quot;&gt;2. arena 的特点&lt;/h2&gt;
 &lt;p&gt;一个线程只有一个&lt;code&gt;arena&lt;/code&gt;，这些&lt;code&gt;arena&lt;/code&gt;是互不相同的。&lt;br&gt;
 主线程的&lt;code&gt;arena&lt;/code&gt;称为&lt;code&gt;main_arena&lt;/code&gt;，子线程的&lt;code&gt;arena&lt;/code&gt;称为&lt;code&gt;thread_arena&lt;/code&gt;。&lt;/p&gt;
+    
+    </summary>
+    
+    
+    
+      <category term="CTF" scheme="https://kiprey.github.io/tags/CTF/"/>
+    
+      <category term="Pwn" scheme="https://kiprey.github.io/tags/Pwn/"/>
+    
+      <category term="Heap" scheme="https://kiprey.github.io/tags/Heap/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>heap - 2 - chunk的分类</title>
+    <link href="https://kiprey.github.io/2020/03/heap-2-chunks/"/>
+    <id>https://kiprey.github.io/2020/03/heap-2-chunks/</id>
+    <published>2020-03-28T16:00:00.000Z</published>
+    <updated>2020-11-19T09:40:10.665Z</updated>
+    
+    <content type="html"><![CDATA[<p>堆块最小分配的单位 —— malloc_chunk !</p><h2 id="1-chunk的结构体">1. chunk的结构体</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span> &#123;</span></span><br><span class="line"></span><br><span class="line">  INTERNAL_SIZE_T      prev_size;  <span class="comment">/* Size of previous chunk (if free).  */</span></span><br><span class="line">  INTERNAL_SIZE_T      size;       <span class="comment">/* Size in bytes, including overhead. */</span></span><br><span class="line"></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">fd</span>;</span>         <span class="comment">/* double links -- used only if free. */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">bk</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Only used for large blocks: pointer to next larger size.  */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">fd_nextsize</span>;</span> <span class="comment">/* double links -- used only if free. */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">bk_nextsize</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><a id="more"></a><ul><li>结构成员<ul><li>通用结构成员<ul><li><code>struct malloc_chunk</code>是每次分配堆块的基本单位</li><li><code>prev_size</code> 为上一个 <strong>空闲</strong> 相邻堆块（<strong>虚拟</strong> 内存中相邻，<strong>非</strong> bin链中相邻，下同）的chunk大小<ul><li>如果上一个相邻堆块 <strong>不空闲</strong> ，则该变量无用</li><li>那么，该变量的空间可以给上一个堆块使用，即 <strong>空间复用</strong></li></ul></li><li><code>size</code>为当前chunk的大小（该变量可 <strong>&amp;</strong> 上各种标志位以记录数据，例如PREV_INUSE标志位）</li><li>指针<code>fd</code>指向下一个chunk（当该chunk位于链尾时指向<code>arena</code>）</li><li>指针<code>bk</code>指向上一个chunk（当该chunk位于链头时指向<code>arena</code>，fast chunks除外）</li></ul></li><li>当这个chunk为 <strong>large chunk</strong> 时，才会使用以下结构成员<ul><li><code>fd_nextsize</code>指向大于当前chunk大小、且位于相同large bin链的chunk</li><li><code>bk_nextsize</code>指向小于当前chunk大小、且位于相同large bin链的chunk</li></ul></li></ul></li></ul><h2 id="2-allocated-chunk">2. allocated chunk</h2><ul><li><p>为便于称呼，我们称，已被分配给用户的chunk为allocated chunk</p></li><li><p>当free chunk被分配时，返回给用户的指针为 <strong>该chunk首地址 + 2 x SIZE_SZ</strong><br>即该chunk的成员fd指针的地址</p><ul><li><code>SIZE_SZ</code>为<code>size_t</code>的大小<br>在32位程序中<code>SIZE_SE</code>为4字节、64位程序中为8字节<ul><li><p>其代码为</p><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> INTERNAL_SIZE_T</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INTERNAL_SIZE_T size_t</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* The corresponding word size */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIZE_SZ                (sizeof(INTERNAL_SIZE_T))</span></span><br></pre></td></tr></table></figure></li></ul></li></ul></li><li><p>当chunk被分配时，指针fd、bk、fd_nextsize、bk_nextsize 无用，故该部分空间被分配给用户使用，用户所得到内存空间从指针fd的内存地址开始</p></li></ul><h2 id="2-free-chunk">2. free chunk</h2><ul><li><strong>free chunk</strong>， 指的是已经被操作系统释放的空闲chunk</li><li>不同于allocated chunk，此时该free chunk的指针fd、bk等有作用，不可被随意覆盖、</li></ul><h2 id="3-top-chunk">3. top chunk</h2><ul><li>地址最高、位于堆顶的的free chunk，称为top chunk</li><li>该 chunk <strong>不属于</strong> 任何bin，只由arena直接管理</li><li>当所有free chunk都无法满足用户需求时，如果top chunk够大，则top chunk将会被切割为两部分，第一部分分配给用户，第二部分会成为新的top chunk</li></ul><h2 id="4-last-remainder-chunk">4. last remainder chunk</h2><ul><li>当用户请求的是一个small chunk，并且该请求无法被small bin和unsorted bin满足</li><li>此时查找最合适的chunk，并把该chunk切割，剩余部分放入unsorted bin里并成为新的last remainder</li></ul>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;堆块最小分配的单位 —— malloc_chunk !&lt;/p&gt;
+&lt;h2 id=&quot;1-chunk的结构体&quot;&gt;1. chunk的结构体&lt;/h2&gt;
+&lt;figure class=&quot;highlight cpp&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;malloc_chunk&lt;/span&gt; &amp;#123;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  INTERNAL_SIZE_T      prev_size;  &lt;span class=&quot;comment&quot;&gt;/* Size of previous chunk (if free).  */&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  INTERNAL_SIZE_T      size;       &lt;span class=&quot;comment&quot;&gt;/* Size in bytes, including overhead. */&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;malloc_chunk&lt;/span&gt;* &lt;span class=&quot;title&quot;&gt;fd&lt;/span&gt;;&lt;/span&gt;         &lt;span class=&quot;comment&quot;&gt;/* double links -- used only if free. */&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;malloc_chunk&lt;/span&gt;* &lt;span class=&quot;title&quot;&gt;bk&lt;/span&gt;;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;comment&quot;&gt;/* Only used for large blocks: pointer to next larger size.  */&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;malloc_chunk&lt;/span&gt;* &lt;span class=&quot;title&quot;&gt;fd_nextsize&lt;/span&gt;;&lt;/span&gt; &lt;span class=&quot;comment&quot;&gt;/* double links -- used only if free. */&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;malloc_chunk&lt;/span&gt;* &lt;span class=&quot;title&quot;&gt;bk_nextsize&lt;/span&gt;;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&amp;#125;;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
     
     </summary>
     
