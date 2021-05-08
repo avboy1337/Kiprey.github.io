@@ -193,7 +193,7 @@ var _hmt = _hmt || [];
 <p>不直接修改为0，是担心这样做可能会导致程序产生某种异常</p>
 </blockquote>
 <p>将<code>game/www/data/Map001.json</code>中的<code>hp</code>数值更改为10就好</p>
-  <img src="/2020/06/actf2020/game_map001_json.png" class="">
+  <img src="/2020/06/actf2020/06/actf2020/game_map001_json.png" class>
 </li>
 </ul>
 <h3 id="2-Whale">2. Whale</h3>
@@ -203,13 +203,13 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>执行<code>env</code>命令，发现</p>
-  <img src="/2020/06/actf2020/whale_hint1.png" class="">
+  <img src="/2020/06/actf2020/06/actf2020/whale_hint1.png" class>
 </li>
 <li>
 <p>执行<code>cat /root/.ash_history</code>, 发现（单击图片可放大）</p>
-  <img src="/2020/06/actf2020/whale_hint2_1.png" class="">
+  <img src="/2020/06/actf2020/06/actf2020/whale_hint2_1.png" class>
 <p>执行一下得到</p>
-  <img src="/2020/06/actf2020/whale_hint2_2.png" class="">
+  <img src="/2020/06/actf2020/06/actf2020/whale_hint2_2.png" class>
 </li>
 <li>
 <p>由于docker中没有查找文件的指令（也可能是我太菜了T_T)<br>
@@ -241,9 +241,9 @@ var _hmt = _hmt || [];
 <ul>
 <li>
 <p>程序会在读取输入之后，将一段特定的数据写入栈上</p>
-<img src="/2020/06/actf2020/pandora_stack_code.png" class="">
+<img src="/2020/06/actf2020/06/actf2020/pandora_stack_code.png" class>
 <p>就是下面这段</p>
-<img src="/2020/06/actf2020/pandora_stack.png" class="">
+<img src="/2020/06/actf2020/06/actf2020/pandora_stack.png" class>
 </li>
 <li>
 <p>程序会将输入的数据经过处理，在处理结束后判断处理结果（其位于<code>$rsp+8</code>）是否为<code>curiosity</code>。<br>
@@ -252,7 +252,7 @@ var _hmt = _hmt || [];
 <li>
 <p>在<code>switch</code>中能修改处理结果的操作只有异或。<br>
 所以我们必须通过<code>switch</code>中的其他分支来控制与其异或的另一个变量</p>
-<img src="/2020/06/actf2020/pandora_xor_code.png" class="">
+<img src="/2020/06/actf2020/06/actf2020/pandora_xor_code.png" class>
 </li>
 <li>
 <p>先把每次异或的目的值计算出来</p>
@@ -302,7 +302,7 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>成功得到flag</p>
-<img src="/2020/06/actf2020/pandora_flag.png" class="">
+<img src="/2020/06/actf2020/06/actf2020/pandora_flag.png" class>
 </li>
 </ul>
 <h3 id="2-easyalgorithm">2. easyalgorithm</h3>
@@ -312,7 +312,7 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>所以只要分别把图里的变量<code>v3</code>和变量<code>s</code>dump出来，然后爆破就好</p>
-<img src="/2020/06/actf2020/easyalgorithm_code.png" class="">
+<img src="/2020/06/actf2020/06/actf2020/easyalgorithm_code.png" class>
 </li>
 <li>
 <p>EXP</p>
@@ -323,22 +323,22 @@ var _hmt = _hmt || [];
 <ul>
 <li>
 <p>先字符串搜索，定位到关键代码</p>
-<img src="/2020/06/actf2020/EasyLogin_code.png" class="">
+<img src="/2020/06/actf2020/06/actf2020/EasyLogin_code.png" class>
 </li>
 <li>
 <p>发现<code>username</code>校验代码段，对关键数组再次异或即可得到<code>username</code></p>
-<img src="/2020/06/actf2020/EasyLogin_username.png" class="">
+<img src="/2020/06/actf2020/06/actf2020/EasyLogin_username.png" class>
 </li>
 <li>
 <p>发现<code>password</code>校验代码段，这里采取爆破的手段<br>
 不过在爆破前，需要先把三个关键数组的数据dump出来</p>
-<img src="/2020/06/actf2020/EasyLogin_passwd.png" class="">
+<img src="/2020/06/actf2020/06/actf2020/EasyLogin_passwd.png" class>
 </li>
 <li>
 <p><strong>坑点</strong>： 这里有两个特殊的判断条件。为什么特殊呢？<br>
 因为这两个判断条件是永远不会成立的（如果想拿flag的话）。<br>
 如果想进入内部代码的话，只能通过跳转标签来进入。</p>
-<img src="/2020/06/actf2020/EasyLogin_hole.png" class="">
+<img src="/2020/06/actf2020/06/actf2020/EasyLogin_hole.png" class>
 </li>
 <li>
 <p>EXP</p>

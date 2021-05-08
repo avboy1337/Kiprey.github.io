@@ -129,7 +129,7 @@ var _hmt = _hmt || [];
 <ul>
 <li>
 <p>在说起__realloc_hook前，我们先看看__libc_realloc函数的汇编代码</p>
-<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/realloc.png" class="">
+<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/05/heap-13-off-by-one-and-realloc-hook/realloc.png" class>
 </li>
 <li>
 <p>我们可以很容易的看到，realloc函数在一开始就会大量的抬高栈帧，然后执行<code>__realloc_hook指向的函数</code>（如果有的话）</p>
@@ -139,7 +139,7 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>__malloc_hook和__realloc_hook在内存上是相邻的，所以fastbin attack修改这两个指针是比较方便的</p>
-<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/realloc_hook_place.png" class="">
+<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/05/heap-13-off-by-one-and-realloc-hook/realloc_hook_place.png" class>
 </li>
 <li>
 <p>我们可以将__malloc_hook修改为 realloc函数上偏移数个字节后的地址（偏移字节取决于栈帧抬高的大小）。例如上图所示，若希望栈帧抬高0x38则设置__malloc_hook为 &amp;realloc+16</p>
@@ -159,7 +159,7 @@ var _hmt = _hmt || [];
 <ul>
 <li>使用libc 2.23， 没有tcache :-)</li>
 <li>可以add, drop, write, print</li>
-<li>一个很明显白给的off-by-one<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/exploit.png" class="">
+<li>一个很明显白给的off-by-one<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/05/heap-13-off-by-one-and-realloc-hook/exploit.png" class>
 </li>
 </ul>
 <h3 id="分析">分析</h3>
@@ -174,18 +174,18 @@ var _hmt = _hmt || [];
 <li>0x90 (unsorted chunk的最小size)</li>
 <li>0x20 (防止unsorted chunk释放时被top chunk合并)</li>
 </ul>
-<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/allocate4chunks.png" class="">
+<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/05/heap-13-off-by-one-and-realloc-hook/allocate4chunks.png" class>
 </li>
-<li>然后通过off-by-one漏洞，修改chunk1的size <strong>(chunk序号从0排列)</strong><img src="/2020/05/heap-13-off-by-one-and-realloc-hook/modifyFastchunksize.png" class="">
+<li>然后通过off-by-one漏洞，修改chunk1的size <strong>(chunk序号从0排列)</strong><img src="/2020/05/heap-13-off-by-one-and-realloc-hook/05/heap-13-off-by-one-and-realloc-hook/modifyFastchunksize.png" class>
 </li>
 <li>将chunk1释放再重新malloc回来，这样就提高了chunk1的可写范围</li>
-<li>之后需要修补一下chunk2的size，为下一步free泄露main_arena地址做准备<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/improveUnsortedChunksize.png" class="">
+<li>之后需要修补一下chunk2的size，为下一步free泄露main_arena地址做准备<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/05/heap-13-off-by-one-and-realloc-hook/improveUnsortedChunksize.png" class>
 </li>
-<li>free掉chunk2, 从而泄露main_arena地址。libc基地址到手，可以算one_gadget、__malloc_hook地址等<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/arenaAddr.png" class="">
+<li>free掉chunk2, 从而泄露main_arena地址。libc基地址到手，可以算one_gadget、__malloc_hook地址等<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/05/heap-13-off-by-one-and-realloc-hook/arenaAddr.png" class>
 </li>
 <li>之后就要准备fastbin attack打__malloc_hook上<br>
 先把刚刚free掉的chunk2 malloc回来，然后分别修改chunk2、chunk3的size为0x71、0x21。<br>
-修改chunk2的size是因为要把chunk2伪造为一个fast chunk，而修改chunk3的size是为了躲过free的检测<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/fakeFastchunk.png" class="">
+修改chunk2的size是因为要把chunk2伪造为一个fast chunk，而修改chunk3的size是为了躲过free的检测<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/05/heap-13-off-by-one-and-realloc-hook/fakeFastchunk.png" class>
 </li>
 <li>free掉chunk2，从而将chunk2接到了fast bin上。</li>
 <li>然后就是愉快的fastbin attack了。这里就不再赘述。</li>
@@ -194,9 +194,9 @@ var _hmt = _hmt || [];
 <p>不了解fastbin attack? 看看<a href="/2020/05/heap-12-fastbin_attack/">这个</a></p>
 </blockquote>
 <ul>
-<li>查看一下可用的one_gadget<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/one_gadget.png" class="">
-第一个one_gadget经过动态调试，发现其条件始终无法被满足<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/one_gadget_raxIsNotZero.png" class="">
-而通过动态调试，执行one_gadget时，发现栈上的数据并不理想<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/one_gadget_stackIsNotGood.png" class="">
+<li>查看一下可用的one_gadget<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/05/heap-13-off-by-one-and-realloc-hook/one_gadget.png" class>
+第一个one_gadget经过动态调试，发现其条件始终无法被满足<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/05/heap-13-off-by-one-and-realloc-hook/one_gadget_raxIsNotZero.png" class>
+而通过动态调试，执行one_gadget时，发现栈上的数据并不理想<img src="/2020/05/heap-13-off-by-one-and-realloc-hook/05/heap-13-off-by-one-and-realloc-hook/one_gadget_stackIsNotGood.png" class>
 </li>
 <li>所以我们需要用__malloc_hook打realloc函数来抬高栈帧，然后用__realloc_hook跳one_gadget来get shell。</li>
 </ul>

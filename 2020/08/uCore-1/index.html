@@ -140,7 +140,7 @@ var _hmt = _hmt || [];
 <li>
 <p>CPU大体上可分为控制单元、运算单元、存储单元</p>
 <ul>
-<li>控制单元是CPU的控制中心，大致由指令寄存器(IR, Instruction Register)、指令译码器(ID, Instruction Decoder)和操作控制器(OC, Operation Controller)组成。以下是一般的指令格式<img src="/2020/08/uCore-1/ia32Inst.png" class="">  
+<li>控制单元是CPU的控制中心，大致由指令寄存器(IR, Instruction Register)、指令译码器(ID, Instruction Decoder)和操作控制器(OC, Operation Controller)组成。以下是一般的指令格式<img src="/2020/08/uCore-1/08/uCore-1/ia32Inst.png" class>  
 </li>
 <li>运算单元根据控制单元的信号，进行运算。</li>
 <li>存储单元CPU内部的L1、L2缓存及寄存器。这部分缓存采用SRAM存储器。SRAM不需要刷新电路即可保存内部存储的数据，但因为体积较大，集成度较低。</li>
@@ -148,7 +148,7 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>CPU中的寄存器分为两大类：程序可见寄存器（例如通用寄存器、段寄存器）和程序不可见寄存器（例如中断描述符寄存器IDTR）。</p>
-<img src="/2020/08/uCore-1/commonRegister.png" class="">  
+<img src="/2020/08/uCore-1/08/uCore-1/commonRegister.png" class>  
 </li>
 <li>
 <p>实模式的主要特性是：<strong>程序用到的地址都是真实的物理地址</strong>。同时，实模式下的地址寻址空间只有1MB(20bit)</p>
@@ -176,7 +176,7 @@ var _hmt = _hmt || [];
 <ul>
 <li>
 <p>CPU初始状态为16位实模式，在实模式下只能访问1MB(20bits)内存。而硬件工程师将1MB的内存空间分成多个部分。</p>
-<img src="/2020/08/uCore-1/memmap.png" class="">  
+<img src="/2020/08/uCore-1/08/uCore-1/memmap.png" class>  
 </li>
 <li>
 <p>其中地址<code>0-0x9ffff</code>的640KB内存是DRAM，即插在主板上的内存条。<br>
@@ -216,7 +216,7 @@ var _hmt = _hmt || [];
 <li>分段地址转换：CPU把逻辑地址（由段选择子selector和段偏移offset组成）中的段选择子的内容作为段描述符表的索引，找到表中对应的段描述符，然后把段描述符中保存的段基址加上段偏移值，形成线性地址（Linear Address）。</li>
 <li>分页地址转换，这一步中把线性地址转换为物理地址。</li>
 </ul>
-<img src="/2020/08/uCore-1/segmentTranslation.png" class="">  
+<img src="/2020/08/uCore-1/08/uCore-1/segmentTranslation.png" class>  
 <h4 id="c-段描述符">c. 段描述符</h4>
 <ul>
 <li>
@@ -244,7 +244,7 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>段描述符的格式</p>
-<img src="/2020/08/uCore-1/SegmentDescription.png" class="">  
+<img src="/2020/08/uCore-1/08/uCore-1/SegmentDescription.png" class>  
 </li>
 <li>
 <p>段描述符的结构</p>
@@ -266,7 +266,7 @@ var _hmt = _hmt || [];
 <li>表指示位（Table Indicator，TI）：选择应该访问哪一个描述符表。0代表应该访问全局描述符表（GDT），1代表应该访问局部描述符表（LDT）。</li>
 <li>请求特权级（Requested Privilege Level，RPL）：保护机制。</li>
 </ul>
-<img src="/2020/08/uCore-1/FormatOfSelector.png" class="">  
+<img src="/2020/08/uCore-1/08/uCore-1/FormatOfSelector.png" class>  
 </li>
 <li>全局描述符表的第一个描述符无法被CPU使用，所以当一个段选择子的索引（Index）部分和表指示位（Table Indicator）都为0的时（即段选择子指向全局描述符表的第一项时），可以当做一个空的选择子。当一个段寄存器被加载一个空选择子时，处理器并不会产生一个异常。但是，当用一个空选择子去访问内存时，则会产生异常。</li>
 </ul>
@@ -308,7 +308,7 @@ var _hmt = _hmt || [];
 <li>
 <p>执行以下代码，即可看到程序输出</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 编译汇编代码</span></span><br><span class="line">nasm mbr.asm -o mbr.bin</span><br><span class="line"><span class="comment"># 制作img镜像。注意dd指令的复制操作与cp不一样，它是针对磁盘来进行的复制</span></span><br><span class="line"><span class="comment">#   将编译出的mbr.bin写进mbr.img中的第0块</span></span><br><span class="line">dd <span class="keyword">if</span>=mbr.bin of=mbr.img bs=512 count=1 conv=notrunc</span><br><span class="line"><span class="comment"># 使用i386架构启动mbr.img</span></span><br><span class="line">qemu-system-i386 mbr.img</span><br></pre></td></tr></table></figure>
-<img src="/2020/08/uCore-1/1mbr.png" class="">  
+<img src="/2020/08/uCore-1/08/uCore-1/1mbr.png" class>  
 </li>
 </ul>
 <h3 id="8-硬件访问">8. 硬件访问</h3>
@@ -322,7 +322,7 @@ var _hmt = _hmt || [];
 <li>
 <p>访问外部硬件的两种方式</p>
 <ul>
-<li>将某个外设的内存映射到一定范围内的地址空间。例如显卡。显卡是显示器的适配器，CPU 不直接和显示器交互，它只和显卡通信。其中的显存被映射到主机物理内存上的低端1MB的<code>0xB8000~0xBFFFF</code>。CPU往显存上写字节便是往屏幕上打印内容。显存地址分布如下<img src="/2020/08/uCore-1/ncardaddress.png" class="">  
+<li>将某个外设的内存映射到一定范围内的地址空间。例如显卡。显卡是显示器的适配器，CPU 不直接和显示器交互，它只和显卡通信。其中的显存被映射到主机物理内存上的低端1MB的<code>0xB8000~0xBFFFF</code>。CPU往显存上写字节便是往屏幕上打印内容。显存地址分布如下<img src="/2020/08/uCore-1/08/uCore-1/ncardaddress.png" class>  
 </li>
 <li>通过IO接口。CPU只访问IO接口，不关心另一边的外设。IO接口上也存在一些寄存器。
 <ul>
@@ -376,7 +376,7 @@ var _hmt = _hmt || [];
 <li>Trap-gate descriptor（系统调用用到）<br>
 下图图显示了80386的中断门描述符、陷阱门描述符的格式：</li>
 </ul>
-<img src="/2020/08/uCore-1/gate.png" class="">  
+<img src="/2020/08/uCore-1/08/uCore-1/gate.png" class>  
 </li>
 </ul>
 <h4 id="c-中断处理过程">c. 中断处理过程</h4>
@@ -463,7 +463,7 @@ var _hmt = _hmt || [];
 <ul>
 <li>
 <p><strong>TSS(Task State Segment)</strong> 是操作系统在进行进程切换时保存进程现场信息的段，其结构如下</p>
-<img src="/2020/08/uCore-1/tss.png" class="">  
+<img src="/2020/08/uCore-1/08/uCore-1/tss.png" class>  
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* task state segment format (as described by the Pentium architecture book) */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">taskstate</span> &#123;</span></span><br><span class="line">    <span class="keyword">uint32_t</span> ts_link;        <span class="comment">// old ts selector</span></span><br><span class="line">    <span class="keyword">uintptr_t</span> ts_esp0;        <span class="comment">// stack pointers and segment selectors</span></span><br><span class="line">    <span class="keyword">uint16_t</span> ts_ss0;        <span class="comment">// after an increase in privilege level</span></span><br><span class="line">    <span class="keyword">uint16_t</span> ts_padding1;</span><br><span class="line">    <span class="keyword">uintptr_t</span> ts_esp1;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_ss1;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_padding2;</span><br><span class="line">    <span class="keyword">uintptr_t</span> ts_esp2;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_ss2;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_padding3;</span><br><span class="line">    <span class="keyword">uintptr_t</span> ts_cr3;        <span class="comment">// page directory base</span></span><br><span class="line">    <span class="keyword">uintptr_t</span> ts_eip;        <span class="comment">// saved state from last task switch</span></span><br><span class="line">    <span class="keyword">uint32_t</span> ts_eflags;</span><br><span class="line">    <span class="keyword">uint32_t</span> ts_eax;        <span class="comment">// more saved state (registers)</span></span><br><span class="line">    <span class="keyword">uint32_t</span> ts_ecx;</span><br><span class="line">    <span class="keyword">uint32_t</span> ts_edx;</span><br><span class="line">    <span class="keyword">uint32_t</span> ts_ebx;</span><br><span class="line">    <span class="keyword">uintptr_t</span> ts_esp;</span><br><span class="line">    <span class="keyword">uintptr_t</span> ts_ebp;</span><br><span class="line">    <span class="keyword">uint32_t</span> ts_esi;</span><br><span class="line">    <span class="keyword">uint32_t</span> ts_edi;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_es;            <span class="comment">// even more saved state (segment selectors)</span></span><br><span class="line">    <span class="keyword">uint16_t</span> ts_padding4;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_cs;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_padding5;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_ss;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_padding6;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_ds;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_padding7;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_fs;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_padding8;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_gs;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_padding9;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_ldt;</span><br><span class="line">    <span class="keyword">uint16_t</span> ts_padding10;</span><br><span class="line">    <span class="keyword">uint16_t</span> <span class="keyword">ts_t</span>;            <span class="comment">// trap on task switch</span></span><br><span class="line">    <span class="keyword">uint16_t</span> ts_iomb;        <span class="comment">// i/o map base address</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <ul>
 <li>
@@ -614,11 +614,11 @@ var _hmt = _hmt || [];
 <ul>
 <li>
 <p>这是错误的指令输出</p>
-<img src="/2020/08/uCore-1/gdbwrong.png" class="">  
+<img src="/2020/08/uCore-1/08/uCore-1/gdbwrong.png" class>  
 </li>
 <li>
 <p>这是正确的指令输出</p>
-  <img src="/2020/08/uCore-1/gdbgood.png" class="">  
+  <img src="/2020/08/uCore-1/08/uCore-1/gdbgood.png" class>  
 </li>
 </ul>
 <blockquote>
@@ -642,7 +642,7 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>在当前环境中，所用到的键盘控制器8042的IO端口只有0x60和0x64两个端口。8042通过这些端口给键盘控制器或键盘发送命令或读取状态。输出端口P2用于特定目的。位0（P20引脚）用于实现CPU复位操作，位1（P21引脚）用于控制A20信号线的开启与否。</p>
-<img src="/2020/08/uCore-1/8042Keyboard.png" class="">  
+<img src="/2020/08/uCore-1/08/uCore-1/8042Keyboard.png" class>  
 <p>我们要操作的位置是8042三个内部端口中<strong>输出端口</strong>的bit 1上，其写入该端口的做法为：</p>
 <blockquote>
 <p>写Output Port：向64h发送0xd1命令，然后向60h写入Output Port的数据</p>

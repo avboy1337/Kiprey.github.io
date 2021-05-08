@@ -216,6 +216,321 @@ var _hmt = _hmt || [];
 
     
     <article
+  id="post-WebServer-1"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/05/WebServer-1/"
+    >WebServer v1.0 相关文档</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/05/WebServer-1/" class="article-date">
+  <time datetime="2021-05-07T16:00:00.000Z" itemprop="datePublished">2021-05-08</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Project/">Project</a> / <a class="article-category-link" href="/categories/Project/WebServer/">WebServer</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="一、前言">一、前言</h2>
+<p>WebServer V1.0 简单实现了一个最基础的版本。在该版本中，主要实现了以下重要内容：</p>
+<ul>
+<li>
+<p>线程互斥锁的实现</p>
+</li>
+<li>
+<p>线程池的设计，以支持并发</p>
+</li>
+<li>
+<p>基础网络连接的实现</p>
+</li>
+<li>
+<p>http 协议的简略支持</p>
+</li>
+</ul>
+<h2 id="二、线程池">二、线程池</h2>
+<h3 id="1-概述">1. 概述</h3>
+<ul>
+<li>
+<p>线程池是一种多线程的处理方式，常常用在高并发服务器上。线程池可以有效的利用高并发服务器上的线程资源。</p>
+</li>
+<li>
+<p>线程用于处理各个请求，其流程大致为：创建线程 =&gt; 传递信息至子线程 =&gt; 线程分离 =&gt; 线程运行 =&gt; 线程销毁。对于较小规模的通信来说，上述的这个流程可以满足基本需求。但是对于高并发服务器来说，重复的创建线程与销毁线程，其开销不可忽视。因此可以使用线程池来让线程复用。</p>
+</li>
+<li>
+<p>需要注意的是，以下的代码与说明是线程池的早期实现版本，以降低讲解难度。</p>
+<p>具体commit id 为<a href="https://github.com/Kiprey/WebServer/tree/5c1aa13cace7bb8cd56f6117acf77c454df569d1" target="_blank" rel="noopener">5c1aa13cace7bb8cd56f6117acf77c454df569d1</a></p>
+<p>后期将额外支持异常处理等等。</p>
+</li>
+</ul>
+<h3 id="2-实现前的准备工作">2. 实现前的准备工作</h3>
+<ul>
+<li>
+<p>对于一个线程所要执行的任务，我们需要明确以下几点：</p>
+<ul>
+<li>当前线程所要执行的函数，最好是与主线程没有较大关联的，即尽量降低耦合性。</li>
+</ul>
+</li>
+<li>
+<p>所要执行的事件，可以传入一个参数，但需要明确<strong>不能有返回值</strong>。</p>
+<blockquote>
+<p>要想有应该也可以做，不过这就是后面的事情了。</p>
+</blockquote>
+<p>因此，我们便可以设计出以下的 task 结构体</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 每个线程的基本事件单元</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ThreadpoolTask</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="keyword">void</span> (*function)(<span class="keyword">void</span>*);</span><br><span class="line">  <span class="keyword">void</span>* arguments;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>线程池除了一些特定的变量（线程个数、事件队列等等）以外，还需要<strong>互斥锁</strong>以及<strong>条件变量</strong>。</p>
+<ul>
+<li>对于每个线程来说，这些线程是有可能同时访问线程池，因此需要在每个线程访问之前<strong>加以上锁</strong>。</li>
+<li>上锁之后，对于每个线程来说，有可能出现这种<strong>获取到锁，但没有事件可以执行</strong>的情况。对于这类情况，子线程必须先释放锁等待事件的到来，等到事件到来之后再重新上锁，获取事件，而这就是<strong>条件变量</strong>的用处。</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-子线程的目标函数">3. 子线程的目标函数</h3>
+<p>由于子线程只会在<strong>线程池创建之时创建</strong>，在<strong>线程池销毁之时销毁</strong>，因此，在子线程中必然要执行一个事件循环，其中重复执行 <strong>获取事件、执行事件</strong> 的动作。</p>
+<p>但这里需要注意两件事情，</p>
+<ol>
+<li>获取事件时，需要给线程池上锁，因为要访问消息队列；必要时刻还需要设置条件变量来暂时释放锁。</li>
+<li>当线程池被销毁时，子线程该如何终止？</li>
+</ol>
+<p>针对问题2，有两种方式：</p>
+<ol>
+<li>一种是在线程池设置一个标志，子线程定期轮询该标志以确认是否退出。</li>
+<li>再一种就是我所实现的，添加一个<strong>退出事件</strong>至事件队列中，子线程执行到该事件时自动退出。</li>
+</ol>
+<p>因此具体实现的代码如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span>* <span class="title">ThreadPool::TaskForWorkerThreads_</span><span class="params">(<span class="keyword">void</span>* arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ThreadPool* pool = (ThreadPool*)arg;</span><br><span class="line">    <span class="comment">// 启动当前线程</span></span><br><span class="line">    ThreadpoolTask task;</span><br><span class="line">    <span class="comment">// 对于子线程来说,事件循环开始</span></span><br><span class="line">    <span class="keyword">for</span>(;;)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 首先获取事件</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 获取事件时需要上个锁</span></span><br><span class="line">            <span class="function">MutexLockGuard <span class="title">guard</span><span class="params">(pool-&gt;threadpool_mutex_)</span></span>;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 如果好不容易获得到锁了,但是没有事件可以执行</span></span><br><span class="line">            <span class="keyword">if</span>(pool-&gt;task_queue_.size() == <span class="number">0</span>)</span><br><span class="line">                <span class="comment">// 则陷入沉睡,释放锁,并等待唤醒</span></span><br><span class="line">                pool-&gt;threadpool_cond_.wait();</span><br><span class="line">            <span class="comment">// 唤醒后一定有事件</span></span><br><span class="line">            assert(pool-&gt;task_queue_.size() != <span class="number">0</span>);</span><br><span class="line">            task = pool-&gt;task_queue_.front();</span><br><span class="line">            pool-&gt;task_queue_.pop();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 执行事件</span></span><br><span class="line">        (task.function)(task.arguments);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 注意: UNREACHABLE, 控制流不可能会到达此处</span></span><br><span class="line">    <span class="comment">// 因为线程的退出不会走这条控制流,而是执行退出事件</span></span><br><span class="line">    assert(<span class="number">0</span> &amp;&amp; <span class="string">"TaskForWorkerThreads_ UNREACHABLE!"</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="4-创建线程池">4. 创建线程池</h3>
+<p>创建线程池较为简单，直接循环创建线程即可。</p>
+<p>需要注意的是，这里设置了销毁线程池时的处理方式。具体信息将在下面<strong>销毁线程池</strong>的那部分中详细讲解。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">ThreadPool::ThreadPool(<span class="keyword">size_t</span> threadNum, ShutdownMode shutdown_mode, <span class="keyword">size_t</span> maxQueueSize)</span><br><span class="line">        : threadNum_(threadNum),</span><br><span class="line">          maxQueueSize_(maxQueueSize), </span><br><span class="line">          <span class="comment">// 使用 类成员变量 threadpool_mutex_ 来初始化 threadpool_cond_</span></span><br><span class="line">          threadpool_cond_(threadpool_mutex_), </span><br><span class="line">          shutdown_mode_(shutdown_mode)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// 开始循环创建线程 </span></span><br><span class="line">    <span class="keyword">while</span>(threads_.size() &lt; threadNum_)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">pthread_t</span> thread;</span><br><span class="line">        <span class="comment">// 如果线程创建成功,则将其压入栈内存中</span></span><br><span class="line">        <span class="keyword">if</span>(!pthread_create(&amp;thread, <span class="literal">nullptr</span>, TaskForWorkerThreads_, <span class="keyword">this</span>))</span><br><span class="line">        &#123;</span><br><span class="line">            threads_.push_back(thread);</span><br><span class="line">            <span class="comment">// // 注意这里只修改已启动的线程数量</span></span><br><span class="line">            <span class="comment">// startedThreadNum_++;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="5-添加事件">5. 添加事件</h3>
+<p>添加新事件时，需要设置一下锁，防止脏读。在新事件添加完成后，使用条件变量来唤醒其中某一个空闲线程以执行新事件。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">ThreadPool::appendTask</span><span class="params">(<span class="keyword">void</span> (*function)(<span class="keyword">void</span>*), <span class="keyword">void</span>* arguments)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 由于会操作事件队列,因此需要上锁</span></span><br><span class="line">    <span class="function">MutexLockGuard <span class="title">guard</span><span class="params">(threadpool_mutex_)</span></span>;</span><br><span class="line">    <span class="comment">// 如果队列长度过长,则将当前task丢弃</span></span><br><span class="line">    <span class="keyword">if</span>(task_queue_.size() &gt; maxQueueSize_)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 添加task至列表中</span></span><br><span class="line">        ThreadpoolTask task = &#123; function, arguments &#125;;</span><br><span class="line">        task_queue_.push(task);</span><br><span class="line">        <span class="comment">// 每当有新事件进入之时,只唤醒一个等待线程</span></span><br><span class="line">        threadpool_cond_.notify();</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="6-销毁线程池">6. 销毁线程池</h3>
+<p>销毁线程池时，需要判断销毁的方式。</p>
+<p>这里设置了两种销毁方式，分别是</p>
+<ol>
+<li>
+<p>IMMEDIATE_SHUTDOWN</p>
+</li>
+<li>
+<p>GRACEFUL_QUIT</p>
+</li>
+</ol>
+<p>对于第一种销毁方式，线程池将马上清空事件队列中的全部事件，并添加与线程个数相对应量的<strong>退出事件</strong>。这将会使每个子线程在<strong>执行完当前事件后，马上执行退出事件</strong>以退出。</p>
+<blockquote>
+<p><strong>退出事件</strong>如下：每个线程简单执行 pthread_exit 以退出。</p>
+</blockquote>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> pthreadExit = [](<span class="keyword">void</span>*) &#123; pthread_exit(<span class="number">0</span>); &#125;;</span><br></pre></td></tr></table></figure>
+<p>而对于第二种销毁方式来说，只是简单的添加退出事件，没有额外的清空之前的事件。这样线程池只会在<strong>所有事件全部结束</strong>后才真正的被销毁。</p>
+<p>以下是具体的实现代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">ThreadPool::~ThreadPool()</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// 向任务队列中添加退出线程事件,注意上锁</span></span><br><span class="line">    <span class="comment">// 注意在 cond 使用之前一定要上 mutex</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 操作 task_queue_ 时一定要上锁</span></span><br><span class="line">        <span class="function">MutexLockGuard <span class="title">guard</span><span class="params">(threadpool_mutex_)</span></span>;</span><br><span class="line">        <span class="comment">// 如果需要立即关闭当前的线程池,则</span></span><br><span class="line">        <span class="keyword">if</span>(shutdown_mode_ == IMMEDIATE_SHUTDOWN)</span><br><span class="line">            <span class="comment">// 先将当前队列清空</span></span><br><span class="line">            <span class="keyword">while</span>(!task_queue_.empty())</span><br><span class="line">                task_queue_.pop();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 往任务队列中添加退出线程任务</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">size_t</span> i = <span class="number">0</span>; i &lt; threadNum_; i++)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">auto</span> pthreadExit = [](<span class="keyword">void</span>*) &#123; pthread_exit(<span class="number">0</span>); &#125;;</span><br><span class="line">            ThreadpoolTask task = &#123; pthreadExit, <span class="literal">nullptr</span> &#125;;</span><br><span class="line">            task_queue_.push(task);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 唤醒所有线程以执行退出操作</span></span><br><span class="line">        threadpool_cond_.notifyAll();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">size_t</span> i = <span class="number">0</span>; i &lt; threadNum_; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 回收线程资源</span></span><br><span class="line">        pthread_join(threads_[i], <span class="literal">nullptr</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="7-参考链接">7. 参考链接</h3>
+<ul>
+<li>
+<p><a href="https://github.com/linyacool/WebServer" target="_blank" rel="noopener">linyacool/WebServer - github</a></p>
+</li>
+<li>
+<p><a href="https://blog.csdn.net/qq_36359022/article/details/78796784" target="_blank" rel="noopener">线程池原理及C语言实现线程池</a></p>
+</li>
+</ul>
+<h2 id="三、网络连接">三、网络连接</h2>
+<h3 id="1-概述-2">1. 概述</h3>
+<p>执行一次完整的网络连接通常需要执行数个 <strong>socket 类</strong> 函数。</p>
+<p>为了弄懂这些函数的使用，本人将在下面随着代码的编写，尽量讲解所使用到的函数内容。</p>
+<p>注：以下部分主要参考自 <strong>Linux manual page</strong>（<code>man</code>指令真是一个好东西 XD）。</p>
+<h3 id="2-socket">2. socket</h3>
+<ul>
+<li>
+<p>socket 函数主要用于创建网络交互（communication）中的一个终端（endpoint），即创建一个 socket fd 文件描述符。</p>
+</li>
+<li>
+<p>socket 函数的类型声明如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;          /* See NOTES */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 执行成功则返回一个新文件描述符fd，失败则返回-1并设置errno</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">socket</span><span class="params">(<span class="keyword">int</span> domain, <span class="keyword">int</span> type, <span class="keyword">int</span> protocol)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>其中，对于参数 domain，我们主要用到以下两种类型:</p>
+<ul>
+<li>AF_UNIX / AF_LOCAL：本地通信，通常用于<strong>进程间通信</strong>。其通信不经过网卡，速度远远大于 AF_INET。</li>
+<li>AF_INET： IPv4 协议通信，数据需要经过网卡。</li>
+</ul>
+<blockquote>
+<p>IPv6 和 bluetooth 等类型暂且不表。比较诧异的是，AF_VSOCK用于虚拟机程序与宿主机进行通信。</p>
+</blockquote>
+<p>对于参数 type，常用的主要有以下几种：</p>
+<ul>
+<li>
+<p>SOCK_STREAM： TCP 通信</p>
+</li>
+<li>
+<p>SOCK_DGRAM： UDP 通信</p>
+</li>
+<li>
+<p>SOCK_NONBLOCK： 设置非阻塞 socket。使用 or 运算符来附加属性</p>
+<blockquote>
+<p>与设置 O_NONBLOCK 至对应文件描述符操作<strong>等同</strong>。</p>
+</blockquote>
+</li>
+<li>
+<p>SOCK_CLOEXEC： 设置若当前程序执行 exec 时，对应文件描述符将在子进程中给关闭。使用 or 运算符来附加属性</p>
+<blockquote>
+<p>与设置 FD_CLOEXEC 至对应文件描述符等同。</p>
+</blockquote>
+</li>
+</ul>
+<p>参数 protocol 通常用于指定某一个特定的套接字协议。如果给定协议系列只有一个协议可以支持特定的套接字类型，则 protocol 可以指定为0。但是若给定协议系列中可能存在多个可以支持套接字的类型，这时候就必须设置 protocol 以指定具体类型。</p>
+</li>
+<li>
+<p>简单举例：创建一个 IPv4 的 TCP 套接字（最常用</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> listen_fd = socket(AF_INET, SOCK_STREAM, <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="3-bind">3. bind</h3>
+<ul>
+<li>
+<p>对于一个<strong>新创建</strong>的 socket（注意是<strong>新创建</strong>的），还没有任何的地址用于赋给该 socket。而 bind 函数就是用于赋以一个地址给该 socket。</p>
+<p>需要注意的是：如果当前 socket 在执行 bind 前已经被使用，则<strong>操作系统将会自动分配地址以及端口号</strong>等等，这也是为什么一些网络程序向外通信时使用的端口号是随机的，因为操作系统会在后面调控。</p>
+</li>
+<li>
+<p>bind 函数的声明如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;          /* See NOTES */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 执行成功则返回0，失败则返回-1并设置errno</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">bind</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">const</span> struct sockaddr *addr, <span class="keyword">socklen_t</span> addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>
+<p>其中，<strong>第一个参数sockfd</strong> 用以传入目标 socket 文件描述符</p>
+</li>
+<li>
+<p>至于<strong>第二个参数addr</strong>，其中使用的规则与结构体，在地址族之间有所不同。</p>
+</li>
+<li>
+<p><strong>第三个参数addrlen</strong>用于表示<strong>第二个参数addr</strong>所指向结构体的size。</p>
+</li>
+</ul>
+<p>对于 AF_INET：所使用到的 address format 如下</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netinet/in.h&gt; // ! 注意头文件！！</span></span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> &#123;</span></span><br><span class="line">    <span class="keyword">sa_family_t</span>    sin_family; <span class="comment">/* address family: AF_INET */</span></span><br><span class="line">    <span class="keyword">in_port_t</span>      sin_port;   <span class="comment">/* port in network byte order */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> <span class="title">sin_addr</span>;</span>   <span class="comment">/* internet address */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Internet address. */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> &#123;</span></span><br><span class="line">    <span class="keyword">uint32_t</span>       s_addr;     <span class="comment">/* address in network byte order */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>其中，sin_family 始终为 AF_INET；sin_port 设置为目标端口；sin_addr用以保存<strong>监听目标的地址</strong>。</p>
+<p>这里多提一句，由于现代计算机可能有多张网卡，因此指定 sin_addr 可以使得只监听特定网卡的连接。如果想监听<strong>全部网卡的连接</strong>，则可以使用宏定义 <strong>INADDR_ANY</strong>（实际上就是 0.0.0.0）。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Address to accept any incoming messages.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INADDR_ANY  ((in_addr_t) 0x00000000)</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意：sin_port、sin_addr 变量都必须以<strong>网络端序</strong>来保存数据（即大端序）。</p>
+<p>socket提供了端序转换的一些函数，便于转换（其中，h表示host，n表示network）。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Functions to convert between host and network byte order.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   Please note that these functions normally take `unsigned long int' or</span></span><br><span class="line"><span class="comment">   `unsigned short int' values as arguments and also return them.  But</span></span><br><span class="line"><span class="comment">   this was a short-sighted decision since on different systems the types</span></span><br><span class="line"><span class="comment">   may have different representations but the values are always the same.  */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint32_t</span> <span class="title">ntohl</span> <span class="params">(<span class="keyword">uint32_t</span> __netlong)</span> __THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint16_t</span> <span class="title">ntohs</span> <span class="params">(<span class="keyword">uint16_t</span> __netshort)</span></span></span><br><span class="line"><span class="function">     __THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint32_t</span> <span class="title">htonl</span> <span class="params">(<span class="keyword">uint32_t</span> __hostlong)</span></span></span><br><span class="line"><span class="function">     __THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint16_t</span> <span class="title">htons</span> <span class="params">(<span class="keyword">uint16_t</span> __hostshort)</span></span></span><br><span class="line"><span class="function">     __THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>对于一个 AF_NET 地址族来说，执行 bind 的一个简单例子如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 绑定端口</span></span><br><span class="line">sockaddr_in server_addr;</span><br><span class="line"><span class="comment">// 初始化一下</span></span><br><span class="line"><span class="built_in">memset</span>(&amp;server_addr, <span class="string">'\0'</span>, <span class="keyword">sizeof</span>(server_addr));</span><br><span class="line"><span class="comment">// 设置一下基本操作</span></span><br><span class="line">server_addr.sin_family = AF_INET;</span><br><span class="line">server_addr.sin_port = htonl((<span class="keyword">unsigned</span> short)port);</span><br><span class="line">server_addr.sin_addr.s_addr = htonl(INADDR_ANY);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 试着bind</span></span><br><span class="line"><span class="keyword">if</span>(bind(listen_fd, (sockaddr*)&amp;server_addr, <span class="keyword">sizeof</span>(server_addr)) == <span class="number">-1</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="4-listen">4. listen</h3>
+<p>listen 函数将会使得传入的 socket fd 变为<strong>等待连接状态</strong>。该函数原型如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;          /* See NOTES */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 成功则返回0，失败则返回-1并设置 errno</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">listen</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">int</span> backlog)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>该函数主要有两个参数：参数 sockfd 传入目标 fd；backlog 指定最大<strong>挂起连接</strong>的等待队列长度，如果队列满了，则新连接将会被拒绝（ECONNREFUSED）。而对于某些特殊协议，将会在一段时间后重新发起连接。</p>
+<h3 id="5-accept">5. accept</h3>
+<ul>
+<li>
+<p>accept 函数将会取出 <strong>listen_fd的挂起连接等待队列</strong> 中的第一个连接，创建一个新的 socket fd（client fd），并将其返回。后续与该连接的交互都是通过该client fd 完成。</p>
+</li>
+<li>
+<p>需要注意的是， accept 会从 listen_fd 中取出挂起的连接，并尝试连接。一旦完成连接后，将会创建一个新的 client_fd。<strong>原先的 listen_fd 不会有任何改变</strong>。</p>
+</li>
+<li>
+<p>如果当前 listen_fd 为<strong>阻塞式</strong>的，则如果当前挂起连接等待队列中不存在任何连接，那么<strong>执行 accept 时将阻塞</strong>，直到有新连接的到来。</p>
+</li>
+<li>
+<p>该函数的原型如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;          /* See NOTES */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">accept</span><span class="params">(<span class="keyword">int</span> sockfd, struct sockaddr *addr, <span class="keyword">socklen_t</span> *addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>第一个参数为传入的监听socket listen_fd</li>
+<li>第二个参数为指向 sockaddr 结构体的 一个指针，accept 函数将会把 <strong>远程 socket 的address</strong>写入目标结构体中</li>
+<li>第三个参数是一个<strong>存放 sockaddr 结构体大小</strong>的指针。</li>
+</ul>
+</li>
+</ul>
+<h3 id="6-Read-Write">6. Read &amp; Write</h3>
+<p>由于 Read &amp; Write 操作涉及到<strong>阻塞与非阻塞式读写</strong>，因此我们需要额外对其做一些异常处理。</p>
+<blockquote>
+<p>需要注意的是，socket读写中，除了使用read/write以外，还可以使用专用于套接字通信的send/recv函数族等等。</p>
+</blockquote>
+<p>该类函数中<strong>最常返回的错误</strong>为 <strong>EINTR</strong> 以及 <strong>EAGAIN</strong>，其他错误暂时忽略。其中：</p>
+<ul>
+<li>
+<p><strong>EINTR</strong>：该错误常见于<strong>阻塞式</strong>的操作，提示当前操作被<strong>中断</strong>。</p>
+<p>如果一个进程在一个慢系统调用中阻塞时，捕获到信号并执行完信号处理例程返回时，这个系统调用将<strong>不再被阻塞，而是被中断</strong>，返回 EINTR。</p>
+<p>对于 read / write 函数来说，当返回这类错误时，最常用的做法就是<strong>重新执行</strong>目标函数。</p>
+</li>
+<li>
+<p><strong>EAGAIN</strong>：该错误常见于<strong>非阻塞式</strong>的操作，提示用户稍后再<strong>重新执行</strong>。</p>
+<p>例如：</p>
+<ul>
+<li>当以<strong>非阻塞</strong>方式大量发送数据时，如果缓冲区爆满，则产生 Resource temporarily unavailable的错误（资源暂时不可用），并返回 EAGAIN。</li>
+<li>当以<strong>非阻塞</strong>模式下读取数据，如果多次读取数据但没有数据可读，则此时不会阻塞等待数据，而是直接返回 EAGAIN</li>
+</ul>
+<p>对于 read 函数来说，由于数据取决于<strong>远程</strong>，因此当接收到 EAGAIN 时终止读取，直接返回；</p>
+<p>但对于 write 函数来说，由于数据取决于<strong>当前程序</strong>，因此可以继续循环写入，直至数据完全写入。</p>
+</li>
+</ul>
+<p>因此，以 read 函数为例，其重新实现的 wrapper 如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">readn</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">void</span>*buf, <span class="keyword">size_t</span> len)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 这里将 void* 转换成 char* 是为了在下面进行自增操作</span></span><br><span class="line">    <span class="keyword">char</span> *pos = (<span class="keyword">char</span>*)buf;</span><br><span class="line">    <span class="keyword">size_t</span> leftNum = len;</span><br><span class="line">    <span class="keyword">ssize_t</span> readNum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(leftNum &gt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">ssize_t</span> tmpRead = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 尝试循环读取,如果报错,则进行判断</span></span><br><span class="line">        <span class="comment">// 注意, read 的返回值为0则表示读取到 EOF,是正常现象</span></span><br><span class="line">        <span class="keyword">if</span>((tmpRead = read(fd, pos, leftNum)) &lt; <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(errno == EINTR)</span><br><span class="line">                tmpRead = <span class="number">0</span>;</span><br><span class="line">            <span class="comment">// 如果始终读取不到数据,则提前返回,因为这个取决于远程 fd,无法预测要等多久</span></span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (errno == EAGAIN)</span><br><span class="line">                <span class="keyword">return</span> readNum;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span>(tmpRead == <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        readNum += tmpRead;</span><br><span class="line">        pos += tmpRead;</span><br><span class="line">        leftNum -= tmpRead;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> readNum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="四、http-请求处理">四、http 请求处理</h2>
+<h3 id="1-概述-3">1. 概述</h3>
+<p>当 Server 成功与 Client 建立原生（RAW）连接后，Client 将会发送数据至 Server，此时 Server 就需要解析数据并进一步将目标数据传送回 Client。其中，http报文的解析和http header的处理便是重点。</p>
+<h3 id="2-HTTP报文格式">2. HTTP报文格式</h3>
+<ul>
+<li>
+<p>http请求报文</p>
+<p><img src="/2021/05/WebServer-1/image-20210507204906032.png" alt="image-20210507204906032"></p>
+</li>
+<li>
+<p>http响应报文</p>
+<p><img src="/2021/05/WebServer-1/image-20210507205312687.png" alt="image-20210507205312687"></p>
+</li>
+</ul>
+<h3 id="3-HTTP-header格式与处理方式">3. HTTP header格式与处理方式</h3>
+<p>参照以下链接</p>
+<ul>
+<li><a href="https://www.jb51.net/article/51951.htm" target="_blank" rel="noopener">HTTP头信息总结 - 脚本之家</a></li>
+<li><a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers" target="_blank" rel="noopener">HTTP headers - MDN</a></li>
+</ul>
+<h3 id="4-HTTP-标准">4. HTTP 标准</h3>
+<ul>
+<li>HTTP1.0标准 - <a href="https://datatracker.ietf.org/doc/rfc1945" target="_blank" rel="noopener">RFC1945</a></li>
+<li>HTTP1.1标准 - <a href="https://datatracker.ietf.org/doc/rfc2616" target="_blank" rel="noopener">RFC2616</a></li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/WebServer/" rel="tag">WebServer</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-v8TurboFan_IR_intro"
   class="article article-type-post"
   itemscope
@@ -621,7 +936,7 @@ var _hmt = _hmt || [];
 <p>Qualys漏洞团队于<code>2021-01-13</code>联系 sudo 团队、<code>2021-01-26</code>正式披露。</p>
 </li>
 <li>
-<p>由于这个漏洞原理<strong>较为简单</strong>，同时又涉及到<strong>提权</strong>这种高危操作，并且其影响广泛（笔者一台虚拟机、一个WSL以及一台阿里云服务器均可被攻击），相当有趣。所以我们接下来就来简单分析一下这个漏洞。</p> 
+<p>由于这个漏洞原理<strong>较为简单</strong>，同时又涉及到<strong>提权</strong>这种高危操作，并且其影响广泛（笔者一台虚拟机、一个WSL以及一台阿里云服务器均可被攻击），相当有趣。所以我们接下来就来简单分析一下这个漏洞。</p></li></ul> 
       <a class="article-more-link" href="/2021/01/CVE-2021-3156/"
         >阅读更多...</a
       >
@@ -690,7 +1005,7 @@ var _hmt = _hmt || [];
 <p>sea of nodes 不是单纯的指某个图的结点，它是一种<strong>特殊中间表示</strong>的图。</p>
 <p>它的表示形式与一般的CFG/DFG不同，其具体内容请查阅上面的连接。</p>
 </blockquote>
-<p>TurboFan的相关源码位于<code>v8/compiler</code>文件夹下。</p> 
+<p>TurboFan的相关源码位于<code>v8/compiler</code>文件夹下。</p></li></ul> 
       <a class="article-more-link" href="/2021/01/v8-turboFan/"
         >阅读更多...</a
       >
@@ -705,65 +1020,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-secLab-CodeQL-learning"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/12/secLab-CodeQL-learning/"
-    >深入学习CodeQL by security_lab</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/12/secLab-CodeQL-learning/" class="article-date">
-  <time datetime="2020-12-24T07:24:31.000Z" itemprop="datePublished">2020-12-24</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%A4%A9%E9%97%AE%E4%B9%8B%E8%B7%AF/">天问之路</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="一、简介">一、简介</h2>
-<p><a href="https://github.com/github/securitylab/tree/main/CodeQL_Queries/cpp" target="_blank" rel="noopener">github SecurityLab</a> 上有多个CodeQL的使用例子</p>
-<p>通过学习这些例子，我们可以加深对CodeQL的了解，以便于更好的使用它。</p> 
-      <a class="article-more-link" href="/2020/12/secLab-CodeQL-learning/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CodeQL/" rel="tag">CodeQL</a></li></ul>
 
     </footer>
   </div>

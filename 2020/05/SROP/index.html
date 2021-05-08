@@ -142,7 +142,7 @@ var _hmt = _hmt || [];
 <ul>
 <li>ELF文件保护全开， 但题目给出了libc</li>
 <li>程序使用了<code>seccomp</code>函数，只能ORW</li>
-<li>输入数据后程序会call sys_sigreturn(注意是<code>call</code>)<img src="/2020/05/SROP/code.png" class="">
+<li>输入数据后程序会call sys_sigreturn(注意是<code>call</code>)<img src="/2020/05/SROP/05/SROP/code.png" class>
 </li>
 <li>我们可以构建SigreturnFrame，将栈迁移到libc的bss段，然后一路ROP从而get flag.</li>
 </ul>

@@ -166,7 +166,7 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>WSL2在使用过程中，可能报错：  <strong>参考的对象类型不支持尝试的操作</strong>。</p>
-<img src="/2021/04/i386_WSL64/image-20210430132003438.png" class="">
+<img src="/2021/04/i386_WSL64/04/i386_WSL64/image-20210430132003438.png" class>
 <p>有两种解决方法：</p>
 <ul>
 <li>
@@ -176,12 +176,12 @@ var _hmt = _hmt || [];
 <p>第二种（推荐）：下载 <a href="/2021/04/i386_WSL64/NoLsp.exe" title="NoLsp.exe">NoLsp.exe</a>，并以管理员权限执行以下命令：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">NoLsp.exe c:\windows\system32\wsl.exe</span><br></pre></td></tr></table></figure>
 <p>等到出现 <code>Success!</code>之后就可以正常使用 WSL2了。</p>
-<img src="/2021/04/i386_WSL64/image-20210430132628877.png" class="">
+<img src="/2021/04/i386_WSL64/04/i386_WSL64/image-20210430132628877.png" class>
 </li>
 </ul>
 <p>为什么解法2的方式如此独特呢？Proxifier 开发者发现：如果Winsock LSP DLL被加载到其进程中，则wsl.exe将显示此错误。因此最简单的解决方案是使用WSCSetApplicationCategory WinAPI调用wsl.exe来防止这种情况。</p>
 <p>这个调用在<code>HKEY LOCAL MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters\AppId Catalog</code>创建了一个wsl.exe的条目：</p>
-<img src="/2021/04/i386_WSL64/image-20210430132755231.png" class="">
+<img src="/2021/04/i386_WSL64/04/i386_WSL64/image-20210430132755231.png" class>
 <p>而这就是解法2的具体技术细节。</p>
 </li>
 <li>
