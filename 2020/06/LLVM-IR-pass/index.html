@@ -308,16 +308,16 @@ ConstantData --派生--> ConstantInt</pre>
 <li>在为语句x=y+z构造结点N的时候，如果x已经在某结点M的定值变量表中，则从M的定值变量表中删除变量x</li>
 <li>例子
 <blockquote>
-<p>左侧是三地址代码，右侧是基本块的DAG表示</p>
+<p>左侧是三地址代码，右侧是基本块的DAG表示<br>
+<img src="/2020/06/LLVM-IR-pass/BasicBlockDAGExample.png" alt="img"></p>
 </blockquote>
-<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/BasicBlockDAGExample.png" class>
 </li>
 </ul>
 <h3 id="b-基于DAG删除无关代码">b. 基于DAG删除无关代码</h3>
 <ul>
 <li>从一个DAG上删除所有 <strong>没有附加活跃变量</strong> 的 <strong>根节点</strong>。重复此操作即可删除所有对应于无用代码的节点。</li>
-<li>例子<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/DAGDeleteUnuseVariable.png" class>
-</li>
+<li>例子<br>
+<img src="/2020/06/LLVM-IR-pass/DAGDeleteUnuseVariable.png" alt="img"></li>
 </ul>
 <h3 id="c-可获取的信息">c. 可获取的信息</h3>
 <ul>
@@ -387,8 +387,8 @@ $f_B = f_{s_1}· f_{s_2} · …·f_{s_n}$</li>
 </ul>
 <h3 id="a-活跃变量分析">a. 活跃变量分析</h3>
 <ul>
-<li>对于变量x和程序点p，如果在流图中沿着从p开始的某条路径会引用变量x在p点的值，则称变量x在点p是 <strong>活跃</strong>(live)的，否则称变量x在点p <strong>不活跃</strong>(dead)<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/live_variable_example.png" class>
-</li>
+<li>对于变量x和程序点p，如果在流图中沿着从p开始的某条路径会引用变量x在p点的值，则称变量x在点p是 <strong>活跃</strong>(live)的，否则称变量x在点p <strong>不活跃</strong>(dead)<br>
+<img src="/2020/06/LLVM-IR-pass/live_variable_example.png" alt="img"></li>
 <li>活跃变量信息的主要用途
 <ul>
 <li>删除无用赋值</li>
@@ -405,9 +405,9 @@ $f_B = f_{s_1}· f_{s_2} · …·f_{s_n}$</li>
 <blockquote>
 <p>$def_B$：在基本块B中 <strong>定值</strong>，但是定值前在B中没有被 <strong>引用</strong> 的变量的集合。<br>
 $use_B$：在基本块B中 <strong>引用</strong>，但是引用前在B中没有被 <strong>定值</strong> 的变量集合。<br>
-例：各基本块B的$use_B$和$def_B$</p>
+例：各基本块B的$use_B$和$def_B$<br>
+<img src="/2020/06/LLVM-IR-pass/useb_and_defb.png" alt="img"></p>
 </blockquote>
-<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/useb_and_defb.png" class>
 </li>
 </ul>
 </li>
@@ -428,10 +428,10 @@ $OUT[B]$：在基本块B的出口处的活跃变量集合</li>
 <ul>
 <li>输入：流图G，其中每个基本块B的$use_B$和$def_B$都已计算出来</li>
 <li>输出：$IN[B]$和$OUT[B]$</li>
-<li>伪代码：<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/live_variable_code.png" class>
-</li>
-<li>例子<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/live_variable_code_example.png" class>
-</li>
+<li>伪代码：<br>
+<img src="/2020/06/LLVM-IR-pass/live_variable_code.png" alt="img"></li>
+<li>例子<br>
+<img src="/2020/06/LLVM-IR-pass/live_variable_code_example.png" alt="img"></li>
 </ul>
 </li>
 </ul>
@@ -450,10 +450,10 @@ $OUT[B]$：在基本块B的出口处的活跃变量集合</li>
 <li>
 <p>用途：</p>
 <ul>
-<li>消除全局公共子表达式<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/deletePublicSubexpression.png" class>
-</li>
-<li>进行复制传播<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/copy_example.png" class>
-</li>
+<li>消除全局公共子表达式<br>
+<img src="/2020/06/LLVM-IR-pass/deletePublicSubexpression.png" alt="img"></li>
+<li>进行复制传播<br>
+<img src="/2020/06/LLVM-IR-pass/copy_example.png" alt="img"></li>
 </ul>
 </li>
 <li>
@@ -533,9 +533,9 @@ $OUT[B]$：在B的出口处可用的U中的表达式集合</li>
 <p>输出：$IN[B]$和$OUT[B]$</p>
 </li>
 <li>
-<p>算法：</p>
-<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/availableExpr_code.png" class>  
-<p>示例代码：</p>
+<p>算法：<br>
+<img src="/2020/06/LLVM-IR-pass/availableExpr_code.png" alt="img"><br>
+示例代码：</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">virtual</span> <span class="keyword">bool</span> <span class="title">runOnFunction</span><span class="params">(Function &amp; F)</span> <span class="keyword">override</span> <span class="keyword">final</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span> &amp; inst : instructions(F))</span><br><span class="line">    &#123;</span><br><span class="line">        InitializeDomainFromInstruction(inst);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span> &amp; inst : instructions(F))</span><br><span class="line">    &#123;</span><br><span class="line">        _inst_bv_map.emplace(&amp;inst, IC()); <span class="comment">// IC 初始条件</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// keep traversing until changes have been made to the</span></span><br><span class="line">    <span class="comment">// instruction-bv mapping</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (traverseCFG(F)) &#123;&#125;</span><br><span class="line"></span><br><span class="line">    printInstBVMap(F);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">traverseCFG</span><span class="params">(<span class="keyword">const</span> Function &amp; func)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">bool</span> transform = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">const</span> BasicBlock&amp; basicBlock : BBTraversalOrder(func))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// OUT[B]和IN[B]的节点集合</span></span><br><span class="line">        BitVector ibv;</span><br><span class="line">        BitVector obv;</span><br><span class="line">        <span class="comment">// 确定IN集合</span></span><br><span class="line">        <span class="comment">// 注：basicBlock不存在operator==函数，故只能比较其地址是否相同</span></span><br><span class="line">        <span class="keyword">if</span>(&amp;basicBlock == &amp;(*BBTraversalOrder(func).begin()))</span><br><span class="line">            <span class="comment">// 设置OUT[ENTRY]为空集，就是设置EntryBlock的IN集为空集</span></span><br><span class="line">            <span class="comment">// 注意基础块ENTRY和此处函数开头的基础块不是同一个</span></span><br><span class="line">            <span class="comment">// ENTRY -&gt; funcEntryBlock -&gt; ... -&gt; funcExitBlock -&gt; EXIT</span></span><br><span class="line">            ibv = BC();  <span class="comment">// BC 边界条件</span></span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            ibv = MeetOp(basicBlock);</span><br><span class="line">        <span class="comment">// 利用fB=fsn⋅…⋅fs2⋅fs1公式，遍历Instruction，计算出当前基础块的OUT集合</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">const</span> Instruction&amp; inst : InstTraversalOrder(basicBlock))</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 对_inst_bv_map的修改在TransferFunc内</span></span><br><span class="line">            <span class="comment">// 传入旧的obv，判断是否修改out集。</span></span><br><span class="line">            obv = _inst_bv_map[&amp;inst];</span><br><span class="line">            <span class="comment">// TransferFunc的第三个参数感觉有点多余</span></span><br><span class="line">            transform |= TransferFunc(inst, ibv, obv);</span><br><span class="line">            <span class="comment">// 计算出的inst_out集合，是下一次transfer的in集合，所以需要赋值</span></span><br><span class="line">            ibv = obv;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> transform;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
@@ -648,8 +648,8 @@ SSA 简化了程序中变量的特性。<br>
 </blockquote>
 </li>
 <li>
-<p>下面的图给出了一个示例，给出了图中的支配结点以及支配边界关系。</p>
-<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/1.jpg" class>
+<p>下面的图给出了一个示例，给出了图中的支配结点以及支配边界关系。<br>
+<img src="/2020/06/LLVM-IR-pass/1.jpg" alt="img"></p>
 </li>
 <li>
 <p>一旦有了支配边界，我们便可以计算出 <strong>Φ</strong> 函数正确的插入位置。</p>
@@ -660,8 +660,8 @@ SSA 简化了程序中变量的特性。<br>
 </li>
 <li>
 <p>回边(back edges)：假定流图中存在两个结点d和n满足d dom n。如果存在从结点n到d的有向边n -&gt; d，那么这条边称为回边。<br>
-例子：</p>
-<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/backEdgeExample.png" class>
+例子：<br>
+<img src="/2020/06/LLVM-IR-pass/backEdgeExample.png" alt="img"></p>
 </li>
 </ul>
 <h2 id="7-消除冗余">7. 消除冗余</h2>
@@ -669,8 +669,8 @@ SSA 简化了程序中变量的特性。<br>
 <ul>
 <li>
 <p>冗余：如果在通向位置p的每条代码路径上，表达式e都已经进行过求值，那么表达式e在位置p处是冗余的。<br>
-部分冗余：如果表达式e在到达位置p的部分（而非全部）代码路径上是冗余的，则表达式eee在位置p处是部分冗余的。</p>
-<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/redundancyExample.png" class>
+部分冗余：如果表达式e在到达位置p的部分（而非全部）代码路径上是冗余的，则表达式eee在位置p处是部分冗余的。<br>
+<img src="/2020/06/LLVM-IR-pass/redundancyExample.png" alt="img"></p>
 </li>
 <li>
 <p>为了在很多执行路径中减少表达式被求值的次数，并保证不增加任何路径中的求值次数。我们可以通过移动各个对<code>x op y</code>求值的位置，并在必要时把求值结果保存在临时变量中，来完成这个目的。</p>
@@ -720,8 +720,8 @@ SSA 简化了程序中变量的特性。<br>
 </li>
 <li><strong>可后延表达式</strong>（Postponable Expression）：在所有从程序入口结点到达p的路径中都会碰到一个位置较前的x+y，并且在最后一个这样的位置到p直接没有对x+y的使用，那么表达式x+y就可后延到程序点p上。</li>
 <li><strong>被使用表达式</strong>(used expression) : 如果在基本块B的出口点被使用的表达式不在B的最后放置（latest）集合中，那么它也是一个在B入口点处被使用的表达式。</li>
-<li>部分冗余消除中的四个数据流分析过程<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/lcm_data.png" class>
-</li>
+<li>部分冗余消除中的四个数据流分析过程<br>
+<img src="/2020/06/LLVM-IR-pass/lcm_data.png" alt="img"></li>
 </ul>
 <h4 id="3-算法">3). 算法</h4>
 <ol>
@@ -784,9 +784,9 @@ SSA 简化了程序中变量的特性。<br>
 <p><strong>循环不变量代码移动</strong>指的是把循环中的所有重复执行替换为循环外的单次计算,从而优化程序。<br>
 具体操作就是将那些，所有操作数不在循环中改变的表达式，从循环内部移动到循环的<em>前置首结点</em>，避免重复计算。</p>
 <blockquote>
-<p><strong>前置首结点</strong>(preheader): 循环不变计算将被移至首结点之前，会创建一个称为<em>前置首结点</em>的新块。前置首结点的<em>唯一后继</em>是首结点，并且原来从循环L外到达L首结点的边都改成进入<em>前置首结点</em>。从循环L里面到达首结点的边不变</p>
+<p><strong>前置首结点</strong>(preheader): 循环不变计算将被移至首结点之前，会创建一个称为<em>前置首结点</em>的新块。前置首结点的<em>唯一后继</em>是首结点，并且原来从循环L外到达L首结点的边都改成进入<em>前置首结点</em>。从循环L里面到达首结点的边不变<br>
+<img src="/2020/06/LLVM-IR-pass/preheader.png" alt="img"></p>
 </blockquote>
-<img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/preheader.png" class>
 </li>
 <li>
 <p>循环不变量的判定条件： 某个变量如果其表达式的所有操作数都是常量，或者是循环外部的变量，或者是循环内部已经被标定为<em>循环不变量</em>的变量，那么这条表达式被称为<em>循环不变量</em>。</p>
@@ -796,19 +796,15 @@ SSA 简化了程序中变量的特性。<br>
 <ol>
 <li>s所在的基本块是循环<strong>所有出口结点</strong>(有后继结点在循环外的结点)的<strong>支配结点</strong>
 <blockquote>
-<p>意味着控制流无论流向何处，都一定会执行语句s</p>
+<p>意味着控制流无论流向何处，都一定会执行语句s<br>
+<img src="/2020/06/LLVM-IR-pass/licm_1.png" alt="img"></p>
 </blockquote>
 </li>
+<li>循环中<strong>没有其它语句对x赋值</strong><br>
+<img src="/2020/06/LLVM-IR-pass/licm_2.png" alt="img"></li>
+<li>循环中对x的引用<strong>仅由s到达</strong><br>
+<img src="/2020/06/LLVM-IR-pass/licm_3.png" alt="img"></li>
 </ol>
-  <img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/licm_1.png" class>
-<ol start="2">
-<li>循环中<strong>没有其它语句对x赋值</strong></li>
-</ol>
-  <img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/licm_2.png" class>
-<ol start="3">
-<li>循环中对x的引用<strong>仅由s到达</strong></li>
-</ol>
-  <img src="/2020/06/LLVM-IR-pass/06/LLVM-IR-pass/licm_3.png" class>
 </li>
 <li>
 <p>如何处理嵌套循环</p>

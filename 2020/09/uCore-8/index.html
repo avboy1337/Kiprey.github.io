@@ -326,7 +326,7 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>目录和文件的<strong>树形结构</strong>（早期的文件系统是扁平的）</p>
-<img src="/2020/09/uCore-8/09/uCore-8/directoryTree.png" class>
+<p><img src="/2020/09/uCore-8/directoryTree.png" alt="img"></p>
 </li>
 </ul>
 </li>
@@ -381,7 +381,7 @@ var _hmt = _hmt || [];
 </blockquote>
 </li>
 </ul>
-<img src="/2020/09/uCore-8/09/uCore-8/file_rename.png" class>
+<p><img src="/2020/09/uCore-8/file_rename.png" alt="img"></p>
 </li>
 <li>
 <p><strong>文件目录中的循环</strong></p>
@@ -394,7 +394,7 @@ var _hmt = _hmt || [];
 </li>
 <li>更多实践：<strong>限制路径可遍历文件目录的数量</strong></li>
 </ul>
-<img src="/2020/09/uCore-8/09/uCore-8/directoryLoop.png" class>
+<p><img src="/2020/09/uCore-8/directoryLoop.png" alt="img"></p>
 </li>
 <li>
 <p><strong>名字解析（路径遍历）</strong></p>
@@ -669,7 +669,7 @@ var _hmt = _hmt || [];
 <li>多级索引块：一个一级索引块指向多个二级索引块等等</li>
 </ul>
 <h4 id="d-UFS多级索引分配">d. UFS多级索引分配</h4>
-<img src="/2020/09/uCore-8/09/uCore-8/UFS_indexSearch.png" class>
+<p><img src="/2020/09/uCore-8/UFS_indexSearch.png" alt="img"></p>
 <ul>
 <li>文件头包含13个指针
 <ul>
@@ -725,7 +725,7 @@ var _hmt = _hmt || [];
 <li>分区是一组柱面的集合</li>
 <li>每个分区都可视为逻辑上独立的磁盘</li>
 </ul>
-<img src="/2020/09/uCore-8/09/uCore-8/divideArea.png" class>
+<p><img src="/2020/09/uCore-8/divideArea.png" alt="img"></p>
 </li>
 <li>
 <p>一个典型的磁盘文件系统组织</p>
@@ -734,7 +734,7 @@ var _hmt = _hmt || [];
 <p>文件卷：一个拥有完整文件系统实例的外存空间，通常常驻在磁盘的单个分区上</p>
 </li>
 <li>
-<img src="/2020/09/uCore-8/09/uCore-8/diskFileSystem.png" class>
+<p><img src="/2020/09/uCore-8/diskFileSystem.png" alt="img"></p>
 </li>
 </ul>
 </li>
@@ -770,14 +770,14 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>通过独立磁盘上并行数据块访问提供更大的磁盘带宽</p>
 </blockquote>
-<img src="/2020/09/uCore-8/09/uCore-8/raid0.png" class>
+<p><img src="/2020/09/uCore-8/raid0.png" alt="img"></p>
 <h4 id="c-RAID-1：磁盘镜像">c. RAID-1：磁盘镜像</h4>
 <p>向两个磁盘写入，从任何一个读取</p>
 <ul>
 <li>可靠性成倍增加</li>
 <li>读取性能线性增加</li>
 </ul>
-<img src="/2020/09/uCore-8/09/uCore-8/raid1.png" class>
+<p><img src="/2020/09/uCore-8/raid1.png" alt="img"></p>
 <h4 id="d-RAID-4：带校验的磁盘条带化">d. RAID-4：带校验的磁盘条带化</h4>
 <blockquote>
 <p>基于数据块的条带化</p>
@@ -786,12 +786,12 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>允许从任意一个故障磁盘中恢复</p>
 </blockquote>
-<img src="/2020/09/uCore-8/09/uCore-8/raid4.png" class>
+<p><img src="/2020/09/uCore-8/raid4.png" alt="img"></p>
 <h4 id="e-RAID-5：带分布式校验的磁盘条带化">e. RAID-5：带分布式校验的磁盘条带化</h4>
 <blockquote>
 <p>基于数据块的条带化</p>
 </blockquote>
-<img src="/2020/09/uCore-8/09/uCore-8/raid5.png" class>
+<p><img src="/2020/09/uCore-8/raid5.png" alt="img"></p>
 <h4 id="f-可纠正多个磁盘错误的冗余磁盘阵列">f. 可纠正多个磁盘错误的冗余磁盘阵列</h4>
 <ul>
 <li>RAID-5：每组条带块有一个奇偶校验块，允许一个磁盘错误</li>
@@ -801,11 +801,11 @@ var _hmt = _hmt || [];
 <ul>
 <li>
 <p>RAID 0+1</p>
-<img src="/2020/09/uCore-8/09/uCore-8/raid01.png" class>
+<p><img src="/2020/09/uCore-8/raid01.png" alt="img"></p>
 </li>
 <li>
 <p>RAID 1+0</p>
-<img src="/2020/09/uCore-8/09/uCore-8/raid10.png" class>
+<p><img src="/2020/09/uCore-8/raid10.png" alt="img"></p>
 </li>
 </ul>
 <h3 id="9-uCore文件系统实现">9. uCore文件系统实现</h3>
@@ -845,9 +845,9 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>自己画的太丑了T_T，该图来源<a href="http://www.resery.top/" target="_blank" rel="noopener">resery</a></p>
 </blockquote>
-<img src="/2020/09/uCore-8/09/uCore-8/fsStruct.png" class>
+<p><img src="/2020/09/uCore-8/fsStruct.png" alt="img"></p>
 <p>文件系统整体结构</p>
-<img src="/2020/09/uCore-8/09/uCore-8/total_struct.png" class>
+<p><img src="/2020/09/uCore-8/total_struct.png" alt="img"></p>
 <p>我们先从上到下分析一下结构</p>
 <h4 id="b-文件系统结构">b. 文件系统结构</h4>
 <h5 id="1-通用文件系统访问接口层">1) 通用文件系统访问接口层</h5>

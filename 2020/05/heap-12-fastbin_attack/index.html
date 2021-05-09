@@ -181,19 +181,19 @@ var _hmt = _hmt || [];
 <li>
 <p>首先malloc4块chunk</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> * fast_chunk_1 = <span class="built_in">malloc</span>(<span class="number">0x10</span>)</span><br><span class="line"><span class="comment">// 为啥0x60，因为此时的fast chunk的size为0x70，与size为0x7f的fast chunk处于同一个索引的fast bin链</span></span><br><span class="line"><span class="keyword">char</span> * fast_chunk_2 = <span class="built_in">malloc</span>(<span class="number">0x60</span>)</span><br><span class="line"><span class="keyword">char</span> * unsorted_chunk = <span class="built_in">malloc</span>(<span class="number">0x100</span>)</span><br><span class="line"><span class="comment">// 防止unsorted chunk在free时，与top chunk合并</span></span><br><span class="line"><span class="keyword">char</span> * fast_chunk_3 = <span class="built_in">malloc</span>(<span class="number">0x10</span>)</span><br></pre></td></tr></table></figure>
-<img src="/2020/05/heap-12-fastbin_attack/05/heap-12-fastbin_attack/malloc4chunk.png" class>
+<p><img src="/2020/05/heap-12-fastbin_attack/malloc4chunk.png" alt="img"></p>
 </li>
 <li>
-<p>然后通过堆溢出，修改fast_chunk_2的size为 0x180，使 unsorted chunk 完全包含于fast_chunk_2</p>
-<img src="/2020/05/heap-12-fastbin_attack/05/heap-12-fastbin_attack/coverUnsortedChunk.png" class>
+<p>然后通过堆溢出，修改fast_chunk_2的size为 0x180，使 unsorted chunk 完全包含于fast_chunk_2<br>
+<img src="/2020/05/heap-12-fastbin_attack/coverUnsortedChunk.png" alt="img"></p>
 </li>
 <li>
 <p>然后free掉fast_chunk_2 再malloc(0x170)回来，此时fast_chunk_2的读写范围扩大了</p>
 </li>
 <li>
 <p>这时候我们要释放unsorted chunk，由于unsorted bin的size在malloc fast_chunk_2时被清零了，所以需要修复一下<br>
-修复好后再free掉unsorted chunk</p>
-<img src="/2020/05/heap-12-fastbin_attack/05/heap-12-fastbin_attack/recoverUnsortedChunk.png" class>
+修复好后再free掉unsorted chunk<br>
+<img src="/2020/05/heap-12-fastbin_attack/recoverUnsortedChunk.png" alt="img"></p>
 </li>
 <li>
 <p>此时便可以通过fast_chunk_2 来输出main_arena地址</p>
@@ -205,13 +205,13 @@ var _hmt = _hmt || [];
 <ul>
 <li>注意此时fast_chunk_2的size值为0x181,所以首先我们就修改fast_chunk_2的size为0x71<br>
 否则free时，fast_chunk_2不会被放进fast bin里<br>
-然后把该chunk free掉<img src="/2020/05/heap-12-fastbin_attack/05/heap-12-fastbin_attack/freeFast_chunk_2.png" class> 
-</li>
+然后把该chunk free掉<br>
+<img src="/2020/05/heap-12-fastbin_attack/freeFast_chunk_2.png" alt="img"></li>
 <li>然后现在我们来找找目标地址附近，该找哪一块空间，来作为fake_fast_chunk的起始地址<br>
-我们很容易就可以发现，这个地址符合要求。<img src="/2020/05/heap-12-fastbin_attack/05/heap-12-fastbin_attack/findfake.png" class>
-</li>
-<li>接下来修改fast_chunk_2的fd指针为fake_fast_chunk的地址<img src="/2020/05/heap-12-fastbin_attack/05/heap-12-fastbin_attack/fakeChunk_fastbin.png" class>
-</li>
+我们很容易就可以发现，这个地址符合要求。<br>
+<img src="/2020/05/heap-12-fastbin_attack/findfake.png" alt="img"></li>
+<li>接下来修改fast_chunk_2的fd指针为fake_fast_chunk的地址<br>
+<img src="/2020/05/heap-12-fastbin_attack/fakeChunk_fastbin.png" alt="img"></li>
 </ul>
 </li>
 <li>

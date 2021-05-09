@@ -179,9 +179,9 @@ var _hmt = _hmt || [];
 <li>堆内存。当调用内存分配或释放函数时。对可以在运行时动态地扩展和收缩。</li>
 <li>共享库。地址中间部分是一块用来存放像C标准库和数学库这样地共享库代码和数据的区域。</li>
 <li>栈内存。位于用户虚拟地址空间顶部的是用户栈，编译器用它来实现函数调用。</li>
-<li>内核虚拟内存。地址空间最顶部的区域是为内核保留的。不允许应用程序读/写/执行这个区域的内容。应用程序只能调用内核来执行这些操作。</li>
+<li>内核虚拟内存。地址空间最顶部的区域是为内核保留的。不允许应用程序读/写/执行这个区域的内容。应用程序只能调用内核来执行这些操作。<br>
+<img src="/2020/07/csapp/chapters1_vm.png" alt="img"></li>
 </ul>
-<img src="/2020/07/csapp/07/csapp/chapters1_vm.png" class>
 </li>
 </ul>
 </li>
@@ -191,8 +191,8 @@ var _hmt = _hmt || [];
 <h2 id="二、-信息的表示和处理">二、 信息的表示和处理</h2>
 <h3 id="1-字节顺序">1) 字节顺序</h3>
 <ul>
-<li>字节顺序分为<em>大端序</em>(big-endian)和<em>小端序</em>(liggle-endian)。大多数机器使用的都是小端序。<img src="/2020/07/csapp/07/csapp/chapters2_endian.png" class>
-</li>
+<li>字节顺序分为<em>大端序</em>(big-endian)和<em>小端序</em>(liggle-endian)。大多数机器使用的都是小端序。<br>
+<img src="/2020/07/csapp/chapters2_endian.png" alt="img"></li>
 </ul>
 <h3 id="2-补码-two’s-complement">2) 补码(two’s complement)</h3>
 <ul>
@@ -256,19 +256,19 @@ var _hmt = _hmt || [];
 <li>特殊情况
 <ol>
 <li><strong>无穷大</strong> 。exp == 255 &amp;&amp; frac == 0</li>
-<li><strong>NaN</strong> 。exp == 255 &amp;&amp; frac != 0</li>
+<li><strong>NaN</strong> 。exp == 255 &amp;&amp; frac != 0<br>
+<img src="/2020/07/csapp/chapters2_ieee_float_example.png" alt="img"></li>
 </ol>
 </li>
 </ul>
-<img src="/2020/07/csapp/07/csapp/chapters2_ieee_float_example.png" class>
 </li>
 <li>
 <p>尽管浮点数可表达的范围较大，但当浮点数越来越大时，其精度会越来越小；当浮点数越来越小时，其精度也会越来越大。不管精度如何变化，这其中始终存在一个范围。</p>
 <blockquote>
 <p>浮点数无法精确表示所有的小数。大多数小数都只能近似表示，例如0.1表示为0.100000001。<br>
-浮点数也无法精确表示超大整数。超大整数的表示可能会丢失一些精度，例如表示的整数与预期值相差1等等。</p>
+浮点数也无法精确表示超大整数。超大整数的表示可能会丢失一些精度，例如表示的整数与预期值相差1等等。<br>
+<img src="/2020/07/csapp/chapters2_ieee_range.png" alt="img"></p>
 </blockquote>
-<img src="/2020/07/csapp/07/csapp/chapters2_ieee_range.png" class>  
 </li>
 <li>
 <p>float类型最好不要与double类型的数据进行比较，否则会产生一些奇怪的错误，例如以下代码</p>
@@ -347,11 +347,11 @@ var _hmt = _hmt || [];
 <li>可能有附加的<em>寄存器指示符字节</em>(register specifier byte)，用于指定1~2个寄存器。</li>
 <li>有些指令需要一个附加的<em>常数 字</em>(constant word)。这个立即数成为指令的某个操作数.
 <blockquote>
-<p>例如<code>irmovq $1, %rax</code>。</p>
+<p>例如<code>irmovq $1, %rax</code>。<br>
+<img src="/2020/07/csapp/chapters4_y86_isa.png" alt="img"></p>
 </blockquote>
 </li>
 </ul>
-<img src="/2020/07/csapp/07/csapp/chapters4_y86_isa.png" class>
 </li>
 </ul>
 <h3 id="3-异常">3) 异常</h3>
@@ -363,7 +363,7 @@ var _hmt = _hmt || [];
 </li>
 </ul>
 <h3 id="4-SEQ阶段">4) SEQ阶段</h3>
-<img src="/2020/07/csapp/07/csapp/chapters4_y86_graph.png" class>
+<p><img src="/2020/07/csapp/chapters4_y86_graph.png" alt="img"></p>
 <blockquote>
 <p>详细细节请翻阅CSAPP第三版第277页，这里只是简单概述</p>
 </blockquote>
@@ -374,37 +374,37 @@ var _hmt = _hmt || [];
 <li>PC增加硬件单元会根据当前PC以及CPU内的信号来生成下一条指令的PC。<br>
 $new PC = old PC + 1 + r + 8i$（$r$为当前指令是否需要寄存器指示字节，$i$为需要的常数字节数）
 <blockquote>
-<p>注意，此时只是计算，还没有设置下一条的PC</p>
+<p>注意，此时只是计算，还没有设置下一条的PC<br>
+<img src="/2020/07/csapp/chapters4_y86_fetch.png" alt="img"></p>
 </blockquote>
 </li>
 </ul>
-<img src="/2020/07/csapp/07/csapp/chapters4_y86_fetch.png" class>
 </li>
 <li>译码和写回阶段
 <ul>
-<li>寄存器文件有两个读端口A和B，从这两个端口同时读取寄存器值valA和valB</li>
+<li>寄存器文件有两个读端口A和B，从这两个端口同时读取寄存器值valA和valB<br>
+<img src="/2020/07/csapp/chapters4_y86_translate.png" alt="img"></li>
 </ul>
-<img src="/2020/07/csapp/07/csapp/chapters4_y86_translate.png" class>
 </li>
 <li>执行阶段
 <ul>
 <li>执行阶段包括ALU，该单元更具<code>alufun</code>信号的设置，对输入的<code>aluA</code>、<code>aluB</code>执行特定操作。</li>
 <li>指令阶段还包括条件码寄存器。每次运行时，ALU都会产生三个与条件码相关的信号——零、符号、溢出。</li>
-<li>标号为<code>cond</code>的硬件单元会根据条件码和功能码来确定是否进行条件分支或条件数据传送。</li>
+<li>标号为<code>cond</code>的硬件单元会根据条件码和功能码来确定是否进行条件分支或条件数据传送。<br>
+<img src="/2020/07/csapp/chapters4_y86_exec.png" alt="img"></li>
 </ul>
-<img src="/2020/07/csapp/07/csapp/chapters4_y86_exec.png" class>
 </li>
 <li>访存阶段
 <ul>
-<li>该阶段的任务为读写程序数据。读写的对象除了主存以外，还包括寄存器文件</li>
+<li>该阶段的任务为读写程序数据。读写的对象除了主存以外，还包括寄存器文件<br>
+<img src="/2020/07/csapp/chapters4_y86_visitM.png" alt="img"></li>
 </ul>
-<img src="/2020/07/csapp/07/csapp/chapters4_y86_visitM.png" class>
 </li>
 <li>更新PC阶段
 <ul>
-<li>根据指令的类型以及是否选择分支来设置新的PC。如果没有跳转，则使用取指阶段计算出的新PC值。</li>
+<li>根据指令的类型以及是否选择分支来设置新的PC。如果没有跳转，则使用取指阶段计算出的新PC值。<br>
+<img src="/2020/07/csapp/chapters4_y86_updatePC.png" alt="img"></li>
 </ul>
-<img src="/2020/07/csapp/07/csapp/chapters4_y86_updatePC.png" class>
 </li>
 </ul>
 <h3 id="5-流水线">5) 流水线</h3>
@@ -422,10 +422,10 @@ $new PC = old PC + 1 + r + 8i$（$r$为当前指令是否需要寄存器指示�
 <li>
 <p>避免冒险的方式</p>
 <ul>
-<li>暂停(stalling)。暂停技术阻塞一组指令在它们所处的阶段，而允许其他指令继续通过流水线，直到冒险条件不再满足。其处理方法为：每次要阻塞一条指令在译码阶段，就在指令阶段插入一个气泡（bubble）。气泡类似nop指令，不会更改寄存器、内存、条件码与程序状态。<img src="/2020/07/csapp/07/csapp/chapters4_pipelin_bubble.png" class>
-</li>
-<li>转发(formarding)。将结果值直接从一个流水线阶段传到较早阶段的技术称为数据转发，也称旁路(bypassing)。<img src="/2020/07/csapp/07/csapp/chapters4_pipelin_forward.png" class>
-</li>
+<li>暂停(stalling)。暂停技术阻塞一组指令在它们所处的阶段，而允许其他指令继续通过流水线，直到冒险条件不再满足。其处理方法为：每次要阻塞一条指令在译码阶段，就在指令阶段插入一个气泡（bubble）。气泡类似nop指令，不会更改寄存器、内存、条件码与程序状态。<br>
+<img src="/2020/07/csapp/chapters4_pipelin_bubble.png" alt="img"></li>
+<li>转发(formarding)。将结果值直接从一个流水线阶段传到较早阶段的技术称为数据转发，也称旁路(bypassing)。<br>
+<img src="/2020/07/csapp/chapters4_pipelin_forward.png" alt="img"></li>
 </ul>
 </li>
 <li>
@@ -482,8 +482,8 @@ $new PC = old PC + 1 + r + 8i$（$r$为当前指令是否需要寄存器指示�
 <li>Cache是一种小容量高速缓冲存储器，它由SRAM组成，其直接制作在CPU芯片内，速度几乎与CPU一样快。</li>
 <li>程序运行时，CPU使用的一部分数据/指令会预先成批拷贝在Cache中，当CPU需要从内存读/写数据或指令时，先检查Cache，若有，就直接从Cache中读取，而不用访问主存储器。</li>
 <li>由于程序访问的局部性特征，大多数情况下CPU可以直接从这个高速缓存中取得指令和数据，不必再访问主存。这大大提高了访存速度。</li>
-<li>Cache的通用组织<img src="/2020/07/csapp/07/csapp/chapter6_cache.png" class>
-</li>
+<li>Cache的通用组织<br>
+<img src="/2020/07/csapp/chapter6_cache.png" alt="img"></li>
 <li>有效位
 <ul>
 <li>有效位为0时表示信息无效，为1表示信息有效</li>
@@ -500,15 +500,15 @@ $new PC = old PC + 1 + r + 8i$（$r$为当前指令是否需要寄存器指示�
 </ul>
 <h4 id="a-直接映射高速缓存">a. 直接映射高速缓存</h4>
 <ul>
-<li>每个组只有一行的高速缓存称为<em>直接映射</em>高速缓存(direct-mapped cache)<img src="/2020/07/csapp/07/csapp/chapter6_directMap-cache.png" class>
-</li>
+<li>每个组只有一行的高速缓存称为<em>直接映射</em>高速缓存(direct-mapped cache)<br>
+<img src="/2020/07/csapp/chapter6_directMap-cache.png" alt="img"></li>
 <li>高速缓存请求数据的流程
 <ul>
-<li>组选择：从主存地址中的特定偏移处抽取s个组索引，这些位被解释成一个对应的无符号整数高速缓存组号。<img src="/2020/07/csapp/07/csapp/chapter6_directMap-cache_group.png" class>
-</li>
+<li>组选择：从主存地址中的特定偏移处抽取s个组索引，这些位被解释成一个对应的无符号整数高速缓存组号。<br>
+<img src="/2020/07/csapp/chapter6_directMap-cache_group.png" alt="img"></li>
 <li>行匹配：直接映射高速缓存中每组只有一个高速缓存行。如果当前行的有效位已经设置，并且标记(tag)匹配，则缓存命中。</li>
-<li>字选择：根据后b位的块内偏移来获取所需的字<img src="/2020/07/csapp/07/csapp/chapter6_directMap-cache_line.png" class>
-</li>
+<li>字选择：根据后b位的块内偏移来获取所需的字<br>
+<img src="/2020/07/csapp/chapter6_directMap-cache_line.png" alt="img"></li>
 <li>行替换：如果缓存不命中，则需要从下一级存储层次结构中取出请求的块，并驱逐并替换高速缓存行。</li>
 </ul>
 </li>
@@ -518,10 +518,10 @@ $new PC = old PC + 1 + r + 8i$（$r$为当前指令是否需要寄存器指示�
 <h4 id="b-全相联高速缓存">b. 全相联高速缓存</h4>
 <ul>
 <li><em>全相联高速缓存</em>（fully associative cache）是由一个包含所有高速缓存行的组组成的。</li>
-<li>全相联高速缓存的结构较为简单<img src="/2020/07/csapp/07/csapp/chapter6_fullMap-cache.png" class>
-</li>
-<li>全相联高速缓存中的行匹配和字选择与上述的类似，组只有一行所以默认只选择组0。<img src="/2020/07/csapp/07/csapp/chapter6_fullMap-cache_found.png" class>
-</li>
+<li>全相联高速缓存的结构较为简单<br>
+<img src="/2020/07/csapp/chapter6_fullMap-cache.png" alt="img"></li>
+<li>全相联高速缓存中的行匹配和字选择与上述的类似，组只有一行所以默认只选择组0。<br>
+<img src="/2020/07/csapp/chapter6_fullMap-cache_found.png" alt="img"></li>
 <li>由于全相联高速缓存电路必须并行搜索许多相匹配的标记，构成一个又大又快的相联高速缓存十分困难，而且造价昂贵。因此全相联高速缓存只适合做小的高速缓存。
 <blockquote>
 <p>例如虚拟内存系统中的翻译备用缓冲器，该部件用于缓存页表项。</p>
@@ -530,12 +530,12 @@ $new PC = old PC + 1 + r + 8i$（$r$为当前指令是否需要寄存器指示�
 </ul>
 <h4 id="c-组相联高速缓存">c. 组相联高速缓存</h4>
 <ul>
-<li><em>组相联高速缓存</em>（set associative cache）是上述两种高速缓存的结合体。下图是它的结构<img src="/2020/07/csapp/07/csapp/chapter6_setMapCache.png" class>
-</li>
-<li>组相联高速缓存的组匹配<img src="/2020/07/csapp/07/csapp/chapter6_setMapCache_group.png" class>
-</li>
-<li>组相联高速缓存的行匹配与字选择<img src="/2020/07/csapp/07/csapp/chapter6_setMapCache_line.png" class>
-</li>
+<li><em>组相联高速缓存</em>（set associative cache）是上述两种高速缓存的结合体。下图是它的结构<br>
+<img src="/2020/07/csapp/chapter6_setMapCache.png" alt="img"></li>
+<li>组相联高速缓存的组匹配<br>
+<img src="/2020/07/csapp/chapter6_setMapCache_group.png" alt="img"></li>
+<li>组相联高速缓存的行匹配与字选择<br>
+<img src="/2020/07/csapp/chapter6_setMapCache_line.png" alt="img"></li>
 <li>组相联高速缓存的不命中。
 <ul>
 <li>当数据不命中时，需要替换该组中的某一行。其常用的替换算法有：
@@ -608,9 +608,9 @@ LRU具体实现时，通过给每个cache行设定一个计数器，根据计数
 <li>
 <p>示例代码</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctime&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> m = <span class="number">10000</span>;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> n = <span class="number">1000</span>;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> testNum = <span class="number">1000</span>;</span><br><span class="line">  <span class="keyword">int</span> total = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">int</span>** nums = <span class="keyword">new</span> <span class="keyword">int</span>* [m];</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; m; i++)</span><br><span class="line">  &#123;</span><br><span class="line">    nums[i] = <span class="keyword">new</span> <span class="keyword">int</span>[n];</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; n; j++)</span><br><span class="line">      nums[i][j] = (i%<span class="number">10</span>) * (j%<span class="number">10</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">clock_t</span> t1 = clock();</span><br><span class="line">  <span class="comment">// 高速缓存友好的代码</span></span><br><span class="line">  total = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> a = <span class="number">0</span>; a &lt; testNum; a++)</span><br><span class="line">    <span class="comment">// 索引顺序为 i,j</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; m; i++)</span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; n; j++)</span><br><span class="line">        total += nums[i][j];</span><br><span class="line"></span><br><span class="line">  <span class="keyword">clock_t</span> t2 = clock();</span><br><span class="line">  <span class="comment">// 高速缓存不友好的代码</span></span><br><span class="line">  total = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> a = <span class="number">0</span>; a &lt; testNum; a++)</span><br><span class="line">    <span class="comment">// 索引顺序为 j, i</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; n; j++)</span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; m; i++)</span><br><span class="line">        total += nums[i][j];</span><br><span class="line"></span><br><span class="line">  <span class="keyword">clock_t</span> t3 = clock();</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">"t1: "</span> &lt;&lt; t1 &lt;&lt; <span class="string">" t2: "</span> &lt;&lt; t2 &lt;&lt; <span class="string">" t3: "</span> &lt;&lt; t3 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">"高速缓存  友好代码所需时间: "</span> &lt;&lt; t2 - t1 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; <span class="string">"高速缓存不友好代码所需时间: "</span> &lt;&lt; t3 - t2 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>程序输出</p>
-<img src="/2020/07/csapp/07/csapp/cache_code.png" class>
-<p>其速度差距在这段代码的输出上表现的淋漓尽致，差距十分明显。</p>
+<p>程序输出<br>
+<img src="/2020/07/csapp/cache_code.png" alt="img"><br>
+其速度差距在这段代码的输出上表现的淋漓尽致，差距十分明显。</p>
 </li>
 </ul>
 <h2 id="七、-链接">七、 链接</h2>
@@ -754,8 +754,8 @@ LRU具体实现时，通过给每个cache行设定一个计数器，根据计数
 <ul>
 <li>Linux<em>信号</em>(signal)是一种更高层的软件形式的异常。它允许进程和内核中断其他进程。</li>
 <li>信号提供了一种机制，通知用户进程发生了这些异常。</li>
-<li>以下是linux系统上支持的信号列表<img src="/2020/07/csapp/07/csapp/signals.png" class>
-</li>
+<li>以下是linux系统上支持的信号列表<br>
+<img src="/2020/07/csapp/signals.png" alt="img"></li>
 <li>传递一个信号到目的进程的步骤
 <ul>
 <li>发送信号
@@ -856,8 +856,8 @@ LRU具体实现时，通过给每个cache行设定一个计数器，根据计数
 <h4 id="2-因特网域名">2. 因特网域名</h4>
 <ul>
 <li>因特网定义了一组<em>域名</em>(domain name)以及一种将域名映射到IP地址的机制，便于人们记忆。</li>
-<li>域名集合形成了一个层次结构。<img src="/2020/07/csapp/07/csapp/doman_struct.png" class>
-</li>
+<li>域名集合形成了一个层次结构。<br>
+<img src="/2020/07/csapp/doman_struct.png" alt="img"></li>
 <li>因特网定义了域名集合和IP地址集合之间的映射。在现代，映射通过DNS(Doman Name System，域名系统)维护。</li>
 </ul>
 <h4 id="3-因特网连接">3. 因特网连接</h4>
@@ -877,8 +877,8 @@ LRU具体实现时，通过给每个cache行设定一个计数器，根据计数
 <p><strong>套接字接口</strong>(socket interface)是一组函数，它们和Unix I/O 函数结合，用以创建网络应用。</p>
 </li>
 <li>
-<p>以下是一个典型的客户端-服务器事务的上下文中的套接字接口概述。</p>
-<img src="/2020/07/csapp/07/csapp/socket_concept_pic.png" class>
+<p>以下是一个典型的客户端-服务器事务的上下文中的套接字接口概述。<br>
+<img src="/2020/07/csapp/socket_concept_pic.png" alt="img"></p>
 </li>
 <li>
 <p>套接字地址结构</p>
@@ -891,11 +891,9 @@ LRU具体实现时，通过给每个cache行设定一个计数器，根据计数
 <blockquote>
 <p>注意区分开<strong>监听描述符</strong>和<strong>已连接描述符</strong>。<br>
 1.监听描述符作为客户端连接请求的一个端点，通常被创建一次，并存在于服务器的整个生命周期。<br>
-2.已连接描述符是客户端和服务器之间已经建立起的连接的一个端点。服务器每次接收连接请求时都会创建一次，它只存在于服务器为一个客户端服务的过程。</p>
-</blockquote>
-<img src="/2020/07/csapp/07/csapp/connfdOrlistenfg.png" class>
-<blockquote>
-<p><strong>监听描述符</strong>和<strong>已连接描述符</strong>概念的区分可以方便并发服务器的建立。</p>
+2.已连接描述符是客户端和服务器之间已经建立起的连接的一个端点。服务器每次接收连接请求时都会创建一次，它只存在于服务器为一个客户端服务的过程。<br>
+<img src="/2020/07/csapp/connfdOrlistenfg.png" alt="img"><br>
+<strong>监听描述符</strong>和<strong>已连接描述符</strong>概念的区分可以方便并发服务器的建立。</p>
 </blockquote>
 </li>
 <li>
@@ -905,8 +903,8 @@ LRU具体实现时，通过给每个cache行设定一个计数器，根据计数
 <h2 id="十二-并发编程">十二. 并发编程</h2>
 <ul>
 <li>在访问一块共享变量时，并发程序需要对该变量进行上锁，以免产生不必要的条件竞争。</li>
-<li>并发编程一定要避免死锁<img src="/2020/07/csapp/07/csapp/deadLockPic.png" class>
-</li>
+<li>并发编程一定要避免死锁<br>
+<img src="/2020/07/csapp/deadLockPic.png" alt="img"></li>
 </ul>
 <blockquote>
 <p>其余暂略，待学习操作系统时再学并发</p>

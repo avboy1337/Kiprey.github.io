@@ -169,7 +169,8 @@ var _hmt = _hmt || [];
 <ol>
 <li>当 ASCll 用 Base 加密达不到所对应的位数的时候用=号补齐</li>
 <li><strong>Base64隐写</strong><br>
-先看图 <img src="/2020/04/misc/04/misc/base64steganography.png" class>
+先看图<br>
+<img src="/2020/04/misc/base64steganography.png" alt="img">
 <ul>
 <li>注意红色的 0, base64解码时将其丢弃了, 所以这里的值不会影响解码. 故我们可以在这进行隐写。</li>
 <li>为什么等号的那部分 0 不能用于隐写? 因为修改那里的二进制值会导致等号数量变化, 解码的第 1 步会受影响. 自然也就破坏了源字符串。</li>
@@ -300,19 +301,19 @@ var _hmt = _hmt || [];
    
   <nav class="article-nav">
     
-      <a href="/2020/04/pwn/" class="article-nav-link">
+      <a href="/2020/04/heap-8-UAF/" class="article-nav-link">
         <strong class="article-nav-caption">上一篇</strong>
         <div class="article-nav-title">
           
-            CTF Pwn 的杂项笔记
+            heap - 8 - UAF漏洞的简单介绍及其例子
           
         </div>
       </a>
     
     
-      <a href="/2020/04/heap-7-%20__int_malloc_source/" class="article-nav-link">
+      <a href="/2020/04/crypto/" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
-        <div class="article-nav-title">heap - 7 - _int_malloc 源码及其部分分析</div>
+        <div class="article-nav-title">CTF Crypto 的笔记</div>
       </a>
     
   </nav>

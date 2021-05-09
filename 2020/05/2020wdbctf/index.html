@@ -118,13 +118,13 @@ var _hmt = _hmt || [];
 <ul>
 <li>保护全开</li>
 <li>ELF文件中rodata段上有大量字符串。将其中部分字符串百度一下（例如： <code>duplicate global definition</code>）便可得知，该程序为C语言解释器</li>
-<li>在程序main函数中，发现一串疑似可用的关键字/函数名。<img src="/2020/05/2020wdbctf/05/2020wdbctf/boom1_KeyChars.png" class>
-</li>
+<li>在程序main函数中，发现一串疑似可用的关键字/函数名。<br>
+<img src="/2020/05/2020wdbctf/boom1_KeyChars.png" alt="img"></li>
 </ul>
 <a id="more"></a>
 <ul>
-<li>IDA反编译后，在main函数后半段中，发现所有函数只能执行一次，没办法直接ORW flag<img src="/2020/05/2020wdbctf/05/2020wdbctf/boom1_FuncOnce.png" class>
-</li>
+<li>IDA反编译后，在main函数后半段中，发现所有函数只能执行一次，没办法直接ORW flag<br>
+<img src="/2020/05/2020wdbctf/boom1_FuncOnce.png" alt="img"></li>
 </ul>
 <blockquote>
 <p>说了这么多，其实和解法一点关系也没有 T_T</p>
@@ -136,13 +136,11 @@ var _hmt = _hmt || [];
 然后用printf格式化字符串漏洞来泄露__libc_start_main_ret的地址。之后就可以查询libc-database，得到libc的版本</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="comment">// 21个 "%p "</span></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"%p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p %p"</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <ul>
-<li>泄露__libc_start_main_ret地址（单击图片可放大）</li>
+<li>泄露__libc_start_main_ret地址（单击图片可放大）<br>
+<img src="/2020/05/2020wdbctf/boom1_LeakLibc_start_main_ret.png" alt="img"></li>
+<li>泄露远程libc版本<br>
+<img src="/2020/05/2020wdbctf/boom1_LeakLibcVersion.png" alt="img"></li>
 </ul>
-<img src="/2020/05/2020wdbctf/05/2020wdbctf/boom1_LeakLibc_start_main_ret.png" class>
-<ul>
-<li>泄露远程libc版本</li>
-</ul>
-<img src="/2020/05/2020wdbctf/05/2020wdbctf/boom1_LeakLibcVersion.png" class>
 </li>
 <li>
 <p>在得到libc版本后，<strong>一定要先打patch!!!</strong>。当程序使用不同libc时，其内存布局也会不一样，会发生改变，所以一定要先打patch。</p>
@@ -158,7 +156,7 @@ var _hmt = _hmt || [];
 </blockquote>
 <p>先在程序退出处下断点，然后把本地变量地址输出。并在vmmap里找寻libc的基地址。两者相减便可得到相对偏移</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> a;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"%p\n"</span>, &amp;a);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<img src="/2020/05/2020wdbctf/05/2020wdbctf/boom1_Vmmap.png" class>
+<p><img src="/2020/05/2020wdbctf/boom1_Vmmap.png" alt="img"></p>
 </li>
 <li>
 <p>在得到了libc版本和基地址后，只要将libc中<code>__free_hook</code>改为<code>system</code>函数的起始地址，然后再<code>free(&quot;/bin/sh&quot;)</code>即可get shell.</p>
@@ -191,16 +189,16 @@ var _hmt = _hmt || [];
 <p>VMpwn有几个共性</p>
 <ol>
 <li><strong>大量分支</strong><br>
-话不多说，看图<img src="/2020/05/2020wdbctf/05/2020wdbctf/boom2_idabranches.png" class>
-</li>
+话不多说，看图<br>
+<img src="/2020/05/2020wdbctf/boom2_idabranches.png" alt="img"></li>
 <li><code>3/4个寄存器</code>
 <ol>
 <li><code>IP</code>，用于指向下条指令的指针</li>
 <li><code>SP</code>，指向虚拟栈的栈顶</li>
 <li><code>AX</code>，用于存放运算结果的变量</li>
-<li><code>BP</code>（如果有的话），用于指向虚拟栈中某些位置，以便于运算时使用</li>
+<li><code>BP</code>（如果有的话），用于指向虚拟栈中某些位置，以便于运算时使用<br>
+<img src="/2020/05/2020wdbctf/boom2_vmFeature.png" alt="img"></li>
 </ol>
-<img src="/2020/05/2020wdbctf/05/2020wdbctf/boom2_vmFeature.png" class>
 </li>
 </ol>
 </li>
@@ -208,8 +206,8 @@ var _hmt = _hmt || [];
 <p>该程序可执行 <strong>压栈</strong>、<strong>弹栈</strong>、<strong>+-*/%等运算</strong>、<strong>指针解引用</strong> 等，还支持对 <strong>指令立即数</strong> 的相关操作。</p>
 </li>
 <li>
-<p>动态调试发现，初始时虚拟栈上存有栈上<code>environ</code>的地址</p>
-<img src="/2020/05/2020wdbctf/05/2020wdbctf/boom2_vmStack.png" class>
+<p>动态调试发现，初始时虚拟栈上存有栈上<code>environ</code>的地址<br>
+<img src="/2020/05/2020wdbctf/boom2_vmStack.png" alt="img"></p>
 </li>
 <li>
 <p>所以我们可以通过修改虚拟栈上存放的<code>environ</code>地址，将其减去某个偏移，得到<code>__libc_start_main_ret</code>所在的栈地址。进而在<code>__libc_start_main_ret</code>的栈地址处写入one_gadget。待main函数返回时get shell.</p>
@@ -237,8 +235,8 @@ var _hmt = _hmt || [];
 <h4 id="2-分析-3">2) 分析</h4>
 <ul>
 <li>这里第一时间就想到了爆破，最大爆破次数100 * 10 == 1000次。程序在本地执行的很快，不需要花太久时间<br>
-在本地试着爆破了一下，发现速度还挺快<img src="/2020/05/2020wdbctf/05/2020wdbctf/faster_bruteForce.png" class>
-</li>
+在本地试着爆破了一下，发现速度还挺快<br>
+<img src="/2020/05/2020wdbctf/faster_bruteForce.png" alt="img"></li>
 <li>爆破出路径后，程序就可以进行栈溢出了。在程序中有read有write，无论是泄露libc版本打patch还是直接DynELF都可以，就不再赘述了</li>
 </ul>
 <h4 id="3-爆破脚本">3) 爆破脚本</h4>
@@ -255,21 +253,21 @@ var _hmt = _hmt || [];
 <h4 id="1-分析">1) 分析</h4>
 <ul>
 <li>
-<p>程序会生成两个随机数，并将这两个数放置在栈上。同时，程序还会将某个随机数的栈地址后2字节放置在栈上</p>
-<img src="/2020/05/2020wdbctf/05/2020wdbctf/quantum_entanglement_maincode.png" class>
-<p>在执行<code>log_in</code>函数之后，判断栈上两个随机数是否相同，如果相同则get shell。</p>
+<p>程序会生成两个随机数，并将这两个数放置在栈上。同时，程序还会将某个随机数的栈地址后2字节放置在栈上<br>
+<img src="/2020/05/2020wdbctf/quantum_entanglement_maincode.png" alt="img"><br>
+在执行<code>log_in</code>函数之后，判断栈上两个随机数是否相同，如果相同则get shell。</p>
 </li>
 <li>
-<p><code>log_in</code>函数存在格式化字符串漏洞</p>
-<img src="/2020/05/2020wdbctf/05/2020wdbctf/quantum_entanglement_printf.png" class>
+<p><code>log_in</code>函数存在格式化字符串漏洞<br>
+<img src="/2020/05/2020wdbctf/quantum_entanglement_printf.png" alt="img"></p>
 <blockquote>
 <p>这个漏洞函数有点坑，故意设置arg2为<code>%s</code>。 如果审计伪代码时速度稍微快了一点，说不定就审不出来了 :-)</p>
 </blockquote>
 </li>
 <li>
-<p>既然我们要通过格式化字符串漏洞来pass后面的随机数比较，那么我们就先看看栈上的数据</p>
-<img src="/2020/05/2020wdbctf/05/2020wdbctf/quantum_entanglement_stack1.png" class>
-<p>我们希望将这半截地址写到栈上存储的某个栈地址上，从而在栈上构造随机数1的栈地址。之后便可以通过该地址来修改上面的随机数。</p>
+<p>既然我们要通过格式化字符串漏洞来pass后面的随机数比较，那么我们就先看看栈上的数据<br>
+<img src="/2020/05/2020wdbctf/quantum_entanglement_stack1.png" alt="img"><br>
+我们希望将这半截地址写到栈上存储的某个栈地址上，从而在栈上构造随机数1的栈地址。之后便可以通过该地址来修改上面的随机数。</p>
 <blockquote>
 <p>一个小例子:</p>
 <ul>
@@ -281,8 +279,8 @@ var _hmt = _hmt || [];
 </blockquote>
 </li>
 <li>
-<p>我们可以在栈的底部找到所需的<code>栈1-&gt;栈2-&gt;栈3</code>链</p>
-<img src="/2020/05/2020wdbctf/05/2020wdbctf/quantum_entanglement_stack2.png" class>
+<p>我们可以在栈的底部找到所需的<code>栈1-&gt;栈2-&gt;栈3</code>链<br>
+<img src="/2020/05/2020wdbctf/quantum_entanglement_stack2.png" alt="img"></p>
 </li>
 <li>
 <p><strong>关键点</strong>：利用格式化字符串 <code>%*A$c%B$hn</code> , 我们可以将argA上的两字节移动到argB指向的内存上</p>
@@ -356,13 +354,14 @@ var _hmt = _hmt || [];
 <ol>
 <li>我们可以通过格式化字符串，泄露<code>__libc_start_main_ret</code>地址，得到libc的版本，并进一步计算<code>system</code>地址和<code>__free_hook</code>地址。为接下来的操作做准备。</li>
 <li>由于输入的字符串在堆上，故没办法通过 <em>输入字符串里的地址</em> 来定向修改数据<br>
-但通过观察栈上数据，我们可以发现，输入的命令存放在栈上<img src="/2020/05/2020wdbctf/05/2020wdbctf/cloudProtect_stack.png" class>
-所以我们可以在该命令后面加上__free_hook的地址，来定向修改__free_hook<img src="/2020/05/2020wdbctf/05/2020wdbctf/cloudProtect_stack_freeHook.png" class>
-</li>
+但通过观察栈上数据，我们可以发现，输入的命令存放在栈上<br>
+<img src="/2020/05/2020wdbctf/cloudProtect_stack.png" alt="img"><br>
+所以我们可以在该命令后面加上__free_hook的地址，来定向修改__free_hook<br>
+<img src="/2020/05/2020wdbctf/cloudProtect_stack_freeHook.png" alt="img"></li>
 <li>由于该程序中指针占用八个字节，如果直接修改数据，势必会输出大量无用信息（大约几个G左右）<br>
 所以需要分批修改。每次使用<code>%11hhn</code>修改一个字节，修改6次即可完成目标。<br>
-当然，__free_hook的地址也要加上对应的偏移<img src="/2020/05/2020wdbctf/05/2020wdbctf/cloudProtect_stack_freeHook_offset.png" class>
-</li>
+当然，__free_hook的地址也要加上对应的偏移<br>
+<img src="/2020/05/2020wdbctf/cloudProtect_stack_freeHook_offset.png" alt="img"></li>
 </ol>
 </li>
 </ul>

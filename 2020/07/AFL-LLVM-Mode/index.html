@@ -125,9 +125,9 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>编译AFL LLVM_mode的<code>afl-clang-fast</code>也很简单，只要进入<code>llvm_mode</code>文件夹并执行<code>make all</code>即可。<br>
-<strong>注意！</strong> 编译<code>afl-clang-fast</code>时，所使用的<code>clang</code>版本一定要与<code>llvm-config</code>上显示的版本所<strong>对应</strong>，否则会报如下错误：</p>
-<img src="/2020/07/AFL-LLVM-Mode/07/AFL-LLVM-Mode/wrongEnv.png" class>
-<p>笔者的系统里装了llvm-6.0、llvm-8以及llvm-9，但对应的clang只安装了clang-8，所以链接时会报错。我的做法是</p>
+<strong>注意！</strong> 编译<code>afl-clang-fast</code>时，所使用的<code>clang</code>版本一定要与<code>llvm-config</code>上显示的版本所<strong>对应</strong>，否则会报如下错误：<br>
+<img src="/2020/07/AFL-LLVM-Mode/wrongEnv.png" alt="img"><br>
+笔者的系统里装了llvm-6.0、llvm-8以及llvm-9，但对应的clang只安装了clang-8，所以链接时会报错。我的做法是</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /usr/bin</span><br><span class="line"><span class="comment"># 修改llvm-config的符号链接，使其调用llvm-8的llvm-config</span></span><br><span class="line">sudo ln -snf ../lib/llvm-8/bin/llvm-config llvm-config</span><br><span class="line"><span class="built_in">cd</span> /usr/class/AFL-master/llvm_mode</span><br><span class="line"><span class="comment"># 注意要把曾经编译出来的目标文件删除，重新编译</span></span><br><span class="line">make clean</span><br><span class="line">make all</span><br><span class="line"><span class="comment"># 设置符号链接</span></span><br><span class="line">ln -s ../afl-clang-fast /usr/<span class="built_in">local</span>/bin/afl-clang-fast</span><br><span class="line">ln -s ../afl-clang-fast++ /usr/<span class="built_in">local</span>/bin/afl-clang-fast++</span><br></pre></td></tr></table></figure>
 </li>
 <li>
@@ -148,8 +148,8 @@ var _hmt = _hmt || [];
 <li>
 <p>我们可以在主函数中添加一点代码，将传递给CC/CXX的参数输出，便于学习</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 输出传递给CC或CXX的参数</span></span><br><span class="line"><span class="built_in">printf</span>(cCYA<span class="string">"CC/CXX args:\n"</span>cRST);</span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; cc_par_cnt; i++)</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"\targ%d: %s\n"</span>, i, cc_params[i]);</span><br></pre></td></tr></table></figure>
-<p>示例</p>
-<img src="/2020/07/AFL-LLVM-Mode/07/AFL-LLVM-Mode/argsOutput.png" class>
+<p>示例<br>
+<img src="/2020/07/AFL-LLVM-Mode/argsOutput.png" alt="img"></p>
 </li>
 <li>
 <p>一个有趣的地方： <code>afl-clang-fast</code>与<code>afl-clang-fast++</code>是同一个文件，在函数<code>edit_params</code>中，其通过判断当前执行的文件名来决定使用CC或者CXX</p>
@@ -249,12 +249,10 @@ var _hmt = _hmt || [];
 <li>
 <p>以下是经过pass处理后所插入的IR代码。这些IR代码在每个基础块前都会被插入。</p>
 <blockquote>
-<p>图片中的<code>39820</code>是当前基础块随机出的编号，<code>19910</code>是当前基础块编号右移一位的值</p>
-</blockquote>
-<img src="/2020/07/AFL-LLVM-Mode/07/AFL-LLVM-Mode/passIR.png" class>
-<p>使用afl-clang-fast，将源代码编译为IR的指令</p>
-<blockquote>
-<p>注意：最好设置环境变量<code>AFL_DONT_OPTIMIZE</code>以关闭编译器优化</p>
+<p>图片中的<code>39820</code>是当前基础块随机出的编号，<code>19910</code>是当前基础块编号右移一位的值<br>
+<img src="/2020/07/AFL-LLVM-Mode/passIR.png" alt="img"><br>
+使用afl-clang-fast，将源代码编译为IR的指令<br>
+注意：最好设置环境变量<code>AFL_DONT_OPTIMIZE</code>以关闭编译器优化</p>
 </blockquote>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">afl-clang-fast -S -emit-llvm src.c</span><br></pre></td></tr></table></figure>
 </li>
@@ -280,9 +278,9 @@ AFL会尝试通过仅执行一次目标二进制文件来优化性能。它会�
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __AFL_HAVE_MANUAL_CONTROL</span></span><br><span class="line">  __AFL_INIT();</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  <span class="keyword">int</span> a = <span class="number">2</span>, b;</span><br><span class="line">    <span class="keyword">if</span>(a == <span class="number">0</span>)</span><br><span class="line">        b = <span class="number">3</span>*a - <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        b = <span class="number">6</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <ul>
 <li>
-<p>宏定义<code>__AFL_HAVE_MANUAL_CONTROL</code>与<code>__AFL_INIT()</code>的实现，都由afl-clang-fast以参数的形式传递给真正的编译器</p>
-<img src="/2020/07/AFL-LLVM-Mode/07/AFL-LLVM-Mode/afl-init.png" class>
-<p>等价于</p>
+<p>宏定义<code>__AFL_HAVE_MANUAL_CONTROL</code>与<code>__AFL_INIT()</code>的实现，都由afl-clang-fast以参数的形式传递给真正的编译器<br>
+<img src="/2020/07/AFL-LLVM-Mode/afl-init.png" alt="img"><br>
+等价于</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __AFL_HAVE_MANUAL_CONTROL 1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __AFL_INIT() \</span></span><br><span class="line">  <span class="keyword">do</span> &#123; \</span><br><span class="line">      <span class="keyword">static</span> <span class="keyword">volatile</span> <span class="keyword">char</span> *_A __attribute__((used));  \</span><br><span class="line">      _A = (<span class="keyword">char</span>*)<span class="string">"##SIG_AFL_DEFER_FORKSRV##"</span>; \</span><br><span class="line">      __attribute__((visibility(<span class="string">"default"</span>))) <span class="keyword">void</span> _I(<span class="keyword">void</span>) __asm__(<span class="string">"__afl_manual_init"</span>); \</span><br><span class="line">      _I(); \</span><br><span class="line">  &#125; <span class="keyword">while</span> (<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
 </li>
 <li>
