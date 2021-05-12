@@ -10,17 +10,62 @@
 ]]></content>
   </entry>
   <entry>
-    <title>WebServer v1.0 相关文档</title>
+    <title>WebServer v1.0 文档</title>
     <url>/2021/05/WebServer-1/</url>
-    <content><![CDATA[<h2 id="一、前言">一、前言</h2>
-<p>WebServer V1.0 简单实现了一个最基础的版本。在该版本中，主要实现了以下重要内容：</p>
+    <content><![CDATA[<h2 id="概述">概述</h2>
+<p>WebServer 1.0 简单实现了一个基础的 <strong>多并发网络服务程序</strong> 。在该版本中，主要实现了以下重要内容：</p>
 <ul>
-<li>线程互斥锁的实现</li>
+<li>线程互斥锁 &amp; 条件变量的封装</li>
 <li>线程池的设计，以支持并发</li>
 <li>基础网络连接的实现</li>
-<li>http 协议的简略支持</li>
+<li>http 协议的简略支持
+<ul>
+<li>支持部分常用 HTTP 报文
+<ul>
+<li>200 OK</li>
+<li>400 Bad Request</li>
+<li>500 Internal Server Error</li>
+<li>501 Not Implemented</li>
+<li>505 HTTP Version Not Supported</li>
 </ul>
+</li>
+<li>支持 HTTP GET 请求</li>
+<li>支持 HTTP/1.1 <strong>持续连接</strong> 特性</li>
+</ul>
+</li>
+</ul>
+<p>项目代码位于 <a href="https://github.com/Kiprey/WebServer/tree/bf5af6bddab551b8f950bf5ab3793e4a33d527ef" target="_blank" rel="noopener">Kiprey/WebServer - github</a></p>
 <a id="more"></a>
+<p>运行示例：</p>
+<p><img src="/2021/05/WebServer-1/image-20210512133857068.png" alt="image-20210512133857068"></p>
+<blockquote>
+<p>注意：该程序的实现大量参考了 <a href="https://github.com/linyacool/WebServer" target="_blank" rel="noopener">linyacool/WebServer - github</a> 的代码。</p>
+</blockquote>
+<h2 id="一、互斥锁-条件变量">一、互斥锁 &amp; 条件变量</h2>
+<h3 id="1-互斥锁">1. 互斥锁</h3>
+<p>对于当前的多线程程序来说，可能会出现多个线程同时读写同一个数据结构的情况，那么此时势必会造成脏读这种错误情况。而互斥锁的使用，是为了保证数据共享操作的完整性，确保任一时刻，只能有一个线程访问目标对象。</p>
+<p>在linux中，互斥锁主要使用以下函数来实现：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 初始化 mutex 对象</span></span><br><span class="line"><span class="keyword">pthread_mutex_t</span> mutex = PTHREAD_MUTEX_INITIALIZER;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_mutex_init</span><span class="params">(<span class="keyword">pthread_mutex_t</span> *<span class="keyword">restrict</span> mutex,</span></span></span><br><span class="line"><span class="function"><span class="params">                        <span class="keyword">const</span> <span class="keyword">pthread_mutexattr_t</span> *<span class="keyword">restrict</span> attr)</span></span>;</span><br><span class="line"><span class="comment">// mutex 加锁，在获得锁之前将会阻塞</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_mutex_lock</span><span class="params">(<span class="keyword">pthread_mutex_t</span> *mutex)</span></span>;</span><br><span class="line"><span class="comment">// mutex 加锁，如果能马上获取锁则返回0，无法获取锁则马上返回errno</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_mutex_trylock</span><span class="params">(<span class="keyword">pthread_mutex_t</span> *mutex)</span></span>;</span><br><span class="line"><span class="comment">// mutex 释放锁</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_mutex_unlock</span><span class="params">(<span class="keyword">pthread_mutex_t</span> *mutex)</span></span>;</span><br><span class="line"><span class="comment">// 销毁 mutex 对象</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_mutex_destroy</span><span class="params">(<span class="keyword">pthread_mutex_t</span> *mutex)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>由于 pthread 族的库函数名称较长，并且调用方式也互不相同，因此在这些库函数上做了一个简单的封装：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief MutexLock 将 pthread_mutex 封装成一个类, </span></span><br><span class="line"><span class="comment"> *        这样做的好处是不用记住那些繁杂的 pthread 开头的函数使用方式</span></span><br><span class="line"><span class="comment"> */</span> </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MutexLock</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> mutex_;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    MutexLock()     &#123; pthread_mutex_init(&amp;mutex_, <span class="literal">nullptr</span>); &#125;</span><br><span class="line">    ~MutexLock()    &#123; pthread_mutex_destroy(&amp;mutex_); &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">lock</span><span class="params">()</span>     </span>&#123; pthread_mutex_lock(&amp;mutex_); &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">unlock</span><span class="params">()</span>   </span>&#123; pthread_mutex_unlock(&amp;mutex_); &#125;</span><br><span class="line">    <span class="function"><span class="keyword">pthread_mutex_t</span>* <span class="title">getMutex</span><span class="params">()</span> </span>&#123; <span class="keyword">return</span> &amp;mutex_; &#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>正常来说，我们使用锁时，需要经过以下过程：<strong>获取锁-&gt;进入临界区-&gt;释放锁</strong>。但在实际使用锁时，容易忘记释放锁，而这是一个非常严重的错误。因此我们可以实现一个 <code>MutexLockGuard</code>类，借助类的构造函数和析构函数，来帮助我们自动获取锁和释放锁，只需一个简单的声明即可<strong>获取锁&amp;释放锁</strong>。</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief MutexLockGuard 主要是为了自动获取锁/释放锁, 防止意外情况下忘记释放锁</span></span><br><span class="line"><span class="comment"> *        而且块状的锁定区域更容易让人理解代码</span></span><br><span class="line"><span class="comment"> */</span> </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MutexLockGuard</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    MutexLock&amp; lock_;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief 声明 MutexLockGuard 时自动上锁</span></span><br><span class="line"><span class="comment">     * @param lock 待锁定的资源</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    MutexLockGuard(MutexLock&amp; mutex) : lock_(mutex) &#123; lock_.lock(); &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief 当前作用域结束时自动释放锁, 防止遗忘</span></span><br><span class="line"><span class="comment">     */</span> </span><br><span class="line">    ~MutexLockGuard() &#123; lock_.unlock(); &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="2-条件变量">2. 条件变量</h3>
+<p>一说起条件变量，就不得不说先说起<strong>管程</strong>。管程保证了<strong>同一时刻只有一个线程在管程内活动</strong>，但<strong>不能保证</strong>线程在进入管程后，能继续一次性执行下去直到管程结束。</p>
+<blockquote>
+<p>例如某个线程好不容易进入了管程，但执行了一段时间，突然发现某个条件没有满足，使得当前线程必须阻塞，无法继续执行。但要是该线程原地阻塞，一直占用这个管程，那其他的线程自然就无法进入管程，造成死锁。</p>
+</blockquote>
+<p>那该怎么办呢？这就轮到条件变量出场了。</p>
+<p>继续以上面的这个例子为例，由于该线程进入管程后可能会阻塞，因此非常肯定的是，必须在该进程进入阻塞状态前释放管程，否则会造成死锁。但是该线程已经进入管程，且没办法继续执行下去，因此只能<strong>原地释放管程</strong>，并等待<strong>条件</strong>满足后，<strong>重新获取管程锁</strong>，并将该线程唤醒，使其继续执行。</p>
+<p>条件变量起到的作用，就相当于控制线程在管程中挂起和唤醒的作用。上面的语句可能有点难以理解，请思考一下这个例子：</p>
+<blockquote>
+<p>线程池中，当子线程需要读取事件队列来获取事件之前，需要先获取队列的锁。当子线程获取到锁以后，如果队列为空，则条件不满足（注意这里的条件是：<strong>队列非空</strong>），因此子线程就无法从中获取事件，没法继续执行。此时可以使用条件变量让子线程在管程中挂起，等到条件满足时再通过条件变量来唤醒，回到管程继续执行。</p>
+<p>注意：使用条件变量时，一定要确保<strong>在已经获取到管程锁的前提下</strong>使用，否则条件变量容易被多个子线程修改/使用。</p>
+</blockquote>
+<p>条件变量相关的函数如下：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 初始化条件变量</span></span><br><span class="line"><span class="keyword">pthread_cond_t</span> cond = PTHREAD_COND_INITIALIZER;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_init</span><span class="params">(<span class="keyword">pthread_cond_t</span> *<span class="keyword">restrict</span> cond,</span></span></span><br><span class="line"><span class="function"><span class="params">                      <span class="keyword">const</span> <span class="keyword">pthread_condattr_t</span> *<span class="keyword">restrict</span> attr)</span></span>;</span><br><span class="line"><span class="comment">// 唤醒 **至少一个** 被目标条件变量阻塞的线程</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_signal</span><span class="params">(<span class="keyword">pthread_cond_t</span> *cond)</span></span>;</span><br><span class="line"><span class="comment">// 唤醒 **所有** 被目标条件变量阻塞的线程</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_broadcast</span><span class="params">(<span class="keyword">pthread_cond_t</span> *cond)</span></span>;</span><br><span class="line"><span class="comment">// 让目标条件变量阻塞当前线程</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_wait</span><span class="params">(<span class="keyword">pthread_cond_t</span> *<span class="keyword">restrict</span> cond,</span></span></span><br><span class="line"><span class="function"><span class="params">                      <span class="keyword">pthread_mutex_t</span> *<span class="keyword">restrict</span> mutex)</span></span>;</span><br><span class="line"><span class="comment">// 让目标条件变量阻塞当前线程，并设置最大阻塞时间</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_timedwait</span><span class="params">(<span class="keyword">pthread_cond_t</span> *<span class="keyword">restrict</span> cond,</span></span></span><br><span class="line"><span class="function"><span class="params">                            <span class="keyword">pthread_mutex_t</span> *<span class="keyword">restrict</span> mutex,</span></span></span><br><span class="line"><span class="function"><span class="params">                            <span class="keyword">const</span> struct timespec *<span class="keyword">restrict</span> abstime)</span></span>;</span><br><span class="line"><span class="comment">// 销毁条件变量</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_destroy</span><span class="params">(<span class="keyword">pthread_cond_t</span> *cond)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>与上面的互斥锁一样，这里也实现了一个 <code>Condition</code>类来简化条件变量的使用：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 条件变量,主要用于多线程中的锁 </span></span><br><span class="line"><span class="comment"> *        与 MutexLock 一致,无需记住繁杂的函数名称</span></span><br><span class="line"><span class="comment"> *        条件变量主要是与mutex进行搭配,常用于资源分配相关的场景,</span></span><br><span class="line"><span class="comment"> *        例如当某个线程获取到锁以后,发现没有资源,则此时可以释放资源并等待条件变量</span></span><br><span class="line"><span class="comment"> * @note  注意: 使用条件变量时,必须上锁,防止出现多个线程共同使用条件变量</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Condition</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    MutexLock&amp; lock_;       <span class="comment">// 目标 Mutex 互斥锁</span></span><br><span class="line">    <span class="keyword">pthread_cond_t</span> cond_;   <span class="comment">// 条件变量</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Condition(MutexLock&amp; mutex) : lock_(mutex) &#123; pthread_cond_init(&amp;cond_, <span class="literal">nullptr</span>); &#125;</span><br><span class="line">    ~Condition()        &#123; pthread_cond_destroy(&amp;cond_); &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">notify</span><span class="params">()</span>       </span>&#123; pthread_cond_signal(&amp;cond_); &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">notifyAll</span><span class="params">()</span>    </span>&#123; pthread_cond_broadcast(&amp;cond_); &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">wait</span><span class="params">()</span>         </span>&#123; pthread_cond_wait(&amp;cond_, lock_.getMutex()); &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *  @brief  等待当前的条件变量一段时间</span></span><br><span class="line"><span class="comment">     *  @param  sec 等待的时间(单位:秒)</span></span><br><span class="line"><span class="comment">     *  @return 成功在时间内等待到则返回 true, 超时则返回 false</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">waitForSeconds</span><span class="params">(<span class="keyword">size_t</span> sec)</span>   </span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        timespec abstime;</span><br><span class="line">        <span class="comment">// 获取当前系统真实时间</span></span><br><span class="line">        clock_gettime(CLOCK_REALTIME, &amp;abstime);</span><br><span class="line">        abstime.tv_sec += (<span class="keyword">time_t</span>)sec;</span><br><span class="line">        <span class="keyword">return</span> ETIMEDOUT != pthread_cond_timedwait(&amp;cond_, lock_.getMutex(), &amp;abstime);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <h2 id="二、线程池">二、线程池</h2>
 <h3 id="1-概述">1. 概述</h3>
 <ul>
@@ -28,12 +73,7 @@
 <p>线程池是一种多线程的处理方式，常常用在高并发服务器上。线程池可以有效的利用高并发服务器上的线程资源。</p>
 </li>
 <li>
-<p>线程用于处理各个请求，其流程大致为：创建线程 =&gt; 传递信息至子线程 =&gt; 线程分离 =&gt; 线程运行 =&gt; 线程销毁。对于较小规模的通信来说，上述的这个流程可以满足基本需求。但是对于高并发服务器来说，重复的创建线程与销毁线程，其开销不可忽视。因此可以使用线程池来让线程复用。</p>
-</li>
-<li>
-<p>需要注意的是，以下的代码与说明是线程池的早期实现版本，以降低讲解难度。</p>
-<p>具体commit id 为<a href="https://github.com/Kiprey/WebServer/tree/5c1aa13cace7bb8cd56f6117acf77c454df569d1" target="_blank" rel="noopener">5c1aa13cace7bb8cd56f6117acf77c454df569d1</a></p>
-<p>后期将额外支持异常处理等等。</p>
+<p>线程用于处理各个请求，其流程大致为：<strong>创建线程 =&gt; 传递信息至子线程 =&gt; 线程分离 =&gt; 线程运行 =&gt; 线程销毁</strong>。对于较小规模的通信来说，上述的这个流程可以满足基本需求。但是对于高并发服务器来说，重复的创建线程与销毁线程，其开销不可忽视。因此可以使用线程池来让线程复用。</p>
 </li>
 </ul>
 <h3 id="2-实现前的准备工作">2. 实现前的准备工作</h3>
@@ -50,7 +90,7 @@
 <p>要想有应该也可以做，不过这就是后面的事情了。</p>
 </blockquote>
 <p>因此，我们便可以设计出以下的 task 结构体</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 每个线程的基本事件单元</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ThreadpoolTask</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="keyword">void</span> (*function)(<span class="keyword">void</span>*);</span><br><span class="line">  <span class="keyword">void</span>* arguments;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 每个线程的基本事件单元</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ThreadpoolTask</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="keyword">void</span> (*function)(<span class="keyword">void</span>*);</span><br><span class="line">    <span class="keyword">void</span>* arguments;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 </li>
 <li>
 <p>线程池除了一些特定的变量（线程个数、事件队列等等）以外，还需要<strong>互斥锁</strong>以及<strong>条件变量</strong>。</p>
@@ -70,10 +110,13 @@
 <p>针对问题2，有两种方式：</p>
 <ol>
 <li>一种是在线程池设置一个标志，子线程定期轮询该标志以确认是否退出。</li>
-<li>再一种就是我所实现的，添加一个<strong>退出事件</strong>至事件队列中，子线程执行到该事件时自动退出。</li>
+<li>再一种就是当前所实现的：添加一个<strong>退出事件</strong>至事件队列中，子线程执行到该事件时自动退出。</li>
 </ol>
 <p>因此具体实现的代码如下所示：</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span>* <span class="title">ThreadPool::TaskForWorkerThreads_</span><span class="params">(<span class="keyword">void</span>* arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ThreadPool* pool = (ThreadPool*)arg;</span><br><span class="line">    <span class="comment">// 启动当前线程</span></span><br><span class="line">    ThreadpoolTask task;</span><br><span class="line">    <span class="comment">// 对于子线程来说,事件循环开始</span></span><br><span class="line">    <span class="keyword">for</span>(;;)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 首先获取事件</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 获取事件时需要上个锁</span></span><br><span class="line">            <span class="function">MutexLockGuard <span class="title">guard</span><span class="params">(pool-&gt;threadpool_mutex_)</span></span>;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 如果好不容易获得到锁了,但是没有事件可以执行</span></span><br><span class="line">            <span class="keyword">if</span>(pool-&gt;task_queue_.size() == <span class="number">0</span>)</span><br><span class="line">                <span class="comment">// 则陷入沉睡,释放锁,并等待唤醒</span></span><br><span class="line">                pool-&gt;threadpool_cond_.wait();</span><br><span class="line">            <span class="comment">// 唤醒后一定有事件</span></span><br><span class="line">            assert(pool-&gt;task_queue_.size() != <span class="number">0</span>);</span><br><span class="line">            task = pool-&gt;task_queue_.front();</span><br><span class="line">            pool-&gt;task_queue_.pop();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 执行事件</span></span><br><span class="line">        (task.function)(task.arguments);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 注意: UNREACHABLE, 控制流不可能会到达此处</span></span><br><span class="line">    <span class="comment">// 因为线程的退出不会走这条控制流,而是执行退出事件</span></span><br><span class="line">    assert(<span class="number">0</span> &amp;&amp; <span class="string">"TaskForWorkerThreads_ UNREACHABLE!"</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意，<code>pthread_cond_signal</code> 会唤醒<strong>至少</strong>一个线程，注意是<strong>至少</strong>。因此可能会出现唤醒多个线程但只有一个事件等待处理的情况。针对于这种情况，只需设置子线程在被唤醒后，循环检测是否有剩余事件等待处理即可。</p>
+</blockquote>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span>* <span class="title">ThreadPool::TaskForWorkerThreads_</span><span class="params">(<span class="keyword">void</span>* arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ThreadPool* pool = (ThreadPool*)arg;</span><br><span class="line">    <span class="comment">// 启动当前线程</span></span><br><span class="line">    ThreadpoolTask task;</span><br><span class="line">    <span class="comment">// 对于子线程来说,事件循环开始</span></span><br><span class="line">    <span class="keyword">for</span>(;;)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 首先获取事件</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 获取事件时需要上个锁</span></span><br><span class="line">            <span class="function">MutexLockGuard <span class="title">guard</span><span class="params">(pool-&gt;threadpool_mutex_)</span></span>;</span><br><span class="line"></span><br><span class="line">            <span class="comment">/** </span></span><br><span class="line"><span class="comment">             * 如果好不容易获得到锁了,但是没有事件可以执行</span></span><br><span class="line"><span class="comment">             * 则陷入沉睡,释放锁,并等待唤醒</span></span><br><span class="line"><span class="comment">             * <span class="doctag">NOTE:</span> 注意, pthread_cond_signal 会唤醒至少一个线程</span></span><br><span class="line"><span class="comment">             *       也就是说,可能存在被唤醒的线程仍然没有事件处理的情况</span></span><br><span class="line"><span class="comment">             *       这时只需循环wait即可.</span></span><br><span class="line"><span class="comment">             */</span> </span><br><span class="line">            <span class="keyword">while</span>(pool-&gt;task_queue_.size() == <span class="number">0</span>)</span><br><span class="line">                pool-&gt;threadpool_cond_.wait();</span><br><span class="line">            <span class="comment">// 唤醒后一定有事件</span></span><br><span class="line">            assert(pool-&gt;task_queue_.size() != <span class="number">0</span>);</span><br><span class="line">            task = pool-&gt;task_queue_.front();</span><br><span class="line">            pool-&gt;task_queue_.pop();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 执行事件</span></span><br><span class="line">        (task.function)(task.arguments);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 注意: UNREACHABLE, 控制流不可能会到达此处</span></span><br><span class="line">    <span class="comment">// 因为线程的退出不会走这条控制流,而是执行退出事件</span></span><br><span class="line">    assert(<span class="number">0</span> &amp;&amp; <span class="string">"TaskForWorkerThreads_ UNREACHABLE!"</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="4-创建线程池">4. 创建线程池</h3>
 <p>创建线程池较为简单，直接循环创建线程即可。</p>
 <p>需要注意的是，这里设置了销毁线程池时的处理方式。具体信息将在下面<strong>销毁线程池</strong>的那部分中详细讲解。</p>
@@ -113,7 +156,7 @@
 <h3 id="1-概述-2">1. 概述</h3>
 <p>执行一次完整的网络连接通常需要执行数个 <strong>socket 类</strong> 函数。</p>
 <p>为了弄懂这些函数的使用，本人将在下面随着代码的编写，尽量讲解所使用到的函数内容。</p>
-<p>注：以下部分主要参考自 <strong>Linux manual page</strong>（<code>man</code>指令真是一个好东西 XD）。</p>
+<p>注：以下部分主要参考自 <strong>Linux/Posix manual page</strong>（<code>man</code>指令真是一个好东西 XD）。</p>
 <h3 id="2-socket">2. socket</h3>
 <ul>
 <li>
@@ -154,7 +197,7 @@
 <p>参数 protocol 通常用于指定某一个特定的套接字协议。如果给定协议系列只有一个协议可以支持特定的套接字类型，则 protocol 可以指定为0。但是若给定协议系列中可能存在多个可以支持套接字的类型，这时候就必须设置 protocol 以指定具体类型。</p>
 </li>
 <li>
-<p>简单举例：创建一个 IPv4 的 TCP 套接字（最常用</p>
+<p>简单举例：创建一个 IPv4 的 TCP 套接字（最常用）</p>
 <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="keyword">int</span> listen_fd = socket(AF_INET, SOCK_STREAM, <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
@@ -183,15 +226,20 @@
 <p>其中，sin_family 始终为 AF_INET；sin_port 设置为目标端口；sin_addr用以保存<strong>监听目标的地址</strong>。</p>
 <p>这里多提一句，由于现代计算机可能有多张网卡，因此指定 sin_addr 可以使得只监听特定网卡的连接。如果想监听<strong>全部网卡的连接</strong>，则可以使用宏定义 <strong>INADDR_ANY</strong>（实际上就是 0.0.0.0）。</p>
 <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/* Address to accept any incoming messages.  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INADDR_ANY  ((in_addr_t) 0x00000000)</span></span><br></pre></td></tr></table></figure>
+<p>而如果绑定 127.0.0.1 回环地址，则<strong>只能监听到主动发送至回环地址的请求</strong>，其他发送到当前该机器但目标IP非回环地址的请求则不会被处理。</p>
 <blockquote>
 <p>注意：sin_port、sin_addr 变量都必须以<strong>网络端序</strong>来保存数据（即大端序）。</p>
 <p>socket提供了端序转换的一些函数，便于转换（其中，h表示host，n表示network）。</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/* Functions to convert between host and network byte order.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   Please note that these functions normally take `unsigned long int' or</span></span><br><span class="line"><span class="comment">   `unsigned short int' values as arguments and also return them.  But</span></span><br><span class="line"><span class="comment">   this was a short-sighted decision since on different systems the types</span></span><br><span class="line"><span class="comment">   may have different representations but the values are always the same.  */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint32_t</span> <span class="title">ntohl</span> <span class="params">(<span class="keyword">uint32_t</span> __netlong)</span> __THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint16_t</span> <span class="title">ntohs</span> <span class="params">(<span class="keyword">uint16_t</span> __netshort)</span></span></span><br><span class="line"><span class="function">     __THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint32_t</span> <span class="title">htonl</span> <span class="params">(<span class="keyword">uint32_t</span> __hostlong)</span></span></span><br><span class="line"><span class="function">     __THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint16_t</span> <span class="title">htons</span> <span class="params">(<span class="keyword">uint16_t</span> __hostshort)</span></span></span><br><span class="line"><span class="function">     __THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/* Functions to convert between host and network byte order.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">Please note that these functions normally take `unsigned long int' or</span></span><br><span class="line"><span class="comment">`unsigned short int' values as arguments and also return them.  But</span></span><br><span class="line"><span class="comment">this was a short-sighted decision since on different systems the types</span></span><br><span class="line"><span class="comment">may have different representations but the values are always the same.  */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint32_t</span> <span class="title">ntohl</span> <span class="params">(<span class="keyword">uint32_t</span> __netlong)</span> __THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint16_t</span> <span class="title">ntohs</span> <span class="params">(<span class="keyword">uint16_t</span> __netshort)</span></span></span><br><span class="line"><span class="function">__THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint32_t</span> <span class="title">htonl</span> <span class="params">(<span class="keyword">uint32_t</span> __hostlong)</span></span></span><br><span class="line"><span class="function">__THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">uint16_t</span> <span class="title">htons</span> <span class="params">(<span class="keyword">uint16_t</span> __hostshort)</span></span></span><br><span class="line"><span class="function">__THROW __<span class="title">attribute__</span> <span class="params">((__const__))</span></span>;</span><br></pre></td></tr></table></figure>
 </blockquote>
-<p>对于一个 AF_NET 地址族来说，执行 bind 的一个简单例子如下：</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 绑定端口</span></span><br><span class="line">sockaddr_in server_addr;</span><br><span class="line"><span class="comment">// 初始化一下</span></span><br><span class="line"><span class="built_in">memset</span>(&amp;server_addr, <span class="string">'\0'</span>, <span class="keyword">sizeof</span>(server_addr));</span><br><span class="line"><span class="comment">// 设置一下基本操作</span></span><br><span class="line">server_addr.sin_family = AF_INET;</span><br><span class="line">server_addr.sin_port = htonl((<span class="keyword">unsigned</span> short)port);</span><br><span class="line">server_addr.sin_addr.s_addr = htonl(INADDR_ANY);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 试着bind</span></span><br><span class="line"><span class="keyword">if</span>(bind(listen_fd, (sockaddr*)&amp;server_addr, <span class="keyword">sizeof</span>(server_addr)) == <span class="number">-1</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
+<blockquote>
+<p>如果需要<strong>网络端序IP地址&lt;—&gt;字符串</strong>类型转变，则请参照以下函数：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netinet/in.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">inet_aton</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *cp, struct in_addr *inp)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">in_addr_t</span> <span class="title">inet_addr</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *cp)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">in_addr_t</span> <span class="title">inet_network</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *cp)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">char</span> *<span class="title">inet_ntoa</span><span class="params">(struct in_addr in)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function">struct in_addr <span class="title">inet_makeaddr</span><span class="params">(<span class="keyword">in_addr_t</span> net, <span class="keyword">in_addr_t</span> host)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">in_addr_t</span> <span class="title">inet_lnaof</span><span class="params">(struct in_addr in)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">in_addr_t</span> <span class="title">inet_netof</span><span class="params">(struct in_addr in)</span></span>;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>对于一个 AF_NET 地址族来说，执行 bind 的一个简单例子如下：</p>
+  <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 绑定端口</span></span><br><span class="line">sockaddr_in server_addr;</span><br><span class="line"><span class="comment">// 初始化一下</span></span><br><span class="line"><span class="built_in">memset</span>(&amp;server_addr, <span class="string">'\0'</span>, <span class="keyword">sizeof</span>(server_addr));</span><br><span class="line"><span class="comment">// 设置一下基本操作</span></span><br><span class="line">server_addr.sin_family = AF_INET;</span><br><span class="line">server_addr.sin_port = htonl((<span class="keyword">unsigned</span> short)port);</span><br><span class="line">server_addr.sin_addr.s_addr = htonl(INADDR_ANY);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 试着bind</span></span><br><span class="line"><span class="keyword">if</span>(bind(listen_fd, (sockaddr*)&amp;server_addr, <span class="keyword">sizeof</span>(server_addr)) == <span class="number">-1</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br></pre></td></tr></table></figure>
 <h3 id="4-listen">4. listen</h3>
 <p>listen 函数将会使得传入的 socket fd 变为<strong>等待连接状态</strong>。该函数原型如下：</p>
 <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;          /* See NOTES */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 成功则返回0，失败则返回-1并设置 errno</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">listen</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">int</span> backlog)</span></span>;</span><br></pre></td></tr></table></figure>
@@ -217,17 +265,18 @@
 </ul>
 </li>
 </ul>
-<h3 id="6-Read-Write">6. Read &amp; Write</h3>
-<p>由于 Read &amp; Write 操作涉及到<strong>阻塞与非阻塞式读写</strong>，因此我们需要额外对其做一些异常处理。</p>
+<h3 id="6-read-recv-write-send">6. read/recv &amp; write/send</h3>
+<p>由于 read/recv &amp; write/send 操作涉及到<strong>阻塞与非阻塞式读写</strong>，因此我们需要额外对其做一些异常处理。</p>
 <blockquote>
 <p>需要注意的是，socket读写中，除了使用read/write以外，还可以使用专用于套接字通信的send/recv函数族等等。</p>
 </blockquote>
+<h4 id="a-错误码">a. 错误码</h4>
 <p>该类函数中<strong>最常返回的错误</strong>为 <strong>EINTR</strong> 以及 <strong>EAGAIN</strong>，其他错误暂时忽略。其中：</p>
 <ul>
 <li>
 <p><strong>EINTR</strong>：该错误常见于<strong>阻塞式</strong>的操作，提示当前操作被<strong>中断</strong>。</p>
 <p>如果一个进程在一个慢系统调用中阻塞时，捕获到信号并执行完信号处理例程返回时，这个系统调用将<strong>不再被阻塞，而是被中断</strong>，返回 EINTR。</p>
-<p>对于 read / write 函数来说，当返回这类错误时，最常用的做法就是<strong>重新执行</strong>目标函数。</p>
+<p>对于读写函数来说，当返回这类错误时，最常用的做法就是<strong>重新执行</strong>目标函数。</p>
 </li>
 <li>
 <p><strong>EAGAIN</strong>：该错误常见于<strong>非阻塞式</strong>的操作，提示用户稍后再<strong>重新执行</strong>。</p>
@@ -237,36 +286,114 @@
 <li>当以<strong>非阻塞</strong>模式下读取数据，如果多次读取数据但没有数据可读，则此时不会阻塞等待数据，而是直接返回 EAGAIN</li>
 </ul>
 <p>对于 read 函数来说，由于数据取决于<strong>远程</strong>，因此当接收到 EAGAIN 时终止读取，直接返回；</p>
-<p>但对于 write 函数来说，由于数据取决于<strong>当前程序</strong>，因此可以继续循环写入，直至数据完全写入。</p>
+<p>但对于 write 函数来说，由于数据取决于<strong>当前服务器</strong>，因此可以继续循环写入，直至数据完全写入。</p>
 </li>
 </ul>
-<p>因此，以 read 函数为例，其重新实现的 wrapper 如下：</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">readn</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">void</span>*buf, <span class="keyword">size_t</span> len)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 这里将 void* 转换成 char* 是为了在下面进行自增操作</span></span><br><span class="line">    <span class="keyword">char</span> *pos = (<span class="keyword">char</span>*)buf;</span><br><span class="line">    <span class="keyword">size_t</span> leftNum = len;</span><br><span class="line">    <span class="keyword">ssize_t</span> readNum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(leftNum &gt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">ssize_t</span> tmpRead = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 尝试循环读取,如果报错,则进行判断</span></span><br><span class="line">        <span class="comment">// 注意, read 的返回值为0则表示读取到 EOF,是正常现象</span></span><br><span class="line">        <span class="keyword">if</span>((tmpRead = read(fd, pos, leftNum)) &lt; <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(errno == EINTR)</span><br><span class="line">                tmpRead = <span class="number">0</span>;</span><br><span class="line">            <span class="comment">// 如果始终读取不到数据,则提前返回,因为这个取决于远程 fd,无法预测要等多久</span></span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (errno == EAGAIN)</span><br><span class="line">                <span class="keyword">return</span> readNum;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span>(tmpRead == <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        readNum += tmpRead;</span><br><span class="line">        pos += tmpRead;</span><br><span class="line">        leftNum -= tmpRead;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> readNum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="四、http-请求处理">四、http 请求处理</h2>
+<p>对于 recv/send 函数来说，与 read/write 相比，将会额外多出部分专用于 socket 的错误码，例如 ECONNREFUSED、EPIPE 以及 ECONNRESET 等等。出于调试目的，在实现 读写函数的 wrapper时，将这两类读写函数全部集成在 wrapper中，并用一个bool参数来控制启用 read/write 还是 recv/send 函数。</p>
+<h4 id="b-阻塞-非阻塞-读取">b. 阻塞/非阻塞 读取</h4>
+<p>对于读取操作来说，阻塞读取和非阻塞读取又有所不同：</p>
+<ul>
+<li>当有数据到来时，阻塞和非阻塞的实现相同，都是读取数据并<strong>立即返回</strong>。</li>
+<li>但是当没有数据到来时，由于非阻塞读取时会返回 EAGAIN 错误，因此可以<strong>立即返回</strong>；而阻塞读取此时就必须阻塞，直到数据到来才返回。</li>
+</ul>
+<p>在具体实现 读取操作的wrapper函数时，同样使用一个bool参数来控制是否是阻塞/非阻塞读取。</p>
+<h4 id="c-返回值">c. 返回值</h4>
+<p>read/recv &amp; write/send 函数的返回值</p>
+<ul>
+<li>若为负数则说明存在错误</li>
+<li>若为0则说明<strong>连接中断</strong></li>
+<li>若为正数则该数为成功读取/发送的字节数</li>
+</ul>
+<h4 id="d-最终实现的代码">d. 最终实现的代码</h4>
+<p>综上所述，read/recv 函数重新实现的 wrapper 如下：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">readn</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">void</span>*buf, <span class="keyword">size_t</span> len, <span class="keyword">bool</span> isBlock, <span class="keyword">bool</span> isRead)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 这里将 void* 转换成 char* 是为了在下面进行自增操作</span></span><br><span class="line">    <span class="keyword">char</span> *pos = (<span class="keyword">char</span>*)buf;</span><br><span class="line">    <span class="keyword">size_t</span> leftNum = len;</span><br><span class="line">    <span class="keyword">ssize_t</span> readNum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(leftNum &gt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">ssize_t</span> tmpRead = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 尝试循环读取,如果报错,则进行判断</span></span><br><span class="line">        <span class="comment">// 注意, read 的返回值为0则表示读取到 EOF,是正常现象</span></span><br><span class="line">        <span class="keyword">if</span>(isRead)</span><br><span class="line">            tmpRead = read(fd, pos, leftNum);</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            tmpRead = recv(fd, pos, leftNum, (isBlock ? <span class="number">0</span> : MSG_DONTWAIT));</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span>(tmpRead &lt; <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(errno == EINTR)</span><br><span class="line">                tmpRead = <span class="number">0</span>;</span><br><span class="line">            <span class="comment">// 如果始终读取不到数据,则提前返回,因为这个取决于远程 fd,无法预测要等多久</span></span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (errno == EAGAIN)</span><br><span class="line">                <span class="keyword">return</span> readNum;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 读取的0,则说明远程连接已被关闭</span></span><br><span class="line">        <span class="keyword">if</span>(tmpRead == <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        readNum += tmpRead;</span><br><span class="line">        pos += tmpRead;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 如果是阻塞模式下,并且读取到的数据较小,则说明数据已经全部读取完成,直接返回</span></span><br><span class="line">        <span class="keyword">if</span>(isBlock &amp;&amp; <span class="keyword">static_cast</span>&lt;<span class="keyword">size_t</span>&gt;(tmpRead) &lt; leftNum)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        leftNum -= tmpRead;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> readNum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>write/send 函数的 wrapper 同理：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">writen</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">void</span>*buf, <span class="keyword">size_t</span> len, <span class="keyword">bool</span> isWrite)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 这里将 void* 转换成 char* 是为了在下面进行自增操作</span></span><br><span class="line">    <span class="keyword">char</span> *pos = (<span class="keyword">char</span>*)buf;</span><br><span class="line">    <span class="keyword">size_t</span> leftNum = len;</span><br><span class="line">    <span class="keyword">ssize_t</span> writtenNum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(leftNum &gt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">ssize_t</span> tmpWrite = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(isWrite)</span><br><span class="line">            tmpWrite = write(fd, pos, leftNum);</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            tmpWrite = send(fd, pos, leftNum, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 尝试循环写入,如果报错,则进行判断</span></span><br><span class="line">        <span class="keyword">if</span>(tmpWrite &lt; <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 与read不同的是,如果 EAGAIN,则继续重复写入,因为写入操作是有Server这边决定的</span></span><br><span class="line">            <span class="keyword">if</span>(errno == EINTR || errno == EAGAIN)</span><br><span class="line">                tmpWrite = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span>(tmpWrite == <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        writtenNum += tmpWrite;</span><br><span class="line">        pos += tmpWrite;</span><br><span class="line">        leftNum -= tmpWrite;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> writtenNum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="7-建立连接">7. 建立连接</h3>
+<p>综上各类函数的分析，现在我们可以为服务器端开启一个<strong>监听套接字</strong>，并等待客户端连接：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">socket_bind_and_listen</span><span class="params">(<span class="keyword">int</span> port)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> listen_fd = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 开始创建 socket, 注意这是阻塞模式的socket</span></span><br><span class="line">    <span class="comment">// AF_INET      : IPv4 Internet protocols  </span></span><br><span class="line">    <span class="comment">// SOCK_STREAM  : TCP socket</span></span><br><span class="line">    <span class="keyword">if</span>((listen_fd = socket(AF_INET, SOCK_STREAM, <span class="number">0</span>)) == <span class="number">-1</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 绑定端口</span></span><br><span class="line">    sockaddr_in server_addr;</span><br><span class="line">    <span class="comment">// 初始化一下</span></span><br><span class="line">    <span class="built_in">memset</span>(&amp;server_addr, <span class="string">'\0'</span>, <span class="keyword">sizeof</span>(server_addr));</span><br><span class="line">    <span class="comment">// 设置一下基本操作</span></span><br><span class="line">    server_addr.sin_family = AF_INET;</span><br><span class="line">    server_addr.sin_port = htons((<span class="keyword">unsigned</span> short)port);</span><br><span class="line">    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);</span><br><span class="line">    <span class="comment">// 端口复用</span></span><br><span class="line">    <span class="keyword">int</span> opt = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">if</span>(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &amp;opt, <span class="keyword">sizeof</span>(opt)) == <span class="number">-1</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    <span class="comment">// 试着bind</span></span><br><span class="line">    <span class="keyword">if</span>(bind(listen_fd, (sockaddr*)&amp;server_addr, <span class="keyword">sizeof</span>(server_addr)) == <span class="number">-1</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    <span class="comment">// 试着listen, 设置最大队列长度为 1024</span></span><br><span class="line">    <span class="keyword">if</span>(listen(listen_fd, <span class="number">1024</span>) == <span class="number">-1</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> listen_fd;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意到这部分代码，设置<strong>端口复用</strong>属性：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 端口复用</span></span><br><span class="line"><span class="keyword">int</span> opt = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">if</span>(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &amp;opt, <span class="keyword">sizeof</span>(opt)) == <span class="number">-1</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br></pre></td></tr></table></figure>
+<p>正常来说，对于某个网络程序，一个端口只能绑定一个套接字，别的套接字无法使用这个端口。而如果需要让同一程序的不同套接字绑定统一端口，则需要设置<strong>端口复用</strong>属性。</p>
+<blockquote>
+<p>不过在当前WebServer-1.0版本中，设置端口复用貌似是不必要的，就算删除也无伤大雅。</p>
+</blockquote>
+<h3 id="8-忽略-SIGPIPE-信号">8. 忽略 SIGPIPE 信号</h3>
+<p><strong>SIGPIPE 信号</strong>将在远程连接被中断时发出。默认的处理例程是<strong>终止程序</strong>，而这很明显不是我们所期望的处理方式。因此我们必须设置 WebServer 忽视 SIGPIPE 信号，以免被意外终止。</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">handleSigpipe</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">sa</span>;</span></span><br><span class="line">    <span class="built_in">memset</span>(&amp;sa, <span class="string">'\0'</span>, <span class="keyword">sizeof</span>(sa));</span><br><span class="line">    sa.sa_handler = SIG_IGN;</span><br><span class="line">    sa.sa_flags = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span>(sigaction(SIGPIPE, &amp;sa, <span class="literal">NULL</span>) == <span class="number">-1</span>)</span><br><span class="line">        LOG(ERROR) &lt;&lt; <span class="string">"Ignore SIGPIPE failed! "</span> &lt;&lt; strerror(errno) &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="四、日志输出">四、日志输出</h2>
+<p>WebServer-1.0版本中实现的输出功能较为简单，只将信息输出到终端的stdout、stderr，没有建立日志文件。</p>
+<p>具体实现如下：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief   输出信息相关宏定义与函数</span></span><br><span class="line"><span class="comment"> *          使用 `LOG(INFO) &lt;&lt; "msg";` 形式以执行信息输出.</span></span><br><span class="line"><span class="comment"> * @note    注意: 该宏功能尚未完备,多线程下使用LOG宏将会导致输出数据混杂</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INFO    1           <span class="comment">/* 普通输出 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ERROR   2           <span class="comment">/* 错误输出 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LOG(x)  logmsg(x)   <span class="comment">/* 调用输出函数 */</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="built_in">std</span>::ostream&amp; <span class="title">logmsg</span><span class="params">(<span class="keyword">int</span> flag)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 输出信息时,设置线程互斥</span></span><br><span class="line">    <span class="comment">// 获取线程 TID</span></span><br><span class="line">    <span class="keyword">long</span> tid = syscall(SYS_gettid);</span><br><span class="line">    <span class="keyword">if</span>(flag == ERROR)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cerr</span> &lt;&lt; tid &lt;&lt; <span class="string">": [ERROR]\t"</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">std</span>::<span class="built_in">cerr</span>;       </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(flag == INFO)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; tid &lt;&lt; <span class="string">": [INFO]\t"</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">std</span>::<span class="built_in">cout</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        logmsg(ERROR) &lt;&lt; <span class="string">"错误的 LOG 选择"</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">        <span class="built_in">abort</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果有信息需要输出到终端，则按照以下调用方式使用即可，简单方便：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line">LOG(INFO) &lt;&lt; <span class="string">"my msg"</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+<p>输出信息时，会自动将当前子线程的 LWP 号以及信息类型（INFO/ERROR）输出，例如：</p>
+<p><img src="/2021/05/WebServer-1/image-20210512133247864.png" alt="image-20210512133247864"></p>
+<p>需要注意的是，该输出功能<strong>没有</strong>设置多线程互斥，因此可能会造成输出格式异常，即多个线程同时使用LOG功能，输出的数据在终端上揉成一团，显示的不太雅观。</p>
+<h2 id="五、http-请求处理">五、http 请求处理</h2>
 <h3 id="1-概述-3">1. 概述</h3>
-<p>当 Server 成功与 Client 建立原生（RAW）连接后，Client 将会发送数据至 Server，此时 Server 就需要解析数据并进一步将目标数据传送回 Client。其中，http报文的解析和http header的处理便是重点。</p>
-<h3 id="2-HTTP报文格式">2. HTTP报文格式</h3>
-<ul>
-<li>
-<p>http请求报文</p>
+<p>当 Server 成功与 Client 建立连接后，Client 将会发送数据至 Server，此时 Server 就需要解析数据并进一步将目标数据传送回 Client。其中，http报文的解析和http header的处理便是重点。</p>
+<h3 id="2-连接">2. 连接</h3>
+<p>当建立起一个新的客户端套接字(<strong>client_fd</strong>)后，目标事件将被放进事件队列中，并等待空闲线程处理。</p>
+<p>而这里的事件便是以下函数：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">handlerConnect</span><span class="params">(<span class="keyword">void</span>* arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span>* fd_ptr = (<span class="keyword">int</span>*)arg;</span><br><span class="line">    <span class="keyword">int</span> client_fd = *fd_ptr;</span><br><span class="line">    <span class="keyword">delete</span> fd_ptr;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(client_fd &lt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        LOG(ERROR) &lt;&lt; <span class="string">"client_fd error in handlerConnect"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function">HttpHandler <span class="title">handler</span><span class="params">(client_fd)</span></span>;</span><br><span class="line">    handler.RunEventLoop();</span><br><span class="line">    close(client_fd);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们可以很容易的看到，该函数只做了几件事情：</p>
+<ol>
+<li>取出 client_fd</li>
+<li>初始化 HttpHandler 类实例</li>
+<li>调用 <code>HttpHandler::RunEventLoop</code> 函数</li>
+<li>最终释放 client_fd</li>
+</ol>
+<p>这里的 <strong>HttpHandler</strong> 类，就是下文中的重点。</p>
+<p>HttpHandler 支持部分 HTTP/1.1 版本的特性——<strong>持续连接</strong>。默认情况下，执行其 RunEventLoop 成员函数时，将循环读取来自客户端的请求，处理并返回对应的响应报文。</p>
+<p>HttpHandler 的整体代码结构如下所示，主要是由多个成员函数以及少数几个成员变量组成。RunEventLoop 函数是启动整个处理请求循环的一个开关函数:</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief HttpHandler 类处理每一个客户端连接,并根据读入的http报文,动态返回对应的response</span></span><br><span class="line"><span class="comment"> *        其支持的 HTTP 版本为 HTTP/1.1</span></span><br><span class="line"><span class="comment"> * @note  该类只实现了部分异常处理,没有涵盖大部分的异常(不过暂时也够了)</span></span><br><span class="line"><span class="comment"> */</span> </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">HttpHandler</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *  @brief HttpHandler内部状态 </span></span><br><span class="line"><span class="comment">     */</span> </span><br><span class="line">    <span class="keyword">enum</span> ERROR_TYPE &#123;</span><br><span class="line">        ERR_SUCCESS = <span class="number">0</span>,                <span class="comment">// 无错误</span></span><br><span class="line">        ERR_READ_REQUEST_FAIL,          <span class="comment">// 读取请求数据失败</span></span><br><span class="line">        ERR_NOT_IMPLEMENTED,            <span class="comment">// 不支持一些特定的请求操作,例如 Post</span></span><br><span class="line">        ERR_HTTP_VERSION_NOT_SUPPORTED, <span class="comment">// 不支持当前客户端的http版本</span></span><br><span class="line">        ERR_INTERNAL_SERVER_ERR,        <span class="comment">// 程序内部错误</span></span><br><span class="line">        ERR_CONNECTION_CLOSED,          <span class="comment">// 远程连接已关闭</span></span><br><span class="line">        ERR_BAD_REQUEST,                <span class="comment">// 用户的请求包中存在错误,无法解析  </span></span><br><span class="line">        ERR_SEND_RESPONSE_FAIL          <span class="comment">// 响应包发送失败</span></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief   显式指定 client fd</span></span><br><span class="line"><span class="comment">     * @param   fd 连接的 fd, 初始值为 -1</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">HttpHandler</span><span class="params">(<span class="keyword">int</span> fd = <span class="number">-1</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief   释放所有 HttpHandler 所使用的资源</span></span><br><span class="line"><span class="comment">     * @note    注意,不会主动关闭 client_fd</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    ~HttpHandler();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief   为当前连接启动事件循环</span></span><br><span class="line"><span class="comment">     * @note    1. 在执行事件循环开始之前,一定要设置 client fd</span></span><br><span class="line"><span class="comment">     *          2. 异常处理不完备</span></span><br><span class="line"><span class="comment">     */</span> </span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">RunEventLoop</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 只有getFd,没有setFd,因为Fd必须在创造该实例时被设置</span></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">getClientFd</span><span class="params">()</span>           </span>&#123; <span class="keyword">return</span> client_fd_; &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">size_t</span> MAXBUF = <span class="number">1024</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> client_fd_;</span><br><span class="line">    <span class="comment">// http 请求包的所有数据</span></span><br><span class="line">    <span class="built_in">string</span> request_;</span><br><span class="line">    <span class="comment">// http 头部</span></span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="built_in">string</span>, <span class="built_in">string</span>&gt; headers_; </span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 请求方式</span></span><br><span class="line">    <span class="built_in">string</span> method_;</span><br><span class="line">    <span class="comment">// 请求路径</span></span><br><span class="line">    <span class="built_in">string</span> path_;</span><br><span class="line">    <span class="comment">// http版本号</span></span><br><span class="line">    <span class="built_in">string</span> http_version_;</span><br><span class="line">    <span class="comment">// 是否是 `持续连接`</span></span><br><span class="line">    <span class="comment">// <span class="doctag">NOTE:</span> 为了防止bug的产生,对于每一个类中的isKeepAlive_来说,</span></span><br><span class="line">    <span class="comment">//       值只能从 true -&gt; false,而不能再次从 false -&gt; true</span></span><br><span class="line">    <span class="keyword">bool</span> isKeepAlive_;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 当前解析读入数据的位置</span></span><br><span class="line">    <span class="comment">/** </span></span><br><span class="line"><span class="comment">     * <span class="doctag">NOTE:</span> 该成员变量只在 </span></span><br><span class="line"><span class="comment">     *      readRequest -&gt; parseURI -&gt; parseHttpHeader -&gt; RunEventLoop </span></span><br><span class="line"><span class="comment">     * 内部中使用</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">size_t</span> pos_;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief 将当前client_fd_对应的连接信息,以 LOG(INFO) 的形式输出</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">printConnectionStatus</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief 从client_fd_中读取数据至 request_中</span></span><br><span class="line"><span class="comment">     * @return 0 表示读取成功, 其他则表示读取过程存在错误</span></span><br><span class="line"><span class="comment">     * @note 内部函数recvn在错误时会产生 errno</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">ERROR_TYPE <span class="title">readRequest</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief 从0位置处解析 请求方式\URI\HTTP版本等</span></span><br><span class="line"><span class="comment">     * @return 0 表示成功解析, 其他则表示解析过程存在错误</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">ERROR_TYPE <span class="title">parseURI</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief 从request_中的pos位置开始解析 http header</span></span><br><span class="line"><span class="comment">     * @return 0 表示成功解析, 其他则表示解析过程存在错误</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">ERROR_TYPE <span class="title">parseHttpHeader</span><span class="params">()</span></span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief   发送响应报文给客户端</span></span><br><span class="line"><span class="comment">     * @param   responseCode        http 状态码, http报文第二个字段</span></span><br><span class="line"><span class="comment">     * @param   responseMsg         http 报文第三个字段</span></span><br><span class="line"><span class="comment">     * @param   responseBodyType    返回的body类型,即 Content-type</span></span><br><span class="line"><span class="comment">     * @param   responseBody        返回的body内容</span></span><br><span class="line"><span class="comment">     * @return 0 表示成功发送, 其他则表示发送过程存在错误</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">ERROR_TYPE <span class="title">sendResponse</span><span class="params">(<span class="keyword">const</span> <span class="built_in">string</span>&amp; responseCode, <span class="keyword">const</span> <span class="built_in">string</span>&amp; responseMsg, </span></span></span><br><span class="line"><span class="function"><span class="params">                      <span class="keyword">const</span> <span class="built_in">string</span>&amp; responseBodyType, <span class="keyword">const</span> <span class="built_in">string</span>&amp; responseBody)</span></span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief 发送错误信息至客户端</span></span><br><span class="line"><span class="comment">     * @param errCode   错误http状态码</span></span><br><span class="line"><span class="comment">     * @param errMsg    错误信息, http报文第三个字段</span></span><br><span class="line"><span class="comment">     * @return 0 表示成功发送, 其他则表示发送过程存在错误</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">ERROR_TYPE <span class="title">handleError</span><span class="params">(<span class="keyword">const</span> <span class="built_in">string</span>&amp; errCode, <span class="keyword">const</span> <span class="built_in">string</span>&amp; errMsg)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief 将传入的字符串转义成终端可以直接显示的输出</span></span><br><span class="line"><span class="comment">     * @param str 待输出的字符串</span></span><br><span class="line"><span class="comment">     * @return 转义后的字符串</span></span><br><span class="line"><span class="comment">     * @note  是将 '\r' 等无法在终端上显示的字符,转义成 "\r"字符串 输出</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="built_in">string</span> <span class="title">escapeStr</span> <span class="params">(<span class="keyword">const</span> <span class="built_in">string</span>&amp; str)</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="3-错误类型">3. 错误类型</h3>
+<p>HttpHandler 中实现了以下错误类型：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">*  @brief HttpHandler内部状态 </span></span><br><span class="line"><span class="comment">*/</span> </span><br><span class="line"><span class="keyword">enum</span> ERROR_TYPE &#123;</span><br><span class="line">    ERR_SUCCESS = <span class="number">0</span>,                <span class="comment">// 无错误</span></span><br><span class="line">    ERR_READ_REQUEST_FAIL,          <span class="comment">// 读取请求数据失败</span></span><br><span class="line">    ERR_NOT_IMPLEMENTED,            <span class="comment">// 不支持一些特定的请求操作,例如 Post</span></span><br><span class="line">    ERR_HTTP_VERSION_NOT_SUPPORTED, <span class="comment">// 不支持当前客户端的http版本</span></span><br><span class="line">    ERR_INTERNAL_SERVER_ERR,        <span class="comment">// 程序内部错误</span></span><br><span class="line">    ERR_CONNECTION_CLOSED,          <span class="comment">// 远程连接已关闭</span></span><br><span class="line">    ERR_BAD_REQUEST,                <span class="comment">// 用户的请求包中存在错误,无法解析  </span></span><br><span class="line">    ERR_SEND_RESPONSE_FAIL          <span class="comment">// 响应包发送失败</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>除了第一种 <code>ERR_SUCCESS</code> 表示<strong>无错误</strong>以外，其余的错误类型都有对应的错误处理方式，例如<strong>终止连接</strong>或者<strong>向客户端发送一个特定的响应报文</strong>，我们将在下面的内容中提到这些错误处理方式。</p>
+<h3 id="4-读取请求数据">4. 读取请求数据</h3>
+<p>当远程客户端发送数据至服务器端时，无论传来的是什么数据，首先要做的就是将数据从缓存中读取并保存至自己的缓冲区内。读取时需要明确一点：使用<strong>阻塞方式</strong>读取。因为每个客户端连接都是由单独的线程进行处理的，倘若服务器端没有将所有的请求数据全部读完，那么自然就无法继续执行下去。</p>
+<p>同时还需要明确一点的是，调用 readn 函数读取数据时，有可能客户端传来的数据较多，使得读取到的字节数刚好等于传入 readn 的最大缓冲区大小，那么此时就必须保存并继续循环读取，因为这里可能还有一部分数据没有读取完成，仍然需要继续读取。只有当 readn 函数返回的值小于传入的最大缓冲区大小，才能说明来自客户端的数据已经全部读取完成。此时就可以退出<em>读取请求函数</em>。</p>
+<p>最后，readn 函数可能会因为出错、远程连接中断等意外情况返回负数，因此这里需要额外写一点错误处理，返回对应原因的错误枚举 ERR_READ_REQUEST_FAIL 或者 ERR_CONNECTION_CLOSED 等等。</p>
+<p>综上所述，最终实现的代码如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function">HttpHandler::ERROR_TYPE <span class="title">HttpHandler::readRequest</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 清除之前的数据</span></span><br><span class="line">    request_.clear();</span><br><span class="line">    pos_ = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> buffer[MAXBUF];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 循环阻塞读取 ------------------------------------------</span></span><br><span class="line">    <span class="keyword">for</span>(;;)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">ssize_t</span> len = readn(client_fd_, buffer, MAXBUF, <span class="literal">true</span>, <span class="literal">true</span>);</span><br><span class="line">        <span class="keyword">if</span>(len &lt; <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">return</span> ERR_READ_REQUEST_FAIL;</span><br><span class="line">        <span class="comment">/** </span></span><br><span class="line"><span class="comment">         * 如果此时没读取到信息并且之前已经读取过信息了,则直接返回.</span></span><br><span class="line"><span class="comment">         * 这里需要注意,有些连接可能会提前连接过来,但是不会马上发送数据.因此需要阻塞等待</span></span><br><span class="line"><span class="comment">         * 这里有个坑点: chromium在每次刷新过后,会额外开一个连接,用来缩短下次发送请求的时间</span></span><br><span class="line"><span class="comment">         * 也就是说这里大概率会出现空连接,即连接到了,但是不会马上发送数据,而是等下一次的请求.</span></span><br><span class="line"><span class="comment">         * </span></span><br><span class="line"><span class="comment">         * 如果读取到的字节数为0,则说明远程连接已经被关闭.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(len == <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 对于已经读取完所有数据的这种情况</span></span><br><span class="line">            <span class="keyword">if</span>(request_.length() &gt; <span class="number">0</span>)</span><br><span class="line">                <span class="comment">// 直接停止读取</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="comment">// 如果此时既没读取到数据,之前的 request_也为空,则表示远程连接已经被关闭</span></span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">return</span> ERR_CONNECTION_CLOSED;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 将读取到的数据组装起来</span></span><br><span class="line">        <span class="function"><span class="built_in">string</span> <span class="title">request</span><span class="params">(buffer, buffer + len)</span></span>;</span><br><span class="line">        request_ += request;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 由于当前的读取方式为阻塞读取,因此如果读取到的数据已经全部读取完成,则直接返回</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="keyword">static_cast</span>&lt;<span class="keyword">size_t</span>&gt;(len) &lt; MAXBUF)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ERR_SUCCESS;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="5-解析URI">5. 解析URI</h3>
+<p>接下来是 HTTP 请求报文的解析，我们先简单看看 请求报文的格式：</p>
 <p><img src="/2021/05/WebServer-1/image-20210507204906032.png" alt="image-20210507204906032"></p>
-</li>
-<li>
-<p>http响应报文</p>
+<p>首先，我们需要从报文中获取第一个以 <code>\r\n</code>结尾的行，并从这行中解析出<strong>请求方法</strong>、<strong>目标URL</strong>以及<strong>HTTP版本</strong>。任何一种因为错误报文格式所导致的解析失败，都是 ERR_BAD_REQUEST 错误。</p>
+<p>其次，目前 WebServer-1.0 版本只支持 GET 的请求方法，倘若识别到其他请求方法都会返回 ERR_NOT_IMPLEMENTED 错误。</p>
+<p>由于请求 URL 可能是一个文件夹地址，而不是文件。因此如果URL指向的是一个文件夹，那么我们就必须在这个URL地址后添加<code>/index.html</code>字符串，使得请求的目标地址一定是一个文件（即便该文件可能不存在）。</p>
+<p>最后，目前的 WebServer-1.0版本只支持 HTTP/1.0 和 HTTP/1.1 版本，因此如果识别到了其他的 HTTP版本，则马上返回 ERR_HTTP_VERSION_NOT_SUPPORTED 错误。</p>
+<p>综上所述，最后实现的代码如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function">HttpHandler::ERROR_TYPE <span class="title">HttpHandler::parseURI</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(request_.empty())   <span class="keyword">return</span> ERR_BAD_REQUEST;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">size_t</span> pos1, pos2;</span><br><span class="line">    </span><br><span class="line">    pos1 = request_.find(<span class="string">"\r\n"</span>);</span><br><span class="line">    <span class="keyword">if</span>(pos1 == <span class="built_in">string</span>::npos)    <span class="keyword">return</span> ERR_BAD_REQUEST;</span><br><span class="line">    <span class="built_in">string</span>&amp;&amp; first_line = request_.substr(<span class="number">0</span>, pos1);</span><br><span class="line">    <span class="comment">// a. 查找get</span></span><br><span class="line">    pos1 = first_line.find(<span class="string">' '</span>);</span><br><span class="line">    <span class="keyword">if</span>(pos1 == <span class="built_in">string</span>::npos)    <span class="keyword">return</span> ERR_BAD_REQUEST;</span><br><span class="line">    method_ = first_line.substr(<span class="number">0</span>, pos1);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">string</span> output_method = <span class="string">"Method: "</span>;</span><br><span class="line">    <span class="keyword">if</span>(method_ == <span class="string">"GET"</span>)</span><br><span class="line">        output_method += <span class="string">"GET"</span>;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="keyword">return</span> ERR_NOT_IMPLEMENTED;</span><br><span class="line">    LOG(INFO) &lt;&lt; output_method &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// b. 查找目标路径</span></span><br><span class="line">    pos1++;</span><br><span class="line">    pos2 = first_line.find(<span class="string">' '</span>, pos1);</span><br><span class="line">    <span class="keyword">if</span>(pos2 == <span class="built_in">string</span>::npos)    <span class="keyword">return</span> ERR_BAD_REQUEST;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 获取path时,注意去除 path 中的第一个斜杠</span></span><br><span class="line">    pos1++;</span><br><span class="line">    path_ = first_line.substr(pos1, pos2 - pos1);</span><br><span class="line">    <span class="comment">// 如果 path 为空,则添加一个 . 表示当前文件夹</span></span><br><span class="line">    <span class="keyword">if</span>(path_.length() == <span class="number">0</span>)</span><br><span class="line">        path_ += <span class="string">"."</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 判断目标路径是否是文件夹</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">stat</span> <span class="title">st</span>;</span></span><br><span class="line">    <span class="keyword">if</span>(stat(path_.c_str(), &amp;st) == <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 如果试图打开一个文件夹,则添加 index.html</span></span><br><span class="line">        <span class="keyword">if</span> (S_ISDIR(st.st_mode))</span><br><span class="line">            path_ += <span class="string">"/index.html"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    LOG(INFO) &lt;&lt; <span class="string">"Path: "</span> &lt;&lt; path_ &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// c. 查看HTTP版本</span></span><br><span class="line">    <span class="comment">// NOTE 这里只支持 HTTP/1.0 和 HTTP/1.1</span></span><br><span class="line">    pos2++;</span><br><span class="line">    http_version_ = first_line.substr(pos2, first_line.length() - pos2);</span><br><span class="line">    LOG(INFO) &lt;&lt; <span class="string">"HTTP Version: "</span> &lt;&lt; http_version_ &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 检测是否支持客户端 http 版本</span></span><br><span class="line">    <span class="keyword">if</span>(http_version_ != <span class="string">"HTTP/1.0"</span> &amp;&amp; http_version_ != <span class="string">"HTTP/1.1"</span>)</span><br><span class="line">        <span class="keyword">return</span> ERR_HTTP_VERSION_NOT_SUPPORTED;</span><br><span class="line">    <span class="comment">// 设置只在 HTTP/1.1时 允许 持续连接</span></span><br><span class="line">    <span class="keyword">if</span>(http_version_ != <span class="string">"HTTP/1.1"</span>)</span><br><span class="line">        isKeepAlive_ = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 更新pos_</span></span><br><span class="line">    pos_ = first_line.length() + <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">return</span> ERR_SUCCESS;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="6-解析-HTTP-header">6. 解析 HTTP header</h3>
+<p>从HTTP报文第二行开始，每个以 <code>\r\n</code>为结尾的一行数据中，都有一个 <code>key: value</code>的键值对（header最后一行除外）。因此我们需要继续遍历请求报文的数据，将每个 HTTP header 存入数据结构中。如果解析报文的时候出现错误，则返回 ERR_BAD_REQUEST 错误。</p>
+<p>这里有个点需要注意：HTTP/1.1默认支持<strong>持续连接</strong>，因此 HttpHandler 的成员变量 isKeepAlive_ 默认为 true。但如果客户端中存在这样的 http header <code>Connection: close</code>，则说明当前连接并非<strong>持续性</strong>的，因此处理完当前 http 请求后必须马上断开连接。所以当我们接收到了<code>Connection: close</code>这样的http header时，必须设置 isKeepAlive_  变量为 false。</p>
+<p>综上所述，最终实现的代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function">HttpHandler::ERROR_TYPE <span class="title">HttpHandler::parseHttpHeader</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 清除之前的 http header</span></span><br><span class="line">    headers_.clear();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">size_t</span> pos1, pos2;</span><br><span class="line">    <span class="keyword">for</span>(pos1 = pos_;</span><br><span class="line">        (pos2 = request_.find(<span class="string">"\r\n"</span>, pos1)) != <span class="built_in">string</span>::npos;</span><br><span class="line">        pos1 = pos2 + <span class="number">2</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">string</span>&amp;&amp; header = request_.substr(pos1, pos2 - pos1);</span><br><span class="line">        <span class="comment">// 如果遍历到了空头,则表示http header部分结束</span></span><br><span class="line">        <span class="keyword">if</span>(header.size() == <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        pos1 = header.find(<span class="string">' '</span>);</span><br><span class="line">        <span class="keyword">if</span>(pos1 == <span class="built_in">string</span>::npos)    <span class="keyword">return</span> ERR_BAD_REQUEST;</span><br><span class="line">        <span class="comment">// key处减去1是为了消除key里的最后一个冒号字符</span></span><br><span class="line">        <span class="built_in">string</span>&amp;&amp; key = header.substr(<span class="number">0</span>, pos1 - <span class="number">1</span>);</span><br><span class="line">        <span class="comment">// key 转小写</span></span><br><span class="line">        transform(key.begin(), key.end(), key.begin(), ::<span class="built_in">tolower</span>);</span><br><span class="line">        <span class="comment">// 获取 value</span></span><br><span class="line">        <span class="built_in">string</span>&amp;&amp; value = header.substr(pos1 + <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">        LOG(INFO) &lt;&lt; <span class="string">"HTTP Header: ["</span> &lt;&lt; key &lt;&lt; <span class="string">" : "</span> &lt;&lt; value &lt;&lt; <span class="string">"]"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">        headers_[key] = value;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 获取header完成后,处理一下 Connection 头</span></span><br><span class="line">    <span class="keyword">auto</span> conHeaderIter = headers_.find(<span class="string">"connection"</span>);</span><br><span class="line">    <span class="keyword">if</span>(conHeaderIter != headers_.end())</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">string</span> value = conHeaderIter-&gt;second;</span><br><span class="line">        transform(value.begin(), value.end(), value.begin(), ::<span class="built_in">tolower</span>);</span><br><span class="line">        <span class="keyword">if</span>(value != <span class="string">"keep-alive"</span>)</span><br><span class="line">            isKeepAlive_ = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 判断处理空 header 条目的 \r\n</span></span><br><span class="line">    <span class="keyword">if</span>((request_.size() &lt; pos1 + <span class="number">2</span>) || (request_.substr(pos1, <span class="number">2</span>) != <span class="string">"\r\n"</span>))</span><br><span class="line">        <span class="keyword">return</span> ERR_BAD_REQUEST;</span><br><span class="line"></span><br><span class="line">    pos_ = pos1 + <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">return</span> ERR_SUCCESS;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="7-发送响应报文">7. 发送响应报文</h3>
+<p>http响应报文格式如下所示：</p>
 <p><img src="/2021/05/WebServer-1/image-20210507205312687.png" alt="image-20210507205312687"></p>
-</li>
-</ul>
-<h3 id="3-HTTP-header格式与处理方式">3. HTTP header格式与处理方式</h3>
-<p>参照以下链接</p>
+<p>照着这个报文格式，照葫芦画瓢构建一个报文并将其发送至客户端即可。</p>
+<p>这里要注意一点，当前连接是否继续保持<strong>取决于 isKeepAlive_ 变量</strong>。具体实现如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function">HttpHandler::ERROR_TYPE <span class="title">HttpHandler::sendResponse</span><span class="params">(<span class="keyword">const</span> <span class="built_in">string</span>&amp; responseCode, <span class="keyword">const</span> <span class="built_in">string</span>&amp; responseMsg, </span></span></span><br><span class="line"><span class="function"><span class="params">                            <span class="keyword">const</span> <span class="built_in">string</span>&amp; responseBodyType, <span class="keyword">const</span> <span class="built_in">string</span>&amp; responseBody)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">stringstream</span> sstream;</span><br><span class="line">    sstream &lt;&lt; <span class="string">"HTTP/1.1"</span> &lt;&lt; <span class="string">" "</span> &lt;&lt; responseCode &lt;&lt; <span class="string">" "</span> &lt;&lt; responseMsg &lt;&lt; <span class="string">"\r\n"</span>;</span><br><span class="line">    sstream &lt;&lt; <span class="string">"Connection: "</span> &lt;&lt; (isKeepAlive_ ? <span class="string">"Keep-Alive"</span> : <span class="string">"Close"</span>) &lt;&lt; <span class="string">"\r\n"</span>;</span><br><span class="line">    sstream &lt;&lt; <span class="string">"Server: WebServer/1.0"</span> &lt;&lt; <span class="string">"\r\n"</span>;</span><br><span class="line">    sstream &lt;&lt; <span class="string">"Content-length: "</span> &lt;&lt; responseBody.size() &lt;&lt; <span class="string">"\r\n"</span>;</span><br><span class="line">    sstream &lt;&lt; <span class="string">"Content-type: "</span> &lt;&lt; responseBodyType &lt;&lt; <span class="string">"\r\n"</span>;</span><br><span class="line">    sstream &lt;&lt; <span class="string">"\r\n"</span>;</span><br><span class="line">    sstream &lt;&lt; responseBody;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">string</span>&amp;&amp; response = sstream.str();</span><br><span class="line">    <span class="keyword">ssize_t</span> len = writen(client_fd_, (<span class="keyword">void</span>*)response.c_str(), response.size());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 输出返回的数据</span></span><br><span class="line">    LOG(INFO) &lt;&lt; <span class="string">"&lt;&lt;&lt;&lt;- Response Packet -&gt;&gt;&gt;&gt; "</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    LOG(INFO) &lt;&lt; <span class="string">"&#123;"</span> &lt;&lt; escapeStr(response) &lt;&lt; <span class="string">"&#125;"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(len &lt; <span class="number">0</span> || <span class="keyword">static_cast</span>&lt;<span class="keyword">size_t</span>&gt;(len) != response.size())</span><br><span class="line">        <span class="keyword">return</span> ERR_SEND_RESPONSE_FAIL;</span><br><span class="line">    <span class="keyword">return</span> ERR_SUCCESS;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="8-错误处理">8. 错误处理</h3>
+<p>当 handlerError 错误处理函数被调用时，在该函数内部将简单构建一个 html 错误提示页面，并将该页面发送至远程客户端。具体实现如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function">HttpHandler::ERROR_TYPE <span class="title">HttpHandler::handleError</span><span class="params">(<span class="keyword">const</span> <span class="built_in">string</span>&amp; errCode, <span class="keyword">const</span> <span class="built_in">string</span>&amp; errMsg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">string</span> errStr = errCode + <span class="string">" "</span> + errMsg;</span><br><span class="line">    <span class="built_in">string</span> responseBody = </span><br><span class="line">                <span class="string">"&lt;html&gt;"</span></span><br><span class="line">                <span class="string">"&lt;title&gt;"</span> + errStr + <span class="string">"&lt;/title&gt;"</span></span><br><span class="line">                <span class="string">"&lt;body&gt;"</span> + errStr + </span><br><span class="line">                    <span class="string">"&lt;hr&gt;&lt;em&gt; Kiprey's Web Server&lt;/em&gt;"</span></span><br><span class="line">                <span class="string">"&lt;/body&gt;"</span></span><br><span class="line">                <span class="string">"&lt;/html&gt;"</span>;</span><br><span class="line">    <span class="keyword">return</span> sendResponse(errCode, errMsg, <span class="string">"text/html"</span>, responseBody);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="9-事件循环（重要）">9. 事件循环（重要）</h3>
+<p>HttpHandler 中的 RunEventLoop 函数维护了整个连接的事件循环。具体操作如下：</p>
 <ul>
-<li><a href="https://www.jb51.net/article/51951.htm" target="_blank" rel="noopener">HTTP头信息总结 - 脚本之家</a></li>
-<li><a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers" target="_blank" rel="noopener">HTTP headers - MDN</a></li>
+<li>首先，由于 HTTP/1.1 协议支持 持续连接，因此控制流将会进入一个 while 循环，循环进行<strong>读取请求并发送响应</strong>这样的过程。</li>
+<li>while 循环内部中，首先读取来自客户端的数据，之后进行 URI 与 http header 的解析。如果上面中任何一步存在错误，则发送对应的错误页面给客户端，或者退出循环断开连接。</li>
+<li>如果上述步骤没有错误，则打开目标文件，将文件数据通过 mmap 函数映射到内存，读取并发送至远程客户端。而如果目标文件不存在，则返回 404 错误；文件映射失败则返回 500 错误。</li>
+<li>最后返回 while 循环头部，继续等待新的请求报文。</li>
 </ul>
-<h3 id="4-HTTP-标准">4. HTTP 标准</h3>
-<ul>
-<li>HTTP1.0标准 - <a href="https://datatracker.ietf.org/doc/rfc1945" target="_blank" rel="noopener">RFC1945</a></li>
-<li>HTTP1.1标准 - <a href="https://datatracker.ietf.org/doc/rfc2616" target="_blank" rel="noopener">RFC2616</a></li>
-</ul>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">HttpHandler::RunEventLoop</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ERROR_TYPE err_ty;</span><br><span class="line">    LOG(INFO) &lt;&lt; <span class="string">"------------------- New Connection -------------------"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 输出连接</span></span><br><span class="line">    printConnectionStatus();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 持续连接</span></span><br><span class="line">    <span class="keyword">while</span>(isKeepAlive_)</span><br><span class="line">    &#123;</span><br><span class="line">        LOG(INFO) &lt;&lt; <span class="string">"&lt;&lt;&lt;&lt;- Request Packet -&gt;&gt;&gt;&gt; "</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="comment">// 从socket读取请求数据, 如果读取失败,或者断开连接</span></span><br><span class="line">        <span class="comment">// NOTE 这里的 readRequest 必须完整读取整个 http 报文</span></span><br><span class="line">        <span class="keyword">if</span>((err_ty = readRequest()) != ERR_SUCCESS)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(err_ty == ERR_READ_REQUEST_FAIL)</span><br><span class="line">                LOG(ERROR) &lt;&lt; <span class="string">"Read request failed ! "</span> &lt;&lt; strerror(errno) &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span>(err_ty == ERR_CONNECTION_CLOSED)</span><br><span class="line">                LOG(INFO) &lt;&lt; <span class="string">"Socket("</span> &lt;&lt; client_fd_ &lt;&lt; <span class="string">") was closed."</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                assert(<span class="number">0</span> &amp;&amp; <span class="string">"UNREACHABLE"</span>);       </span><br><span class="line">            <span class="comment">// 断开连接     </span></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        LOG(INFO) &lt;&lt; <span class="string">"&#123;"</span> &lt;&lt; escapeStr(request_) &lt;&lt; <span class="string">"&#125;"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 解析信息 ------------------------------------------</span></span><br><span class="line">        LOG(INFO) &lt;&lt; <span class="string">"&lt;&lt;&lt;&lt;- Request Info -&gt;&gt;&gt;&gt; "</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 1. 先解析第一行</span></span><br><span class="line">        <span class="keyword">if</span>((err_ty = parseURI()) != ERR_SUCCESS)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(err_ty == ERR_NOT_IMPLEMENTED)</span><br><span class="line">            &#123;</span><br><span class="line">                LOG(ERROR) &lt;&lt; <span class="string">"Request method is not implemented."</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">                handleError(<span class="string">"501"</span>, <span class="string">"Not Implemented"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span>(err_ty == ERR_HTTP_VERSION_NOT_SUPPORTED)</span><br><span class="line">            &#123;</span><br><span class="line">                LOG(ERROR) &lt;&lt; <span class="string">"Request HTTP Version Not Supported."</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">                handleError(<span class="string">"505"</span>, <span class="string">"HTTP Version Not Supported"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span>(err_ty == ERR_BAD_REQUEST)</span><br><span class="line">            &#123;</span><br><span class="line">                LOG(ERROR) &lt;&lt; <span class="string">"Bad Request."</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">                handleError(<span class="string">"400"</span>, <span class="string">"Bad Request"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                assert(<span class="number">0</span> &amp;&amp; <span class="string">"UNREACHABLE"</span>); </span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 2. 解析每一条http header</span></span><br><span class="line">        <span class="keyword">if</span>((err_ty = parseHttpHeader()) != ERR_SUCCESS)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(err_ty == ERR_BAD_REQUEST)</span><br><span class="line">            &#123;</span><br><span class="line">                LOG(ERROR) &lt;&lt; <span class="string">"Bad Request."</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">                handleError(<span class="string">"400"</span>, <span class="string">"Bad Request"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                assert(<span class="number">0</span> &amp;&amp; <span class="string">"UNREACHABLE"</span>); </span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 3. 输出剩余的 HTTP body</span></span><br><span class="line">        LOG(INFO) &lt;&lt; <span class="string">"HTTP Body: &#123;"</span> </span><br><span class="line">                &lt;&lt; escapeStr(request_.substr(pos_, request_.length() - pos_)) </span><br><span class="line">                &lt;&lt; <span class="string">"&#125;"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 发送目标数据 ------------------------------------------</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 试图打开一个文件</span></span><br><span class="line">        <span class="keyword">int</span> file_fd;</span><br><span class="line">        <span class="keyword">if</span>((file_fd = open(path_.c_str(), O_RDONLY, <span class="number">0</span>)) == <span class="number">-1</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 如果打开失败,则返回404</span></span><br><span class="line">            LOG(ERROR) &lt;&lt; <span class="string">"File ["</span> &lt;&lt; path_ &lt;&lt; <span class="string">"] open failed ! "</span> &lt;&lt; strerror(errno) &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">            handleError(<span class="string">"404"</span>, <span class="string">"Not Found"</span>); </span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;  </span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 获取目标文件的大小</span></span><br><span class="line">            struct stat st;</span><br><span class="line">            <span class="keyword">if</span>(stat(path_.c_str(), &amp;st) == <span class="number">-1</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                LOG(ERROR) &lt;&lt; <span class="string">"Can not get file ["</span> &lt;&lt; path_ &lt;&lt; <span class="string">"] state ! "</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">                handleError(<span class="string">"500"</span>, <span class="string">"Internal Server Error"</span>);</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 读取文件, 使用 mmap 来高速读取文件</span></span><br><span class="line">            <span class="keyword">void</span>* addr = mmap(<span class="literal">nullptr</span>, st.st_size, PROT_READ, MAP_PRIVATE, file_fd, <span class="number">0</span>);</span><br><span class="line">            <span class="comment">// 记得关闭文件描述符</span></span><br><span class="line">            close(file_fd); </span><br><span class="line">            <span class="comment">// 异常处理</span></span><br><span class="line">            <span class="keyword">if</span>(addr == MAP_FAILED)</span><br><span class="line">            &#123;</span><br><span class="line">                LOG(ERROR) &lt;&lt; <span class="string">"Can not map file ["</span> &lt;&lt; path_ &lt;&lt; <span class="string">"] -&gt; mem ! "</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">                handleError(<span class="string">"500"</span>, <span class="string">"Internal Server Error"</span>);</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 将数据从内存页存入至 responseBody</span></span><br><span class="line">            <span class="keyword">char</span>* file_data_ptr = <span class="keyword">static_cast</span>&lt;<span class="keyword">char</span>*&gt;(addr);</span><br><span class="line">            <span class="function"><span class="built_in">string</span> <span class="title">responseBody</span><span class="params">(file_data_ptr, file_data_ptr + st.st_size)</span></span>;</span><br><span class="line">            <span class="comment">// 记得删除内存</span></span><br><span class="line">            <span class="keyword">int</span> res = munmap(addr, st.st_size);</span><br><span class="line">            <span class="keyword">if</span>(res == <span class="number">-1</span>)</span><br><span class="line">                LOG(ERROR) &lt;&lt; <span class="string">"Can not unmap file ["</span> &lt;&lt; path_ &lt;&lt; <span class="string">"] &lt;-&gt; mem ! "</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">            <span class="comment">// 获取 Content-type</span></span><br><span class="line">            <span class="built_in">string</span> suffix = path_;</span><br><span class="line">            <span class="comment">// 通过循环找到最后一个 dot</span></span><br><span class="line">            <span class="keyword">size_t</span> dot_pos;</span><br><span class="line">            <span class="keyword">while</span>((dot_pos = suffix.find(<span class="string">'.'</span>)) != <span class="built_in">string</span>::npos)</span><br><span class="line">                suffix = suffix.substr(dot_pos + <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 发送数据</span></span><br><span class="line">            <span class="keyword">if</span>(sendResponse(<span class="string">"200"</span>, <span class="string">"OK"</span>, MimeType::getMineType(suffix), responseBody) != ERR_SUCCESS)</span><br><span class="line">                LOG(ERROR) &lt;&lt; <span class="string">"Send Response failed !"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    LOG(INFO) &lt;&lt; <span class="string">"------------------ Connection Closed ------------------"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="六、编译-调试">六、编译 &amp; 调试</h2>
+<p>最后简单说说编译和调试。使用<code>make</code>命令即可构建带有调试信息的 WebServer 二进制文件。这里的makefile是直接抄自 <a href="https://github.com/linyacool/WebServer/blob/master/old_version/old_version_0.1/Makefile" target="_blank" rel="noopener">linyacool/WebServer 中的 makefile</a>，并在其基础之上，修改了编译优化选项为 <code>-O0</code>，以及设置编译时附带额外的调试信息<code>-g3 -ggdb3</code>。</p>
+<p><code>-g</code>所携带的调试信息可以被多个调试器所共用，而<code>-ggdb</code>所携带的调试信息是专供 gdb 使用，两者不完全等同。<code>-ggdb3</code>的调试等级甚至可以调试<strong>宏</strong>。</p>
+<p>这里的调试主要是使用 <strong>gdb + pwndbg</strong> 来完成（gdb 永远的神）。因为多线程程序在gdb下调试非常的方便，它可以很快的切换线程上下文（使用<code>info &lt;threadNum&gt;</code>）以及栈帧上下文（使用<code>f &lt;frameNum&gt;</code>）；而且临时查看 <code>errno</code> 以及临时调用 <code>strerror(errno)</code>查看错误信息等等都非常地方便。</p>
 ]]></content>
       <categories>
         <category>Project</category>
@@ -13518,70 +13645,14 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
       </tags>
   </entry>
   <entry>
-    <title>heap - 10 - _int_free的相关操作</title>
-    <url>/2020/05/heap-10-_int_free_process/</url>
-    <content><![CDATA[<p>_int_free的一系列操作</p>
+    <title>heap - 9 - _int_free 源码及其部分分析</title>
+    <url>/2020/05/heap-9-__int_free_source/</url>
+    <content><![CDATA[<p><code>__int_free</code> —— 核心内存释放函数</p>
 <a id="more"></a>
 <blockquote>
-<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
+<p>所有的分析都以注释的形式添加进源代码中，方便阅读</p>
 </blockquote>
-<h2 id="1-判断当前chunk的大小是否异常小或者异常大-内存有无对齐">1. 判断当前chunk的大小是否异常小或者异常大,内存有无对齐</h2>
-<ul>
-<li>如果是，则 <strong>报错退出</strong></li>
-</ul>
-<h2 id="2-如果当前chunk大小-小于-fast-chunk的最大值">2. 如果当前chunk大小 小于 fast chunk的最大值</h2>
-<ul>
-<li>判断下一个内存相邻chunk的size是否异常大或异常小，如果是，则 <strong>报错退出</strong></li>
-<li>判断当前fastbin链头的chunk是否为当前chunk(防止 <strong>连续的</strong> double free)。如果是，则 <strong>报错退出</strong></li>
-<li>将当前chunk放入fastbin链头</li>
-<li>如果实际放入的fast bin，其index与当前chunk的预期index不同，则 <strong>报错退出</strong></li>
-<li>如果上面的都没出错的话，则函数执行结束，<strong>函数返回</strong></li>
-</ul>
-<h2 id="3-判断当前chunk是否是调用mmap分配的">3. 判断当前chunk是否是调用mmap分配的</h2>
-<ul>
-<li>如果是，则
-<ul>
-<li>如果当前chunk为top chunk，则意味着double free， <strong>报错退出</strong>。因为top chunk为free chunk，不可再被free</li>
-<li>如果当前chunk的下一个内存相邻chunk(next chunk)，其内存起始地址超过了top chunk的最大内存地址，则 <strong>报错退出</strong></li>
-<li>如果当前chunk是inuse的，则 <strong>报错退出</strong></li>
-<li>如果next chunk的size异常大或者异常小，则 <strong>报错退出</strong></li>
-<li>如果上一个内存相邻chunk是free chunk，则将上一个chunk unlink，并与当前chunk合并</li>
-<li>判断next chunk是否为top chunk
-<ul>
-<li>如果不是
-<ul>
-<li>判断next chunk是否是空闲的（inuse）
-<ul>
-<li>如果是，则与当前待释放chunk合并</li>
-<li>否则，清空其PREV_INUSE标志位</li>
-</ul>
-</li>
-<li>将当前待释放chunk放入unsorted bin里</li>
-</ul>
-</li>
-<li>如果是
-<ul>
-<li>则当前chunk与top chunk合并</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>如果当前chunk的size大于某个临界点（临界点大小默认65535bytes/64KB）
-<ul>
-<li>如果存在fast chunk，则进行malloc_consolidate</li>
-<li>判断当前arena是否为main_arena
-<ul>
-<li>如果是，并且top chunk的大小超过某个临界点，则调用systrim返还多余内存</li>
-<li>否则，调用heap_trim返还内存给操作系统</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>函数执行结束，<strong>函数返回</strong></li>
-</ul>
-</li>
-<li>如果不是，则调用munmap函数释放当前chunk的内存，函数执行结束，<strong>函数返回</strong></li>
-</ul>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line">_int_free (mstate av, mchunkptr p, <span class="keyword">int</span> have_lock)</span><br><span class="line">&#123;</span><br><span class="line">  INTERNAL_SIZE_T size;        <span class="comment">/* its size */</span></span><br><span class="line">  mfastbinptr *fb;             <span class="comment">/* associated fastbin */</span></span><br><span class="line">  mchunkptr nextchunk;         <span class="comment">/* next contiguous chunk */</span></span><br><span class="line">  INTERNAL_SIZE_T nextsize;    <span class="comment">/* its size */</span></span><br><span class="line">  <span class="keyword">int</span> nextinuse;               <span class="comment">/* true if nextchunk is used */</span></span><br><span class="line">  INTERNAL_SIZE_T prevsize;    <span class="comment">/* size of previous contiguous chunk */</span></span><br><span class="line">  mchunkptr bck;               <span class="comment">/* misc temp for linking */</span></span><br><span class="line">  mchunkptr fwd;               <span class="comment">/* misc temp for linking */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span> *errstr = <span class="literal">NULL</span>;</span><br><span class="line">  <span class="keyword">int</span> locked = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  size = chunksize (p);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Little security check which won't hurt performance: the</span></span><br><span class="line"><span class="comment">     allocator never wrapps around at the end of the address space.</span></span><br><span class="line"><span class="comment">     Therefore we can exclude some size values which might appear</span></span><br><span class="line"><span class="comment">     here by accident or by "design" from some intruder.  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk的大小异常大，或者地址不是按 2SIZE_SZ 对齐，则报错退出</span></span><br><span class="line">  <span class="keyword">if</span> (__builtin_expect ((<span class="keyword">uintptr_t</span>) p &gt; (<span class="keyword">uintptr_t</span>) -size, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (misaligned_chunk (p), <span class="number">0</span>))</span><br><span class="line">  &#123;</span><br><span class="line">    errstr = <span class="string">"free(): invalid pointer"</span>;</span><br><span class="line">  errout:</span><br><span class="line">    <span class="keyword">if</span> (!have_lock &amp;&amp; locked)</span><br><span class="line">      (<span class="keyword">void</span>) mutex_unlock (&amp;av-&gt;mutex);</span><br><span class="line">    malloc_printerr (check_action, errstr, chunk2mem (p), av);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">/* We know that each chunk is at least MINSIZE bytes in size or a</span></span><br><span class="line"><span class="comment">     multiple of MALLOC_ALIGNMENT.  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 检查一下chunk size是否比最小chunk size还要小，或者是否没有对齐内存</span></span><br><span class="line">  <span class="keyword">if</span> (__glibc_unlikely (size &lt; MINSIZE || !aligned_OK (size)))</span><br><span class="line">  &#123;</span><br><span class="line">    errstr = <span class="string">"free(): invalid size"</span>;</span><br><span class="line">    <span class="keyword">goto</span> errout;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 进行一系列的检查</span></span><br><span class="line">  check_inuse_chunk(av, p);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    If eligible, place chunk on a fastbin so it can be found</span></span><br><span class="line"><span class="comment">    and used quickly in malloc.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk的大小满足fastbin的要求，则放入fastbin</span></span><br><span class="line">  <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(size) &lt;= (<span class="keyword">unsigned</span> <span class="keyword">long</span>)(get_max_fast ())</span><br><span class="line"></span><br><span class="line">#<span class="keyword">if</span> TRIM_FASTBINS</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">        If TRIM_FASTBINS set, don't place chunks</span></span><br><span class="line"><span class="comment">        bordering top into fastbins</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        <span class="comment">// 如果TRIM_FASTBINS设置了，就不能把与top chunk相邻的chunk放入fastbin里</span></span><br><span class="line">      &amp;&amp; (chunk_at_offset(p, size) != av-&gt;top)</span><br><span class="line">#endif</span><br><span class="line">      )</span><br><span class="line">  &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 判断下一个chunk的大小是否异常小或者异常大</span></span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (chunk_at_offset (p, size)-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (chunksize (chunk_at_offset (p, size)) &gt;= av-&gt;system_mem, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="comment">/* We might not have a lock at this point and concurrent modifications</span></span><br><span class="line"><span class="comment">        of system_mem might have let to a false positive.  Redo the test</span></span><br><span class="line"><span class="comment">        after getting the lock.  */</span></span><br><span class="line">      <span class="keyword">if</span> (have_lock</span><br><span class="line">        || (&#123; assert (locked == <span class="number">0</span>);</span><br><span class="line">        mutex_lock(&amp;av-&gt;mutex);</span><br><span class="line">        locked = <span class="number">1</span>;</span><br><span class="line">        chunk_at_offset (p, size)-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ</span><br><span class="line">          || chunksize (chunk_at_offset (p, size)) &gt;= av-&gt;system_mem;</span><br><span class="line">          &#125;))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"free(): invalid next size (fast)"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">if</span> (! have_lock)</span><br><span class="line">      &#123;</span><br><span class="line">        (<span class="keyword">void</span>)mutex_unlock(&amp;av-&gt;mutex);</span><br><span class="line">        locked = <span class="number">0</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果相关标志设置了，则初始化当前chunk的内存</span></span><br><span class="line">    free_perturb (chunk2mem(p), size - <span class="number">2</span> * SIZE_SZ);</span><br><span class="line"></span><br><span class="line">    set_fastchunks(av);</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> idx = fastbin_index(size);</span><br><span class="line">    fb = &amp;fastbin (av, idx);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Atomically link P to its fastbin: P-&gt;FD = *FB; *FB = P;  */</span></span><br><span class="line">    <span class="comment">// 将当前fast free chunk放入fast bin里</span></span><br><span class="line">    mchunkptr old = *fb, old2;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> old_idx = ~<span class="number">0u</span>;</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    &#123;</span><br><span class="line">      <span class="comment">/* Check that the top of the bin is not the record we are going to add</span></span><br><span class="line"><span class="comment">          (i.e., double free).  */</span></span><br><span class="line"></span><br><span class="line">      <span class="comment">// 判断fastbin的头chunk是否就是我们将要free的chunk，以防止正常用户的double free(hacker另说)</span></span><br><span class="line">      <span class="keyword">if</span> (__builtin_expect (old == p, <span class="number">0</span>))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"double free or corruption (fasttop)"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">/* Check that size of fastbin chunk at the top is the same as</span></span><br><span class="line"><span class="comment">          size of the chunk that we are adding.  We can dereference OLD</span></span><br><span class="line"><span class="comment">          only if we have the lock, otherwise it might have already been</span></span><br><span class="line"><span class="comment">          deallocated.  See use of OLD_IDX below for the actual check.  */</span></span><br><span class="line">      <span class="keyword">if</span> (have_lock &amp;&amp; old != <span class="literal">NULL</span>)</span><br><span class="line">        old_idx = fastbin_index(chunksize(old));</span><br><span class="line">      p-&gt;fd = old2 = old;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">while</span> ((old = catomic_compare_and_exchange_val_rel (fb, p, old2)) != old2);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果实际放入的fastbin index与预期的不同，则error</span></span><br><span class="line">    <span class="keyword">if</span> (have_lock &amp;&amp; old != <span class="literal">NULL</span> &amp;&amp; __builtin_expect (old_idx != idx, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"invalid fastbin entry (free)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    Consolidate other non-mmapped chunks as they arrive.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line">  <span class="comment">// 如果当前chunk不是fast bin，并且也不是mmap来的</span></span><br><span class="line">  <span class="keyword">else</span> <span class="keyword">if</span> (!chunk_is_mmapped(p))</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> (! have_lock)</span><br><span class="line">    &#123;</span><br><span class="line">      (<span class="keyword">void</span>)mutex_lock(&amp;av-&gt;mutex);</span><br><span class="line">      locked = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    nextchunk = chunk_at_offset(p, size);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Lightweight tests: check whether the block is already the</span></span><br><span class="line"><span class="comment">       top block.  */</span></span><br><span class="line">    <span class="comment">// 判断当前chunk是否top chunk</span></span><br><span class="line">    <span class="keyword">if</span> (__glibc_unlikely (p == av-&gt;top))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (top)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Or whether the next chunk is beyond the boundaries of the arena.  */</span></span><br><span class="line">    <span class="comment">// 判断下一个chunk的地址是否超出top chunk</span></span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (contiguous (av)</span><br><span class="line">      &amp;&amp; (<span class="keyword">char</span> *) nextchunk</span><br><span class="line">      &gt;= ((<span class="keyword">char</span> *) av-&gt;top + chunksize(av-&gt;top)), <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (out)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Or whether the block is actually not marked used.  */</span></span><br><span class="line">    <span class="comment">// 判断当前chunk是否是inuse的</span></span><br><span class="line">    <span class="keyword">if</span> (__glibc_unlikely (!prev_inuse(nextchunk)))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (!prev)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 判断下一个chunk的大小是否异常大或者异常小</span></span><br><span class="line">    nextsize = chunksize(nextchunk);</span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (nextchunk-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (nextsize &gt;= av-&gt;system_mem, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"free(): invalid next size (normal)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    free_perturb (chunk2mem(p), size - <span class="number">2</span> * SIZE_SZ);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* consolidate backward */</span></span><br><span class="line">    <span class="comment">// 如果上一个内存相邻的chunk是free chunk，则于其合并</span></span><br><span class="line">    <span class="comment">// 注意：由于fast chunk的prev_inuse始终为1，所以fast_chunk不会被合并</span></span><br><span class="line">    <span class="keyword">if</span> (!prev_inuse(p)) &#123;</span><br><span class="line">      prevsize = p-&gt;prev_size;</span><br><span class="line">      size += prevsize;</span><br><span class="line">      p = chunk_at_offset(p, -((<span class="keyword">long</span>) prevsize));</span><br><span class="line">      unlink(av, p, bck, fwd);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果下一个chunk不为top chunk,则清除下一个chunk的prev_inuse位</span></span><br><span class="line">    <span class="keyword">if</span> (nextchunk != av-&gt;top) &#123;</span><br><span class="line">      <span class="comment">/* get and clear inuse bit */</span></span><br><span class="line">      nextinuse = inuse_bit_at_offset(nextchunk, nextsize);</span><br><span class="line">      <span class="comment">// 如果下一个内存相邻的chunk为free chunk，则与其合并</span></span><br><span class="line">      <span class="comment">/* consolidate forward */</span></span><br><span class="line">      <span class="keyword">if</span> (!nextinuse)</span><br><span class="line">      &#123;</span><br><span class="line">        unlink(av, nextchunk, bck, fwd);</span><br><span class="line">        size += nextsize;</span><br><span class="line">      &#125; <span class="keyword">else</span></span><br><span class="line">      clear_inuse_bit_at_offset(nextchunk, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">      <span class="comment">/*</span></span><br><span class="line"><span class="comment">      Place the chunk in unsorted chunk list. Chunks are</span></span><br><span class="line"><span class="comment">      not placed into regular bins until after they have</span></span><br><span class="line"><span class="comment">      been given one chance to be used in malloc.</span></span><br><span class="line"><span class="comment">      */</span></span><br><span class="line">      <span class="comment">// 把当前chunk 无论大小，全部放进unsorted bin里</span></span><br><span class="line">      bck = unsorted_chunks(av);</span><br><span class="line">      fwd = bck-&gt;fd;</span><br><span class="line">      <span class="keyword">if</span> (__glibc_unlikely (fwd-&gt;bk != bck))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"free(): corrupted unsorted chunks"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      p-&gt;fd = fwd;</span><br><span class="line">      p-&gt;bk = bck;</span><br><span class="line">      <span class="keyword">if</span> (!in_smallbin_range(size))</span><br><span class="line">      &#123;</span><br><span class="line">        p-&gt;fd_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">        p-&gt;bk_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      bck-&gt;fd = p;</span><br><span class="line">      fwd-&gt;bk = p;</span><br><span class="line"></span><br><span class="line">      set_head(p, size | PREV_INUSE);</span><br><span class="line">      set_foot(p, size);</span><br><span class="line"></span><br><span class="line">      check_free_chunk(av, p);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">      If the chunk borders the current high end of memory,</span></span><br><span class="line"><span class="comment">      consolidate into top</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">    <span class="comment">// 如果下一个chunk是top chunk，则直接与top chunk合并，不再放入unsorted bin里</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">      size += nextsize;</span><br><span class="line">      set_head(p, size | PREV_INUSE);</span><br><span class="line">      av-&gt;top = p;</span><br><span class="line">      check_chunk(av, p);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">      If freeing a large space, consolidate possibly-surrounding</span></span><br><span class="line"><span class="comment">      chunks. Then, if the total unused topmost memory exceeds trim</span></span><br><span class="line"><span class="comment">      threshold, ask malloc_trim to reduce top.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">      Unless max_fast is 0, we don't know if there are fastbins</span></span><br><span class="line"><span class="comment">      bordering top, so we cannot tell for sure whether threshold</span></span><br><span class="line"><span class="comment">      has been reached unless fastbins are consolidated.  But we</span></span><br><span class="line"><span class="comment">      don't want to consolidate on each free.  As a compromise,</span></span><br><span class="line"><span class="comment">      consolidation is performed if FASTBIN_CONSOLIDATION_THRESHOLD</span></span><br><span class="line"><span class="comment">      is reached.</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 在完成之前的chunk合并后，如果当前chunk的size非常大，那就来一次（可能有的）内存整合，并返还多余的内存给操作系统</span></span><br><span class="line">    <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(size) &gt;= FASTBIN_CONSOLIDATION_THRESHOLD)</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">if</span> (have_fastchunks(av))</span><br><span class="line">        malloc_consolidate(av);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (av == &amp;main_arena)</span><br><span class="line">      &#123;</span><br><span class="line">  <span class="meta">#<span class="meta-keyword">ifndef</span> MORECORE_CANNOT_TRIM</span></span><br><span class="line">        <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(chunksize(av-&gt;top)) &gt;=</span><br><span class="line">            (<span class="keyword">unsigned</span> <span class="keyword">long</span>)(mp_.trim_threshold))</span><br><span class="line">          systrim(mp_.top_pad, av);</span><br><span class="line">  <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span></span><br><span class="line">      &#123;</span><br><span class="line">        <span class="comment">/* Always try heap_trim(), even if the top chunk is not</span></span><br><span class="line"><span class="comment">          large, because the corresponding heap might go away.  */</span></span><br><span class="line">        heap_info *heap = heap_for_ptr(top(av));</span><br><span class="line"></span><br><span class="line">        assert(heap-&gt;ar_ptr == av);</span><br><span class="line">        heap_trim(heap, mp_.top_pad);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (! have_lock)</span><br><span class="line">    &#123;</span><br><span class="line">      assert (locked);</span><br><span class="line">      (<span class="keyword">void</span>)mutex_unlock(&amp;av-&gt;mutex);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    If the chunk was allocated via mmap, release via munmap().</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk是通过mmap来的，则munmap</span></span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    munmap_chunk (p);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 ]]></content>
       <tags>
         <tag>CTF</tag>
@@ -13663,14 +13734,70 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
       </tags>
   </entry>
   <entry>
-    <title>heap - 9 - _int_free 源码及其部分分析</title>
-    <url>/2020/05/heap-9-__int_free_source/</url>
-    <content><![CDATA[<p><code>__int_free</code> —— 核心内存释放函数</p>
+    <title>heap - 10 - _int_free的相关操作</title>
+    <url>/2020/05/heap-10-_int_free_process/</url>
+    <content><![CDATA[<p>_int_free的一系列操作</p>
 <a id="more"></a>
 <blockquote>
-<p>所有的分析都以注释的形式添加进源代码中，方便阅读</p>
+<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
 </blockquote>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line">_int_free (mstate av, mchunkptr p, <span class="keyword">int</span> have_lock)</span><br><span class="line">&#123;</span><br><span class="line">  INTERNAL_SIZE_T size;        <span class="comment">/* its size */</span></span><br><span class="line">  mfastbinptr *fb;             <span class="comment">/* associated fastbin */</span></span><br><span class="line">  mchunkptr nextchunk;         <span class="comment">/* next contiguous chunk */</span></span><br><span class="line">  INTERNAL_SIZE_T nextsize;    <span class="comment">/* its size */</span></span><br><span class="line">  <span class="keyword">int</span> nextinuse;               <span class="comment">/* true if nextchunk is used */</span></span><br><span class="line">  INTERNAL_SIZE_T prevsize;    <span class="comment">/* size of previous contiguous chunk */</span></span><br><span class="line">  mchunkptr bck;               <span class="comment">/* misc temp for linking */</span></span><br><span class="line">  mchunkptr fwd;               <span class="comment">/* misc temp for linking */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span> *errstr = <span class="literal">NULL</span>;</span><br><span class="line">  <span class="keyword">int</span> locked = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  size = chunksize (p);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Little security check which won't hurt performance: the</span></span><br><span class="line"><span class="comment">     allocator never wrapps around at the end of the address space.</span></span><br><span class="line"><span class="comment">     Therefore we can exclude some size values which might appear</span></span><br><span class="line"><span class="comment">     here by accident or by "design" from some intruder.  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk的大小异常大，或者地址不是按 2SIZE_SZ 对齐，则报错退出</span></span><br><span class="line">  <span class="keyword">if</span> (__builtin_expect ((<span class="keyword">uintptr_t</span>) p &gt; (<span class="keyword">uintptr_t</span>) -size, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (misaligned_chunk (p), <span class="number">0</span>))</span><br><span class="line">  &#123;</span><br><span class="line">    errstr = <span class="string">"free(): invalid pointer"</span>;</span><br><span class="line">  errout:</span><br><span class="line">    <span class="keyword">if</span> (!have_lock &amp;&amp; locked)</span><br><span class="line">      (<span class="keyword">void</span>) mutex_unlock (&amp;av-&gt;mutex);</span><br><span class="line">    malloc_printerr (check_action, errstr, chunk2mem (p), av);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">/* We know that each chunk is at least MINSIZE bytes in size or a</span></span><br><span class="line"><span class="comment">     multiple of MALLOC_ALIGNMENT.  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 检查一下chunk size是否比最小chunk size还要小，或者是否没有对齐内存</span></span><br><span class="line">  <span class="keyword">if</span> (__glibc_unlikely (size &lt; MINSIZE || !aligned_OK (size)))</span><br><span class="line">  &#123;</span><br><span class="line">    errstr = <span class="string">"free(): invalid size"</span>;</span><br><span class="line">    <span class="keyword">goto</span> errout;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 进行一系列的检查</span></span><br><span class="line">  check_inuse_chunk(av, p);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    If eligible, place chunk on a fastbin so it can be found</span></span><br><span class="line"><span class="comment">    and used quickly in malloc.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk的大小满足fastbin的要求，则放入fastbin</span></span><br><span class="line">  <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(size) &lt;= (<span class="keyword">unsigned</span> <span class="keyword">long</span>)(get_max_fast ())</span><br><span class="line"></span><br><span class="line">#<span class="keyword">if</span> TRIM_FASTBINS</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">        If TRIM_FASTBINS set, don't place chunks</span></span><br><span class="line"><span class="comment">        bordering top into fastbins</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        <span class="comment">// 如果TRIM_FASTBINS设置了，就不能把与top chunk相邻的chunk放入fastbin里</span></span><br><span class="line">      &amp;&amp; (chunk_at_offset(p, size) != av-&gt;top)</span><br><span class="line">#endif</span><br><span class="line">      )</span><br><span class="line">  &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 判断下一个chunk的大小是否异常小或者异常大</span></span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (chunk_at_offset (p, size)-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (chunksize (chunk_at_offset (p, size)) &gt;= av-&gt;system_mem, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="comment">/* We might not have a lock at this point and concurrent modifications</span></span><br><span class="line"><span class="comment">        of system_mem might have let to a false positive.  Redo the test</span></span><br><span class="line"><span class="comment">        after getting the lock.  */</span></span><br><span class="line">      <span class="keyword">if</span> (have_lock</span><br><span class="line">        || (&#123; assert (locked == <span class="number">0</span>);</span><br><span class="line">        mutex_lock(&amp;av-&gt;mutex);</span><br><span class="line">        locked = <span class="number">1</span>;</span><br><span class="line">        chunk_at_offset (p, size)-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ</span><br><span class="line">          || chunksize (chunk_at_offset (p, size)) &gt;= av-&gt;system_mem;</span><br><span class="line">          &#125;))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"free(): invalid next size (fast)"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">if</span> (! have_lock)</span><br><span class="line">      &#123;</span><br><span class="line">        (<span class="keyword">void</span>)mutex_unlock(&amp;av-&gt;mutex);</span><br><span class="line">        locked = <span class="number">0</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果相关标志设置了，则初始化当前chunk的内存</span></span><br><span class="line">    free_perturb (chunk2mem(p), size - <span class="number">2</span> * SIZE_SZ);</span><br><span class="line"></span><br><span class="line">    set_fastchunks(av);</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> idx = fastbin_index(size);</span><br><span class="line">    fb = &amp;fastbin (av, idx);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Atomically link P to its fastbin: P-&gt;FD = *FB; *FB = P;  */</span></span><br><span class="line">    <span class="comment">// 将当前fast free chunk放入fast bin里</span></span><br><span class="line">    mchunkptr old = *fb, old2;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> old_idx = ~<span class="number">0u</span>;</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    &#123;</span><br><span class="line">      <span class="comment">/* Check that the top of the bin is not the record we are going to add</span></span><br><span class="line"><span class="comment">          (i.e., double free).  */</span></span><br><span class="line"></span><br><span class="line">      <span class="comment">// 判断fastbin的头chunk是否就是我们将要free的chunk，以防止正常用户的double free(hacker另说)</span></span><br><span class="line">      <span class="keyword">if</span> (__builtin_expect (old == p, <span class="number">0</span>))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"double free or corruption (fasttop)"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">/* Check that size of fastbin chunk at the top is the same as</span></span><br><span class="line"><span class="comment">          size of the chunk that we are adding.  We can dereference OLD</span></span><br><span class="line"><span class="comment">          only if we have the lock, otherwise it might have already been</span></span><br><span class="line"><span class="comment">          deallocated.  See use of OLD_IDX below for the actual check.  */</span></span><br><span class="line">      <span class="keyword">if</span> (have_lock &amp;&amp; old != <span class="literal">NULL</span>)</span><br><span class="line">        old_idx = fastbin_index(chunksize(old));</span><br><span class="line">      p-&gt;fd = old2 = old;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">while</span> ((old = catomic_compare_and_exchange_val_rel (fb, p, old2)) != old2);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果实际放入的fastbin index与预期的不同，则error</span></span><br><span class="line">    <span class="keyword">if</span> (have_lock &amp;&amp; old != <span class="literal">NULL</span> &amp;&amp; __builtin_expect (old_idx != idx, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"invalid fastbin entry (free)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    Consolidate other non-mmapped chunks as they arrive.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line">  <span class="comment">// 如果当前chunk不是fast bin，并且也不是mmap来的</span></span><br><span class="line">  <span class="keyword">else</span> <span class="keyword">if</span> (!chunk_is_mmapped(p))</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> (! have_lock)</span><br><span class="line">    &#123;</span><br><span class="line">      (<span class="keyword">void</span>)mutex_lock(&amp;av-&gt;mutex);</span><br><span class="line">      locked = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    nextchunk = chunk_at_offset(p, size);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Lightweight tests: check whether the block is already the</span></span><br><span class="line"><span class="comment">       top block.  */</span></span><br><span class="line">    <span class="comment">// 判断当前chunk是否top chunk</span></span><br><span class="line">    <span class="keyword">if</span> (__glibc_unlikely (p == av-&gt;top))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (top)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Or whether the next chunk is beyond the boundaries of the arena.  */</span></span><br><span class="line">    <span class="comment">// 判断下一个chunk的地址是否超出top chunk</span></span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (contiguous (av)</span><br><span class="line">      &amp;&amp; (<span class="keyword">char</span> *) nextchunk</span><br><span class="line">      &gt;= ((<span class="keyword">char</span> *) av-&gt;top + chunksize(av-&gt;top)), <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (out)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Or whether the block is actually not marked used.  */</span></span><br><span class="line">    <span class="comment">// 判断当前chunk是否是inuse的</span></span><br><span class="line">    <span class="keyword">if</span> (__glibc_unlikely (!prev_inuse(nextchunk)))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (!prev)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 判断下一个chunk的大小是否异常大或者异常小</span></span><br><span class="line">    nextsize = chunksize(nextchunk);</span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (nextchunk-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (nextsize &gt;= av-&gt;system_mem, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"free(): invalid next size (normal)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    free_perturb (chunk2mem(p), size - <span class="number">2</span> * SIZE_SZ);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* consolidate backward */</span></span><br><span class="line">    <span class="comment">// 如果上一个内存相邻的chunk是free chunk，则于其合并</span></span><br><span class="line">    <span class="comment">// 注意：由于fast chunk的prev_inuse始终为1，所以fast_chunk不会被合并</span></span><br><span class="line">    <span class="keyword">if</span> (!prev_inuse(p)) &#123;</span><br><span class="line">      prevsize = p-&gt;prev_size;</span><br><span class="line">      size += prevsize;</span><br><span class="line">      p = chunk_at_offset(p, -((<span class="keyword">long</span>) prevsize));</span><br><span class="line">      unlink(av, p, bck, fwd);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果下一个chunk不为top chunk,则清除下一个chunk的prev_inuse位</span></span><br><span class="line">    <span class="keyword">if</span> (nextchunk != av-&gt;top) &#123;</span><br><span class="line">      <span class="comment">/* get and clear inuse bit */</span></span><br><span class="line">      nextinuse = inuse_bit_at_offset(nextchunk, nextsize);</span><br><span class="line">      <span class="comment">// 如果下一个内存相邻的chunk为free chunk，则与其合并</span></span><br><span class="line">      <span class="comment">/* consolidate forward */</span></span><br><span class="line">      <span class="keyword">if</span> (!nextinuse)</span><br><span class="line">      &#123;</span><br><span class="line">        unlink(av, nextchunk, bck, fwd);</span><br><span class="line">        size += nextsize;</span><br><span class="line">      &#125; <span class="keyword">else</span></span><br><span class="line">      clear_inuse_bit_at_offset(nextchunk, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">      <span class="comment">/*</span></span><br><span class="line"><span class="comment">      Place the chunk in unsorted chunk list. Chunks are</span></span><br><span class="line"><span class="comment">      not placed into regular bins until after they have</span></span><br><span class="line"><span class="comment">      been given one chance to be used in malloc.</span></span><br><span class="line"><span class="comment">      */</span></span><br><span class="line">      <span class="comment">// 把当前chunk 无论大小，全部放进unsorted bin里</span></span><br><span class="line">      bck = unsorted_chunks(av);</span><br><span class="line">      fwd = bck-&gt;fd;</span><br><span class="line">      <span class="keyword">if</span> (__glibc_unlikely (fwd-&gt;bk != bck))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"free(): corrupted unsorted chunks"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      p-&gt;fd = fwd;</span><br><span class="line">      p-&gt;bk = bck;</span><br><span class="line">      <span class="keyword">if</span> (!in_smallbin_range(size))</span><br><span class="line">      &#123;</span><br><span class="line">        p-&gt;fd_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">        p-&gt;bk_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      bck-&gt;fd = p;</span><br><span class="line">      fwd-&gt;bk = p;</span><br><span class="line"></span><br><span class="line">      set_head(p, size | PREV_INUSE);</span><br><span class="line">      set_foot(p, size);</span><br><span class="line"></span><br><span class="line">      check_free_chunk(av, p);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">      If the chunk borders the current high end of memory,</span></span><br><span class="line"><span class="comment">      consolidate into top</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">    <span class="comment">// 如果下一个chunk是top chunk，则直接与top chunk合并，不再放入unsorted bin里</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">      size += nextsize;</span><br><span class="line">      set_head(p, size | PREV_INUSE);</span><br><span class="line">      av-&gt;top = p;</span><br><span class="line">      check_chunk(av, p);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">      If freeing a large space, consolidate possibly-surrounding</span></span><br><span class="line"><span class="comment">      chunks. Then, if the total unused topmost memory exceeds trim</span></span><br><span class="line"><span class="comment">      threshold, ask malloc_trim to reduce top.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">      Unless max_fast is 0, we don't know if there are fastbins</span></span><br><span class="line"><span class="comment">      bordering top, so we cannot tell for sure whether threshold</span></span><br><span class="line"><span class="comment">      has been reached unless fastbins are consolidated.  But we</span></span><br><span class="line"><span class="comment">      don't want to consolidate on each free.  As a compromise,</span></span><br><span class="line"><span class="comment">      consolidation is performed if FASTBIN_CONSOLIDATION_THRESHOLD</span></span><br><span class="line"><span class="comment">      is reached.</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 在完成之前的chunk合并后，如果当前chunk的size非常大，那就来一次（可能有的）内存整合，并返还多余的内存给操作系统</span></span><br><span class="line">    <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(size) &gt;= FASTBIN_CONSOLIDATION_THRESHOLD)</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">if</span> (have_fastchunks(av))</span><br><span class="line">        malloc_consolidate(av);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (av == &amp;main_arena)</span><br><span class="line">      &#123;</span><br><span class="line">  <span class="meta">#<span class="meta-keyword">ifndef</span> MORECORE_CANNOT_TRIM</span></span><br><span class="line">        <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(chunksize(av-&gt;top)) &gt;=</span><br><span class="line">            (<span class="keyword">unsigned</span> <span class="keyword">long</span>)(mp_.trim_threshold))</span><br><span class="line">          systrim(mp_.top_pad, av);</span><br><span class="line">  <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span></span><br><span class="line">      &#123;</span><br><span class="line">        <span class="comment">/* Always try heap_trim(), even if the top chunk is not</span></span><br><span class="line"><span class="comment">          large, because the corresponding heap might go away.  */</span></span><br><span class="line">        heap_info *heap = heap_for_ptr(top(av));</span><br><span class="line"></span><br><span class="line">        assert(heap-&gt;ar_ptr == av);</span><br><span class="line">        heap_trim(heap, mp_.top_pad);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (! have_lock)</span><br><span class="line">    &#123;</span><br><span class="line">      assert (locked);</span><br><span class="line">      (<span class="keyword">void</span>)mutex_unlock(&amp;av-&gt;mutex);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    If the chunk was allocated via mmap, release via munmap().</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk是通过mmap来的，则munmap</span></span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    munmap_chunk (p);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="1-判断当前chunk的大小是否异常小或者异常大-内存有无对齐">1. 判断当前chunk的大小是否异常小或者异常大,内存有无对齐</h2>
+<ul>
+<li>如果是，则 <strong>报错退出</strong></li>
+</ul>
+<h2 id="2-如果当前chunk大小-小于-fast-chunk的最大值">2. 如果当前chunk大小 小于 fast chunk的最大值</h2>
+<ul>
+<li>判断下一个内存相邻chunk的size是否异常大或异常小，如果是，则 <strong>报错退出</strong></li>
+<li>判断当前fastbin链头的chunk是否为当前chunk(防止 <strong>连续的</strong> double free)。如果是，则 <strong>报错退出</strong></li>
+<li>将当前chunk放入fastbin链头</li>
+<li>如果实际放入的fast bin，其index与当前chunk的预期index不同，则 <strong>报错退出</strong></li>
+<li>如果上面的都没出错的话，则函数执行结束，<strong>函数返回</strong></li>
+</ul>
+<h2 id="3-判断当前chunk是否是调用mmap分配的">3. 判断当前chunk是否是调用mmap分配的</h2>
+<ul>
+<li>如果是，则
+<ul>
+<li>如果当前chunk为top chunk，则意味着double free， <strong>报错退出</strong>。因为top chunk为free chunk，不可再被free</li>
+<li>如果当前chunk的下一个内存相邻chunk(next chunk)，其内存起始地址超过了top chunk的最大内存地址，则 <strong>报错退出</strong></li>
+<li>如果当前chunk是inuse的，则 <strong>报错退出</strong></li>
+<li>如果next chunk的size异常大或者异常小，则 <strong>报错退出</strong></li>
+<li>如果上一个内存相邻chunk是free chunk，则将上一个chunk unlink，并与当前chunk合并</li>
+<li>判断next chunk是否为top chunk
+<ul>
+<li>如果不是
+<ul>
+<li>判断next chunk是否是空闲的（inuse）
+<ul>
+<li>如果是，则与当前待释放chunk合并</li>
+<li>否则，清空其PREV_INUSE标志位</li>
+</ul>
+</li>
+<li>将当前待释放chunk放入unsorted bin里</li>
+</ul>
+</li>
+<li>如果是
+<ul>
+<li>则当前chunk与top chunk合并</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>如果当前chunk的size大于某个临界点（临界点大小默认65535bytes/64KB）
+<ul>
+<li>如果存在fast chunk，则进行malloc_consolidate</li>
+<li>判断当前arena是否为main_arena
+<ul>
+<li>如果是，并且top chunk的大小超过某个临界点，则调用systrim返还多余内存</li>
+<li>否则，调用heap_trim返还内存给操作系统</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>函数执行结束，<strong>函数返回</strong></li>
+</ul>
+</li>
+<li>如果不是，则调用munmap函数释放当前chunk的内存，函数执行结束，<strong>函数返回</strong></li>
+</ul>
 ]]></content>
       <tags>
         <tag>CTF</tag>
@@ -13788,6 +13915,190 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
         <tag>Pwn</tag>
         <tag>Heap</tag>
         <tag>pwnable.tw</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CTF Misc 的笔记</title>
+    <url>/2020/04/misc/</url>
+    <content><![CDATA[<p>一点点曾经整理的Misc笔记，数量较少。</p>
+<h2 id="1-git">1. git</h2>
+<ol>
+<li>
+<p>查找所有 commit - <a href="https://www.cnblogs.com/Tkitn/p/11648456.html" target="_blank" rel="noopener">参考链接</a></p>
+ <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 查看所有commit，包括已撤回的提交</span></span><br><span class="line">git <span class="built_in">log</span> --reflog</span><br><span class="line"><span class="comment"># 重置commit头</span></span><br><span class="line">git reset --hard [commit-Hash]</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查看 git 提交的文件内容 - <a href="https://blog.csdn.net/daguanjia11/article/details/73309026" target="_blank" rel="noopener">git 对象库</a></p>
+ <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 查看所有提交log（包括已撤回的提交）</span></span><br><span class="line">git <span class="built_in">log</span> --pretty=raw</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的类型</span></span><br><span class="line">git cat-file -t [Hash]</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的内容</span></span><br><span class="line">git cat-file -p [tree/file-Hash]</span><br><span class="line"><span class="comment"># 查看树的内容</span></span><br><span class="line">git ls-tree [-r是否递归][-t输出更完整的信息（包括子树）] [commit/tree-hash]</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<a id="more"></a>
+<h2 id="2-隐藏文件">2. 隐藏文件</h2>
+<ol>
+<li>
+<p>Binwalk - <a href="https://www.cnblogs.com/2f28/p/9736902.html" target="_blank" rel="noopener">帮助</a></p>
+<ol>
+<li>
+<p>查看隐藏的文件</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">binwalk -I xxxx</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>提取所有隐藏文件</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">binwalk -e xxxx</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="3-各种神奇的编码">3. 各种神奇的编码</h2>
+<ol>
+<li>
+<p>编码方式</p>
+<ol>
+<li><a href="https://tool.bugku.com/" target="_blank" rel="noopener">CTF 编码小工具</a></li>
+<li>培根密码 - <a href="https://tool.bugku.com/peigen/" target="_blank" rel="noopener">在线工具</a> - <a href="https://baike.baidu.com/item/%E5%9F%B9%E6%A0%B9%E5%AF%86%E7%A0%81/2134182?fr=aladdin" target="_blank" rel="noopener">百度百科</a></li>
+<li>栅栏密码 - <a href="https://www.qqxiuzi.cn/bianma/zhalanmima.php" target="_blank" rel="noopener">在线工具</a> - <a href="https://baike.baidu.com/item/%E6%A0%85%E6%A0%8F%E5%AF%86%E7%A0%81/228209?fr=aladdin" target="_blank" rel="noopener">百度百科</a></li>
+<li>Ook! - <a href="https://tool.bugku.com/brainfuck/" target="_blank" rel="noopener">在线工具</a></li>
+<li>base32 - <a href="https://www.qqxiuzi.cn/bianma/base.php" target="_blank" rel="noopener">在线工具</a></li>
+<li>base64 - <a href="https://base64.supfree.net/" target="_blank" rel="noopener">在线工具</a></li>
+<li>base64 &lt;==&gt;图片 - <a href="http://www.vgot.net/test/image2base64.php" target="_blank" rel="noopener">在线转换</a></li>
+</ol>
+</li>
+<li>
+<p>编码集</p>
+<ol>
+<li>Unicode
+<ol>
+<li>Unicode 编码格式为&quot;\uXXXX&quot;
+<ol>
+<li>倘若遇上&quot;\uXX&quot;，需要将其补 0 至 4 个 Hex 值</li>
+</ol>
+</li>
+<li>可用 python 直接 Unicode 转 string</li>
+</ol>
+</li>
+<li>base 编码 - <a href="https://blog.csdn.net/qq_40836885/article/details/83793972" target="_blank" rel="noopener">Base64，Base32，Base16 的区别</a>
+<ol>
+<li>Base64：包含大写字母（A-Z）,小写字母（a-z），数字（0-9）以及+/
+<ol>
+<li>当 ASCll 用 Base 加密达不到所对应的位数的时候用=号补齐</li>
+<li><strong>Base64隐写</strong><br>
+先看图<br>
+<img src="/2020/04/misc/base64steganography.png" alt="img">
+<ul>
+<li>注意红色的 0, base64解码时将其丢弃了, 所以这里的值不会影响解码. 故我们可以在这进行隐写。</li>
+<li>为什么等号的那部分 0 不能用于隐写? 因为修改那里的二进制值会导致等号数量变化, 解码的第 1 步会受影响. 自然也就破坏了源字符串。</li>
+<li>而红色部分的 0 是作为最后一个字符二进制的组成部分, 还原时只用到了最后一个字符二进制的前部分, 后面的部分就不会影响还原。</li>
+<li>唯一的影响就是最后一个字符会变化，请自己看看上图</li>
+</ul>
+</li>
+</ol>
+</li>
+<li>Base32: 包含大写字母（A-Z），数字（2-7）</li>
+<li>Base16: 就是 16 进制，范围是数字(0-9)，字母（A-F）</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="4-图片">4. 图片</h2>
+<ol>
+<li>二维码解码 - <a href="https://jiema.wwei.cn/" target="_blank" rel="noopener">在线工具</a></li>
+<li>PNG 文件头&quot;‰PNG&quot;(Hex:89504E47)</li>
+<li>Stegsolve 解 LSB隐写</li>
+<li>双图对比（<code>beyond compare</code>命令对比）</li>
+<li>steghide 提取文件</li>
+</ol>
+<h2 id="5-压缩包">5. 压缩包</h2>
+<ol>
+<li>ZIP 文件以“PK”开头（Hex：504B0304）</li>
+<li>ZIP 伪加密 - <a href="https://blog.csdn.net/kajweb/article/details/76474476" target="_blank" rel="noopener">CSDN</a></li>
+<li>明文攻击 =&gt; 加密压缩包
+<ul>
+<li>在已经得到压缩包的部分文件的情况下使用，</li>
+<li>需要将这部分文件使用被加密压缩包 <strong>相同的压缩算法</strong> 进行压缩</li>
+</ul>
+</li>
+<li>CRC32碰撞
+<ul>
+<li>在压缩包文件大小较小的情况下可以优先考虑</li>
+</ul>
+</li>
+</ol>
+<h2 id="6-音频">6. 音频</h2>
+<ol>
+<li>频谱图隐写</li>
+<li>波形谱隐写（转二进制）</li>
+</ol>
+<h2 id="7-内存取证">7. 内存取证</h2>
+<ol>
+<li>volatility</li>
+</ol>
+<h2 id="8-游戏存档修改">8. 游戏存档修改</h2>
+<ol>
+<li><a href="http://www.saveeditonline.com/" target="_blank" rel="noopener">在线存档修改</a></li>
+</ol>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Misc</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CTF Crypto 的笔记</title>
+    <url>/2020/04/crypto/</url>
+    <content><![CDATA[<p>一点点Crypto的笔记，真的只有一点点。</p>
+<h2 id="1-RSA">1. RSA</h2>
+<ol>
+<li>RSA 算法原理
+<ol>
+<li><a href="https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/" target="_blank" rel="noopener">CTF-Wiki</a></li>
+<li><a href="https://www.kancloud.cn/kancloud/rsa_algorithm/48484" target="_blank" rel="noopener">看云</a></li>
+</ol>
+</li>
+<li>分解质数
+<ol>
+<li>
+<p>命令行分解 - <a href="https://github.com/ryosan-470/factordb-pycli" target="_blank" rel="noopener">Github</a></p>
+ <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo pip install factordb-pycli</span><br><span class="line">factordb [-h] [--json] number</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>在线解两质数相乘 - <a href="http://factordb.com/index.php" target="_blank" rel="noopener">网址</a></p>
+</li>
+</ol>
+</li>
+</ol>
+<a id="more"></a>
+<ol start="3">
+<li>
+<p>常用exp</p>
+ <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> gmpy</span><br><span class="line"><span class="keyword">from</span> Crypto.Util <span class="keyword">import</span> number</span><br><span class="line"></span><br><span class="line">n=<span class="number">1606938044309278499168642398192229212629290234347717645487123</span></span><br><span class="line">p == <span class="number">1267650600235241044365044382487</span></span><br><span class="line">q == <span class="number">1267650600260888172240281085029</span></span><br><span class="line"></span><br><span class="line">r = (p<span class="number">-1</span>) * (q<span class="number">-1</span>)</span><br><span class="line"></span><br><span class="line">e=<span class="number">0x10001</span></span><br><span class="line">cipher=<span class="number">1206101155741464091016050901578054614292420649123909371122176</span></span><br><span class="line"></span><br><span class="line">d = gmpy.invert(e, r)</span><br><span class="line">m = pow(cipher, d, n)</span><br><span class="line">print(number.long_to_bytes(m))</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Crypto</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CTF Reverse 的笔记</title>
+    <url>/2020/04/reverse/</url>
+    <content><![CDATA[<ul>
+<li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li>
+<li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li>
+</ul>
+<h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2>
+<p>迷宫问题有以下特点:</p>
+<ul>
+<li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li>
+<li>将用户输入限制在少数几个字符范围内.</li>
+<li>一般只有一个迷宫入口和一个迷宫出口</li>
+</ul>
+<p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p>
+<a id="more"></a>]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Reverse</tag>
       </tags>
   </entry>
   <entry>
@@ -13947,153 +14258,6 @@ numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 pr
       <tags>
         <tag>CTF</tag>
         <tag>Pwn</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CTF Reverse 的笔记</title>
-    <url>/2020/04/reverse/</url>
-    <content><![CDATA[<ul>
-<li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li>
-<li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li>
-</ul>
-<h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2>
-<p>迷宫问题有以下特点:</p>
-<ul>
-<li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li>
-<li>将用户输入限制在少数几个字符范围内.</li>
-<li>一般只有一个迷宫入口和一个迷宫出口</li>
-</ul>
-<p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p>
-<a id="more"></a>]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Reverse</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CTF Misc 的笔记</title>
-    <url>/2020/04/misc/</url>
-    <content><![CDATA[<p>一点点曾经整理的Misc笔记，数量较少。</p>
-<h2 id="1-git">1. git</h2>
-<ol>
-<li>
-<p>查找所有 commit - <a href="https://www.cnblogs.com/Tkitn/p/11648456.html" target="_blank" rel="noopener">参考链接</a></p>
- <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 查看所有commit，包括已撤回的提交</span></span><br><span class="line">git <span class="built_in">log</span> --reflog</span><br><span class="line"><span class="comment"># 重置commit头</span></span><br><span class="line">git reset --hard [commit-Hash]</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>查看 git 提交的文件内容 - <a href="https://blog.csdn.net/daguanjia11/article/details/73309026" target="_blank" rel="noopener">git 对象库</a></p>
- <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 查看所有提交log（包括已撤回的提交）</span></span><br><span class="line">git <span class="built_in">log</span> --pretty=raw</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的类型</span></span><br><span class="line">git cat-file -t [Hash]</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的内容</span></span><br><span class="line">git cat-file -p [tree/file-Hash]</span><br><span class="line"><span class="comment"># 查看树的内容</span></span><br><span class="line">git ls-tree [-r是否递归][-t输出更完整的信息（包括子树）] [commit/tree-hash]</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<a id="more"></a>
-<h2 id="2-隐藏文件">2. 隐藏文件</h2>
-<ol>
-<li>
-<p>Binwalk - <a href="https://www.cnblogs.com/2f28/p/9736902.html" target="_blank" rel="noopener">帮助</a></p>
-<ol>
-<li>
-<p>查看隐藏的文件</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">binwalk -I xxxx</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>提取所有隐藏文件</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">binwalk -e xxxx</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-</li>
-</ol>
-<h2 id="3-各种神奇的编码">3. 各种神奇的编码</h2>
-<ol>
-<li>
-<p>编码方式</p>
-<ol>
-<li><a href="https://tool.bugku.com/" target="_blank" rel="noopener">CTF 编码小工具</a></li>
-<li>培根密码 - <a href="https://tool.bugku.com/peigen/" target="_blank" rel="noopener">在线工具</a> - <a href="https://baike.baidu.com/item/%E5%9F%B9%E6%A0%B9%E5%AF%86%E7%A0%81/2134182?fr=aladdin" target="_blank" rel="noopener">百度百科</a></li>
-<li>栅栏密码 - <a href="https://www.qqxiuzi.cn/bianma/zhalanmima.php" target="_blank" rel="noopener">在线工具</a> - <a href="https://baike.baidu.com/item/%E6%A0%85%E6%A0%8F%E5%AF%86%E7%A0%81/228209?fr=aladdin" target="_blank" rel="noopener">百度百科</a></li>
-<li>Ook! - <a href="https://tool.bugku.com/brainfuck/" target="_blank" rel="noopener">在线工具</a></li>
-<li>base32 - <a href="https://www.qqxiuzi.cn/bianma/base.php" target="_blank" rel="noopener">在线工具</a></li>
-<li>base64 - <a href="https://base64.supfree.net/" target="_blank" rel="noopener">在线工具</a></li>
-<li>base64 &lt;==&gt;图片 - <a href="http://www.vgot.net/test/image2base64.php" target="_blank" rel="noopener">在线转换</a></li>
-</ol>
-</li>
-<li>
-<p>编码集</p>
-<ol>
-<li>Unicode
-<ol>
-<li>Unicode 编码格式为&quot;\uXXXX&quot;
-<ol>
-<li>倘若遇上&quot;\uXX&quot;，需要将其补 0 至 4 个 Hex 值</li>
-</ol>
-</li>
-<li>可用 python 直接 Unicode 转 string</li>
-</ol>
-</li>
-<li>base 编码 - <a href="https://blog.csdn.net/qq_40836885/article/details/83793972" target="_blank" rel="noopener">Base64，Base32，Base16 的区别</a>
-<ol>
-<li>Base64：包含大写字母（A-Z）,小写字母（a-z），数字（0-9）以及+/
-<ol>
-<li>当 ASCll 用 Base 加密达不到所对应的位数的时候用=号补齐</li>
-<li><strong>Base64隐写</strong><br>
-先看图<br>
-<img src="/2020/04/misc/base64steganography.png" alt="img">
-<ul>
-<li>注意红色的 0, base64解码时将其丢弃了, 所以这里的值不会影响解码. 故我们可以在这进行隐写。</li>
-<li>为什么等号的那部分 0 不能用于隐写? 因为修改那里的二进制值会导致等号数量变化, 解码的第 1 步会受影响. 自然也就破坏了源字符串。</li>
-<li>而红色部分的 0 是作为最后一个字符二进制的组成部分, 还原时只用到了最后一个字符二进制的前部分, 后面的部分就不会影响还原。</li>
-<li>唯一的影响就是最后一个字符会变化，请自己看看上图</li>
-</ul>
-</li>
-</ol>
-</li>
-<li>Base32: 包含大写字母（A-Z），数字（2-7）</li>
-<li>Base16: 就是 16 进制，范围是数字(0-9)，字母（A-F）</li>
-</ol>
-</li>
-</ol>
-</li>
-</ol>
-<h2 id="4-图片">4. 图片</h2>
-<ol>
-<li>二维码解码 - <a href="https://jiema.wwei.cn/" target="_blank" rel="noopener">在线工具</a></li>
-<li>PNG 文件头&quot;‰PNG&quot;(Hex:89504E47)</li>
-<li>Stegsolve 解 LSB隐写</li>
-<li>双图对比（<code>beyond compare</code>命令对比）</li>
-<li>steghide 提取文件</li>
-</ol>
-<h2 id="5-压缩包">5. 压缩包</h2>
-<ol>
-<li>ZIP 文件以“PK”开头（Hex：504B0304）</li>
-<li>ZIP 伪加密 - <a href="https://blog.csdn.net/kajweb/article/details/76474476" target="_blank" rel="noopener">CSDN</a></li>
-<li>明文攻击 =&gt; 加密压缩包
-<ul>
-<li>在已经得到压缩包的部分文件的情况下使用，</li>
-<li>需要将这部分文件使用被加密压缩包 <strong>相同的压缩算法</strong> 进行压缩</li>
-</ul>
-</li>
-<li>CRC32碰撞
-<ul>
-<li>在压缩包文件大小较小的情况下可以优先考虑</li>
-</ul>
-</li>
-</ol>
-<h2 id="6-音频">6. 音频</h2>
-<ol>
-<li>频谱图隐写</li>
-<li>波形谱隐写（转二进制）</li>
-</ol>
-<h2 id="7-内存取证">7. 内存取证</h2>
-<ol>
-<li>volatility</li>
-</ol>
-<h2 id="8-游戏存档修改">8. 游戏存档修改</h2>
-<ol>
-<li><a href="http://www.saveeditonline.com/" target="_blank" rel="noopener">在线存档修改</a></li>
-</ol>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Misc</tag>
       </tags>
   </entry>
   <entry>
@@ -14290,43 +14454,6 @@ ipconfig/flusdns<br>
       </tags>
   </entry>
   <entry>
-    <title>CTF Crypto 的笔记</title>
-    <url>/2020/04/crypto/</url>
-    <content><![CDATA[<p>一点点Crypto的笔记，真的只有一点点。</p>
-<h2 id="1-RSA">1. RSA</h2>
-<ol>
-<li>RSA 算法原理
-<ol>
-<li><a href="https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/" target="_blank" rel="noopener">CTF-Wiki</a></li>
-<li><a href="https://www.kancloud.cn/kancloud/rsa_algorithm/48484" target="_blank" rel="noopener">看云</a></li>
-</ol>
-</li>
-<li>分解质数
-<ol>
-<li>
-<p>命令行分解 - <a href="https://github.com/ryosan-470/factordb-pycli" target="_blank" rel="noopener">Github</a></p>
- <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sudo pip install factordb-pycli</span><br><span class="line">factordb [-h] [--json] number</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>在线解两质数相乘 - <a href="http://factordb.com/index.php" target="_blank" rel="noopener">网址</a></p>
-</li>
-</ol>
-</li>
-</ol>
-<a id="more"></a>
-<ol start="3">
-<li>
-<p>常用exp</p>
- <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> gmpy</span><br><span class="line"><span class="keyword">from</span> Crypto.Util <span class="keyword">import</span> number</span><br><span class="line"></span><br><span class="line">n=<span class="number">1606938044309278499168642398192229212629290234347717645487123</span></span><br><span class="line">p == <span class="number">1267650600235241044365044382487</span></span><br><span class="line">q == <span class="number">1267650600260888172240281085029</span></span><br><span class="line"></span><br><span class="line">r = (p<span class="number">-1</span>) * (q<span class="number">-1</span>)</span><br><span class="line"></span><br><span class="line">e=<span class="number">0x10001</span></span><br><span class="line">cipher=<span class="number">1206101155741464091016050901578054614292420649123909371122176</span></span><br><span class="line"></span><br><span class="line">d = gmpy.invert(e, r)</span><br><span class="line">m = pow(cipher, d, n)</span><br><span class="line">print(number.long_to_bytes(m))</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Crypto</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>heap - 7 - _int_malloc 源码及其部分分析</title>
     <url>/2020/04/heap-7-%20__int_malloc_source/</url>
     <content><![CDATA[<p><code>__int_malloc</code> —— 核心内存分配函数</p>
@@ -14351,6 +14478,92 @@ ipconfig/flusdns<br>
 <p>所有的分析都以注释的形式添加进源代码中，方便阅读</p>
 </blockquote>
 <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="keyword">void</span> *</span><br><span class="line">__libc_malloc (<span class="keyword">size_t</span> bytes)</span><br><span class="line">&#123;</span><br><span class="line">  mstate ar_ptr;  <span class="comment">// 指向arena的指针</span></span><br><span class="line">  <span class="keyword">void</span> *victim;   <span class="comment">// 指向待分配chunk的指针</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 判断 __malloc_hook 是否为空</span></span><br><span class="line">  <span class="comment">// 如果不为空，则返回 其执行 __malloc_hook指向函数的返回值</span></span><br><span class="line">  <span class="keyword">void</span> *(*hook) (<span class="keyword">size_t</span>, <span class="keyword">const</span> <span class="keyword">void</span> *)</span><br><span class="line">    = atomic_forced_read (__malloc_hook);</span><br><span class="line">  <span class="keyword">if</span> (__builtin_expect (hook != <span class="literal">NULL</span>, <span class="number">0</span>))</span><br><span class="line">    <span class="keyword">return</span> (*hook)(bytes, RETURN_ADDRESS (<span class="number">0</span>));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 获取arena并上线程锁</span></span><br><span class="line">  arena_get (ar_ptr, bytes);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 执行核心内存分配函数，并获得所分配的chunk地址</span></span><br><span class="line">  victim = _int_malloc (ar_ptr, bytes);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前arena不为空，但分配不到chunk</span></span><br><span class="line">  <span class="comment">// 则更换可用arena并尝试重新分配chunk</span></span><br><span class="line">  <span class="keyword">if</span> (!victim &amp;&amp; ar_ptr != <span class="literal">NULL</span>)</span><br><span class="line">    &#123;</span><br><span class="line">      LIBC_PROBE (memory_malloc_retry, <span class="number">1</span>, bytes);</span><br><span class="line">      ar_ptr = arena_get_retry (ar_ptr, bytes);</span><br><span class="line">      victim = _int_malloc (ar_ptr, bytes);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果arena不为空，则解除arena上的线程锁</span></span><br><span class="line">  <span class="keyword">if</span> (ar_ptr != <span class="literal">NULL</span>)</span><br><span class="line">    (<span class="keyword">void</span>) mutex_unlock (&amp;ar_ptr-&gt;mutex);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 判断条件，若不满足指定条件则断言出错</span></span><br><span class="line">  assert (!victim || chunk_is_mmapped (mem2chunk (victim)) ||</span><br><span class="line">          ar_ptr == arena_for_chunk (mem2chunk (victim)));</span><br><span class="line">  <span class="keyword">return</span> victim;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Pwn</tag>
+        <tag>Heap</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>heap - 4 - _int_malloc的相关操作</title>
+    <url>/2020/04/heap-4-_int_malloc_process/</url>
+    <content><![CDATA[<p>_int_malloc的一系列操作</p>
+<a id="more"></a>
+<blockquote>
+<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
+</blockquote>
+<h2 id="1-判断arena是否为空">1. 判断arena是否为空</h2>
+<ul>
+<li>如果是，则调用sysmalloc分配所需内存，<strong>返回并退出</strong></li>
+</ul>
+<h2 id="2-判断所申请的chunk大小是否小于fast-chunk的最大值">2. 判断所申请的chunk大小是否小于fast chunk的最大值</h2>
+<ul>
+<li>如果是，则尝试取出fast bin里的第一个chunk(<code>fastbin-&gt;fd</code>)</li>
+<li>如果该chunk不为空，则检查该chunk是否出错、 <strong>返回该chunk用户地址并退出</strong></li>
+</ul>
+<h2 id="3-判断所申请的chunk大小是否小于small-chunk的最大值">3. 判断所申请的chunk大小是否小于small chunk的最大值</h2>
+<ul>
+<li>如果是，并且指向small bin最后一个chunk的指针（<code>smallbin-&gt;bk</code>）不指向small bin自己，则判断该指针是否为NULL
+<ul>
+<li>如果是，则说明此时是第一次执行该部分代码，则执行<code>malloc_consolidate</code>函数</li>
+<li>否则，则说明small bin上存在可用chunk，检查该chunk是否出错、将该chunk取出， <strong>返回该chunk用户地址并退出</strong></li>
+</ul>
+</li>
+</ul>
+<h2 id="4-取出largebin的索引，并判断是否有空闲的fastchunk">4. 取出largebin的索引，并判断是否有空闲的fastchunk</h2>
+<ul>
+<li>如果有，则执行<code>malloc_consolidate</code>函数</li>
+</ul>
+<h2 id="5-进入大型循环——for循环">5. 进入大型循环——for循环</h2>
+<h3 id="1-遍历unsortedbin里的chunk最多10000次，并执行以下操作">1. 遍历unsortedbin里的chunk最多10000次，并执行以下操作</h3>
+<ol>
+<li>检测该chunk的大小是否非常小或非常大
+<ul>
+<li>如果是，输出错误信息并 <strong>退出</strong></li>
+</ul>
+</li>
+<li>判断用户申请的大小是否同时满足以下3个条件
+<ol>
+<li>在smallchunk的范围内</li>
+<li>unsorted bin里只有一个chunk</li>
+<li>并且该chunk是last_remainder</li>
+</ol>
+<ul>
+<li>如果是，则切割last_remainder,并将剩余remainder放回unsortedbin里、重设last_remainder、检查chunk，最后 <strong>返回该chunk的用户地址并退出</strong></li>
+</ul>
+</li>
+<li>如果这块chunk刚好与所申请的chunk大小相等，则取出该chunk、检查chunk、 <strong>返回该chunk的用户地址并退出</strong></li>
+<li>将遍历到的chunk根据大小放置进small bin或large bin里</li>
+</ol>
+<h3 id="2-尝试在large-bin里搜索可用的chunk">2. 尝试在large bin里搜索可用的chunk</h3>
+<ul>
+<li>如果large bin里，size最大的chunk，其size小于所申请的内存大小
+<ol>
+<li>取出large bin里，size最接近所申请chunk的chunk</li>
+<li>判断该chunk和所申请内存大小相差是否小于MINSIZE
+<ul>
+<li>如果是，则多出的这块内存一并附赠给用户</li>
+<li>否则，分割这块chunk，将剩余的chunk放入unsorted bin里、检查目标chunk、<strong>返回该chunk的用户地址并退出</strong></li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+<h3 id="3-在其他free-chunks大小更大的bin里找更大的内存">3. 在其他free chunks大小更大的bin里找更大的内存</h3>
+<ul>
+<li>由于fastbin、smallbin、largebin上的freechunk是分组的，所以可能出现目标组别上的freechunk无法满足大小，此时使用binmap，去其他更大的bins里查找freechunk</li>
+</ul>
+<h3 id="4-如果执行到了这里，那就真是什么freechunk都找不到了，则判断top-chunk是否够用">4. 如果执行到了这里，那就真是什么freechunk都找不到了，则判断top chunk是否够用</h3>
+<ol>
+<li>如果够用，切割top chunk并使用</li>
+<li>否则，则判断是否有fast chunk空闲
+<ul>
+<li>如果有，则执行<code>malloc_consolidate</code>函数，然后 <strong>返回for循环起点，重新执行相关代码</strong></li>
+<li>否则，调用sysmalloc申请内存，<strong>返回该chunk的用户地址并退出</strong></li>
+</ul>
+</li>
+</ol>
 ]]></content>
       <tags>
         <tag>CTF</tag>
@@ -15049,92 +15262,6 @@ ipconfig/flusdns<br>
 <p>源代码</p>
 <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">NONCONTIGUOUS_BIT indicates that MORECORE does not return contiguous</span></span><br><span class="line"><span class="comment">regions.  Otherwise, contiguity is exploited in merging together,</span></span><br><span class="line"><span class="comment">when possible, results from consecutive MORECORE calls.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">The initial value comes from MORECORE_CONTIGUOUS, but is</span></span><br><span class="line"><span class="comment">changed dynamically if mmap is ever used as an sbrk substitute.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NONCONTIGUOUS_BIT     (2U)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> contiguous(M)          (((M)-&gt;flags &amp; NONCONTIGUOUS_BIT) == 0)</span></span><br></pre></td></tr></table></figure>
 </li>
-</ul>
-</li>
-</ol>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-        <tag>Heap</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>heap - 4 - _int_malloc的相关操作</title>
-    <url>/2020/04/heap-4-_int_malloc_process/</url>
-    <content><![CDATA[<p>_int_malloc的一系列操作</p>
-<a id="more"></a>
-<blockquote>
-<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
-</blockquote>
-<h2 id="1-判断arena是否为空">1. 判断arena是否为空</h2>
-<ul>
-<li>如果是，则调用sysmalloc分配所需内存，<strong>返回并退出</strong></li>
-</ul>
-<h2 id="2-判断所申请的chunk大小是否小于fast-chunk的最大值">2. 判断所申请的chunk大小是否小于fast chunk的最大值</h2>
-<ul>
-<li>如果是，则尝试取出fast bin里的第一个chunk(<code>fastbin-&gt;fd</code>)</li>
-<li>如果该chunk不为空，则检查该chunk是否出错、 <strong>返回该chunk用户地址并退出</strong></li>
-</ul>
-<h2 id="3-判断所申请的chunk大小是否小于small-chunk的最大值">3. 判断所申请的chunk大小是否小于small chunk的最大值</h2>
-<ul>
-<li>如果是，并且指向small bin最后一个chunk的指针（<code>smallbin-&gt;bk</code>）不指向small bin自己，则判断该指针是否为NULL
-<ul>
-<li>如果是，则说明此时是第一次执行该部分代码，则执行<code>malloc_consolidate</code>函数</li>
-<li>否则，则说明small bin上存在可用chunk，检查该chunk是否出错、将该chunk取出， <strong>返回该chunk用户地址并退出</strong></li>
-</ul>
-</li>
-</ul>
-<h2 id="4-取出largebin的索引，并判断是否有空闲的fastchunk">4. 取出largebin的索引，并判断是否有空闲的fastchunk</h2>
-<ul>
-<li>如果有，则执行<code>malloc_consolidate</code>函数</li>
-</ul>
-<h2 id="5-进入大型循环——for循环">5. 进入大型循环——for循环</h2>
-<h3 id="1-遍历unsortedbin里的chunk最多10000次，并执行以下操作">1. 遍历unsortedbin里的chunk最多10000次，并执行以下操作</h3>
-<ol>
-<li>检测该chunk的大小是否非常小或非常大
-<ul>
-<li>如果是，输出错误信息并 <strong>退出</strong></li>
-</ul>
-</li>
-<li>判断用户申请的大小是否同时满足以下3个条件
-<ol>
-<li>在smallchunk的范围内</li>
-<li>unsorted bin里只有一个chunk</li>
-<li>并且该chunk是last_remainder</li>
-</ol>
-<ul>
-<li>如果是，则切割last_remainder,并将剩余remainder放回unsortedbin里、重设last_remainder、检查chunk，最后 <strong>返回该chunk的用户地址并退出</strong></li>
-</ul>
-</li>
-<li>如果这块chunk刚好与所申请的chunk大小相等，则取出该chunk、检查chunk、 <strong>返回该chunk的用户地址并退出</strong></li>
-<li>将遍历到的chunk根据大小放置进small bin或large bin里</li>
-</ol>
-<h3 id="2-尝试在large-bin里搜索可用的chunk">2. 尝试在large bin里搜索可用的chunk</h3>
-<ul>
-<li>如果large bin里，size最大的chunk，其size小于所申请的内存大小
-<ol>
-<li>取出large bin里，size最接近所申请chunk的chunk</li>
-<li>判断该chunk和所申请内存大小相差是否小于MINSIZE
-<ul>
-<li>如果是，则多出的这块内存一并附赠给用户</li>
-<li>否则，分割这块chunk，将剩余的chunk放入unsorted bin里、检查目标chunk、<strong>返回该chunk的用户地址并退出</strong></li>
-</ul>
-</li>
-</ol>
-</li>
-</ul>
-<h3 id="3-在其他free-chunks大小更大的bin里找更大的内存">3. 在其他free chunks大小更大的bin里找更大的内存</h3>
-<ul>
-<li>由于fastbin、smallbin、largebin上的freechunk是分组的，所以可能出现目标组别上的freechunk无法满足大小，此时使用binmap，去其他更大的bins里查找freechunk</li>
-</ul>
-<h3 id="4-如果执行到了这里，那就真是什么freechunk都找不到了，则判断top-chunk是否够用">4. 如果执行到了这里，那就真是什么freechunk都找不到了，则判断top chunk是否够用</h3>
-<ol>
-<li>如果够用，切割top chunk并使用</li>
-<li>否则，则判断是否有fast chunk空闲
-<ul>
-<li>如果有，则执行<code>malloc_consolidate</code>函数，然后 <strong>返回for循环起点，重新执行相关代码</strong></li>
-<li>否则，调用sysmalloc申请内存，<strong>返回该chunk的用户地址并退出</strong></li>
 </ul>
 </li>
 </ol>

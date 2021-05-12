@@ -229,7 +229,7 @@ var _hmt = _hmt || [];
        
 <h2 itemprop="name">
   <a class="article-title" href="/2021/05/WebServer-1/"
-    >WebServer v1.0 相关文档</a> 
+    >WebServer v1.0 文档</a> 
 </h2>
  
 
@@ -238,7 +238,7 @@ var _hmt = _hmt || [];
      
     <div class="article-meta">
       <a href="/2021/05/WebServer-1/" class="article-date">
-  <time datetime="2021-05-07T16:00:00.000Z" itemprop="datePublished">2021-05-08</time>
+  <time datetime="2021-05-11T16:00:00.000Z" itemprop="datePublished">2021-05-12</time>
 </a> 
   <div class="article-category">
     <a class="article-category-link" href="/categories/Project/">Project</a> / <a class="article-category-link" href="/categories/Project/WebServer/">WebServer</a>
@@ -248,14 +248,29 @@ var _hmt = _hmt || [];
       
     <div class="article-entry" itemprop="articleBody">
        
-  <h2 id="一、前言">一、前言</h2>
-<p>WebServer V1.0 简单实现了一个最基础的版本。在该版本中，主要实现了以下重要内容：</p>
+  <h2 id="概述">概述</h2>
+<p>WebServer 1.0 简单实现了一个基础的 <strong>多并发网络服务程序</strong> 。在该版本中，主要实现了以下重要内容：</p>
 <ul>
-<li>线程互斥锁的实现</li>
+<li>线程互斥锁 &amp; 条件变量的封装</li>
 <li>线程池的设计，以支持并发</li>
 <li>基础网络连接的实现</li>
-<li>http 协议的简略支持</li>
-</ul> 
+<li>http 协议的简略支持
+<ul>
+<li>支持部分常用 HTTP 报文
+<ul>
+<li>200 OK</li>
+<li>400 Bad Request</li>
+<li>500 Internal Server Error</li>
+<li>501 Not Implemented</li>
+<li>505 HTTP Version Not Supported</li>
+</ul>
+</li>
+<li>支持 HTTP GET 请求</li>
+<li>支持 HTTP/1.1 <strong>持续连接</strong> 特性</li>
+</ul>
+</li>
+</ul>
+<p>项目代码位于 <a href="https://github.com/Kiprey/WebServer/tree/bf5af6bddab551b8f950bf5ab3793e4a33d527ef" target="_blank" rel="noopener">Kiprey/WebServer - github</a></p> 
       <a class="article-more-link" href="/2021/05/WebServer-1/"
         >阅读更多...</a
       >
