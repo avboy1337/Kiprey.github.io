@@ -203,7 +203,7 @@ var _hmt = _hmt || [];
 </li>
 <li>
 <p>在大多数情况下，这看上去是正确的。但在处理一些特殊的情况时，它仍然很不安全。<br>
-如果源字符串的长度等于或大于第三个参数num的值，则将在目标字符串的末尾添加NULL字符。<br>
+如果源字符串的长度等于或大于第三个参数num的值，则不会将在目标字符串的末尾添加NULL字符。<br>
 而在处理没有终止符的字符串时，它将导致越界访问。以下是<code>strncpy</code>的源代码（来自glibc-2.23）:</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> *</span><br><span class="line">STRNCPY (<span class="keyword">char</span> *s1, <span class="keyword">const</span> <span class="keyword">char</span> *s2, <span class="keyword">size_t</span> n)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">size_t</span> size = __strnlen (s2, n);</span><br><span class="line">  <span class="keyword">if</span> (size != n)</span><br><span class="line">    <span class="built_in">memset</span> (s1 + size, <span class="string">'\0'</span>, n - size);</span><br><span class="line">  <span class="keyword">return</span> <span class="built_in">memcpy</span> (s1, s2, size);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 </li>
