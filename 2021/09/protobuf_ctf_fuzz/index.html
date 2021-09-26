@@ -7,11 +7,11 @@
 <head>
   <meta charset="utf-8" />
    
-  <meta name="keywords" content="漏洞挖掘, 调试, 代码, 计算机科学, Kiprey, Blog, 二进制，信息安全" />
+  <meta name="keywords" content="CTF, pwn, fuzz, protobuf,漏洞挖掘, 调试, 代码, 计算机科学, Kiprey, Blog, 二进制，信息安全" />
    
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>
-     Kiprey&#39;s Blog
+    使用 protobuf &amp; AFLplusplus 进行简易 CTF 自动化 fuzz |  Kiprey&#39;s Blog
   </title>
   <meta name="generator" content="hexo-theme-ayer">
   
@@ -54,169 +54,8 @@ var _hmt = _hmt || [];
         style="position: fixed; left: 0px; top: 0px; z-index: 99999; pointer-events: none;"></canvas>
       
     <main class="content on">
-      
-<section class="cover">
-    
-  <div class="cover-frame">
-    <div class="bg-box">
-      <img src="/images/cover4.jpg" alt="image frame" />
-    </div>
-    <div class="cover-inner text-center text-white">
-      <h1><a href="/">Kiprey&#39;s Blog</a></h1>
-      <div id="subtitle-box">
-        
-        <span id="subtitle"></span>
-        
-      </div>
-      <div>
-        
-      </div>
-    </div>
-  </div>
-  <div class="cover-learn-more">
-    <a href="javascript:void(0)" class="anchor"><i class="ri-arrow-down-line"></i></a>
-  </div>
-</section>
-
-
-
-<script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.11/lib/typed.min.js"></script>
-
-
-<!-- Subtitle -->
-
-  <script>
-    try {
-      var typed = new Typed("#subtitle", {
-        strings: ['半夏时光，半支离歌', '', ''],
-        startDelay: 1000,
-        typeSpeed: 200,
-        loop: true,
-        backSpeed: 100,
-        showCursor: true
-      });
-    } catch (err) {
-      console.log(err)
-    }
-  </script>
-  
-<div id="main">
-  <section class="outer">
-  
-  <ul class="ads">
-    
-        <li>
-            <a href="">
-                <img src="" width="0" alt="">
-            </a>
-        </li>
-    
-</ul>
-  
-  
-  
-
-<div class="notice" style="margin-top:50px">
-    <i class="ri-heart-fill"></i>
-    <div class="notice-content" id="broad"></div>
-</div>
-<script type="text/javascript">
-    fetch('https://v1.hitokoto.cn')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("broad").innerHTML = data.hitokoto;
-        })
-        .catch(console.error)
-</script>
-
-<style>
-    .notice {
-        padding: 20px;
-        border: 1px dashed #e6e6e6;
-        color: #969696;
-        position: relative;
-        display: inline-block;
-        width: 100%;
-        background: #fbfbfb50;
-        border-radius: 10px;
-    }
-
-    .notice i {
-        float: left;
-        color: #999;
-        font-size: 16px;
-        padding-right: 10px;
-        vertical-align: middle;
-        margin-top: -2px;
-    }
-
-    .notice-content {
-        display: initial;
-        vertical-align: middle;
-    }
-</style>
-  
-  <article class="articles">
-    
-    
-    
-    
-    <article
-  id="post-Welcome"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/05/Welcome/"
-    >Welcome
-  <i class="article-topping">置顶</i>
-</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/05/Welcome/" class="article-date">
-  <time datetime="2020-05-06T16:00:00.000Z" itemprop="datePublished">2020-05-07</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="Welcome-to-Kiprey’s-Blog">Welcome to Kiprey’s Blog.</h2>
-<h2 id="Just-enjoy-it">Just enjoy it. :)</h2>
-<p><strong>水的不行的 learning list：<a href="https://github.com/kiprey/skr_Learning" target="_blank" rel="noopener">github repo</a></strong></p> 
-      <a class="article-more-link" href="/2020/05/Welcome/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
+      <section class="outer">
+  <article
   id="post-protobuf_ctf_fuzz"
   class="article article-type-post"
   itemscope
@@ -227,10 +66,9 @@ var _hmt = _hmt || [];
     
     <header class="article-header">
        
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/09/protobuf_ctf_fuzz/"
-    >使用 protobuf &amp; AFLplusplus 进行简易 CTF 自动化 fuzz</a> 
-</h2>
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  使用 protobuf &amp; AFLplusplus 进行简易 CTF 自动化 fuzz
+</h1>
  
 
       
@@ -239,9 +77,34 @@ var _hmt = _hmt || [];
     <div class="article-meta">
       <a href="/2021/09/protobuf_ctf_fuzz/" class="article-date">
   <time datetime="2021-09-26T05:39:22.000Z" itemprop="datePublished">2021-09-26</time>
-</a>    
+</a>   
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.1k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">10 分钟</span>
+        </span>
+    </span>
+</div>
+ 
     </div>
       
+    <div class="tocbot"></div>
+
+
+
+
+  
     <div class="article-entry" itemprop="articleBody">
        
   <h2 id="一、简介">一、简介</h2>
@@ -318,526 +181,115 @@ var _hmt = _hmt || [];
 
     <!-- copyright -->
     
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
     <footer class="article-footer">
        
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://kiprey.github.io/2021/09/protobuf_ctf_fuzz/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/fuzz/" rel="tag">fuzz</a></li></ul>
 
     </footer>
   </div>
 
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-pwnable-tw-2"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/09/pwnable-tw-2/"
-    >Pwnable.tw 部分题解-2</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/09/pwnable-tw-2/" class="article-date">
-  <time datetime="2021-09-23T03:12:44.000Z" itemprop="datePublished">2021-09-23</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="简介">简介</h2>
-<p>这里将保存部分做过的 <a href="http://pwnable.tw" target="_blank" rel="noopener">pwnable.tw</a> 的题解。</p> 
-      <a class="article-more-link" href="/2021/09/pwnable-tw-2/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/pwnable-tw/" rel="tag">pwnable.tw</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-cnatda-1"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/05/cnatda-1/"
-    >计算机网络笔记-1</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/05/cnatda-1/" class="article-date">
-  <time datetime="2021-05-15T03:12:44.000Z" itemprop="datePublished">2021-05-15</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="简介">简介</h2>
-<ul>
-<li>这里记录了笔者阅读《计算机网络：自顶向下方法》的一些笔记。笔记有所缩略。</li>
-<li>主要关于
-<ul>
-<li>第一章：计算机网络和因特网</li>
-<li>第二章：应用层</li>
-<li>第三章：运输层</li>
-</ul>
-</li>
-</ul> 
-      <a class="article-more-link" href="/2021/05/cnatda-1/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/" rel="tag">计算机网络</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-WebServer-1"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/05/WebServer-1/"
-    >WebServer v1.0 文档</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/05/WebServer-1/" class="article-date">
-  <time datetime="2021-05-11T16:00:00.000Z" itemprop="datePublished">2021-05-12</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Project/">Project</a> / <a class="article-category-link" href="/categories/Project/WebServer/">WebServer</a>
-  </div>
    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="概述">概述</h2>
-<p>WebServer 1.0 简单实现了一个基础的 <strong>多并发网络服务程序</strong> 。在该版本中，主要实现了以下重要内容：</p>
-<ul>
-<li>线程互斥锁 &amp; 条件变量的封装</li>
-<li>线程池的设计，以支持并发</li>
-<li>基础网络连接的实现</li>
-<li>http 协议的简略支持
-<ul>
-<li>支持部分常用 HTTP 报文
-<ul>
-<li>200 OK</li>
-<li>400 Bad Request</li>
-<li>500 Internal Server Error</li>
-<li>501 Not Implemented</li>
-<li>505 HTTP Version Not Supported</li>
-</ul>
-</li>
-<li>支持 HTTP GET 请求</li>
-<li>支持 HTTP/1.1 <strong>持续连接</strong> 特性</li>
-</ul>
-</li>
-</ul>
-<p>1.0 版本的项目代码位于 <a href="https://github.com/Kiprey/WebServer/tree/4095ccc6fd3facd3988ea71178cacad7b4e0dd13" target="_blank" rel="noopener">Kiprey/WebServer CommitID: 4095cc - github</a></p>
-<p>最新版本的项目代码位于 <a href="https://github.com/Kiprey/WebServer" target="_blank" rel="noopener">Kiprey/WebServer - github</a></p> 
-      <a class="article-more-link" href="/2021/05/WebServer-1/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
+  <nav class="article-nav">
     
-
-    <!-- copyright -->
     
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/WebServer/" rel="tag">WebServer</a></li></ul>
-
-    </footer>
-  </div>
-
+      <a href="/2021/09/pwnable-tw-2/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Pwnable.tw 部分题解-2</div>
+      </a>
     
- 
-    
-</article>
-
-    
-    <article
-  id="post-v8TurboFan_IR_intro"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/04/v8TurboFan_IR_intro/"
-    >V8 TurboFan 生成图简析</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/04/v8TurboFan_IR_intro/" class="article-date">
-  <time datetime="2021-04-29T16:00:00.000Z" itemprop="datePublished">2021-04-30</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="一、简介">一、简介</h2>
-<p>v8 turbolizer 有助于我们分析 JIT turbofan 的优化方式以及优化过程。但我们常常对于 turbolizer 生成的 IR 图一知半解，不清楚具体符号所代表的意思。以下为笔者阅读相关代码后所做的笔记。</p> 
-      <a class="article-more-link" href="/2021/04/v8TurboFan_IR_intro/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-i386_WSL64"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/04/i386_WSL64/"
-    >WSL64 运行 32 位程序</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/04/i386_WSL64/" class="article-date">
-  <time datetime="2021-04-27T16:00:00.000Z" itemprop="datePublished">2021-04-28</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>WSL1 下执行 x86 程序较为困难，需要进行较多步骤，并且存在局限性;</p>
-<p>WSL2 下可以直接执行 x86 程序，但需要从 WSL1 中升级上去。</p>
-<p>两种操作均较为麻烦，因此这里记录了一点笔者走过的弯路。</p> 
-      <a class="article-more-link" href="/2021/04/i386_WSL64/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wsl/" rel="tag">wsl</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-CVE-2018-16065"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/03/CVE-2018-16065/"
-    >CVE-2018-16065 分析</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/03/CVE-2018-16065/" class="article-date">
-  <time datetime="2021-03-03T16:00:00.000Z" itemprop="datePublished">2021-03-04</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/v8/">v8</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="一、前言">一、前言</h2>
-<p>CVE-2018-16065 是 v8 中 <code>EmitBigTypedArrayElementStore</code> 函数内部的一个漏洞。该漏洞在检查相应 ArrayBuffer 是否被 Detach（即是否是<code>neutered</code>）之后，执行了一个带有<strong>副作用</strong>的（即<strong>可调用用户 JS callback 代码</strong>的） <code>ToBigInt</code> 函数。而用户可在对应回调函数中将原先通过上述检查的 BigIntArray （即<strong>不是 neutered 的 TypedArray</strong>）重新变成 <code>neutered</code>。</p>
-<p>这将使一部分数据被非法写入至一块已经 Detached 的 ArrayBuffer上。如果 GC 试图回收该 ArrayBuffer 的 backing store ，则会触发 CRASH。</p> 
-      <a class="article-more-link" href="/2021/03/CVE-2018-16065/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-CVE-2019-5755"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/02/CVE-2019-5755/"
-    >CVE-2019-5755 分析</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/02/CVE-2019-5755/" class="article-date">
-  <time datetime="2021-02-13T16:00:00.000Z" itemprop="datePublished">2021-02-14</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/v8/">v8</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="一、前言">一、前言</h2>
-<ul>
-<li>
-<p>CVE-2019-5755 是一个位于 v8 turboFan 的类型信息缺失漏洞。该漏洞将导致 SpeculativeSafeIntegerSubtract 的计算结果缺失 MinusZero （即 -0）这种类型。这将允许 turboFan 计算出错误的 Range 并可进一步构造出越界读写原语，乃至执行 shellcode。</p>
-</li>
-<li>
-<p>复现用的 v8 版本为 <code>7.1.302.28</code> （或者commit ID <code>a62e9dd69957d9b1d0a56f825506408960a283fc</code> 前的版本也可）</p>
-</li>
-</ul> 
-      <a class="article-more-link" href="/2021/02/CVE-2019-5755/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-CVE-2019-13764"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/02/CVE-2019-13764/"
-    >CVE-2019-13764 分析</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/02/CVE-2019-13764/" class="article-date">
-  <time datetime="2021-02-10T16:00:00.000Z" itemprop="datePublished">2021-02-11</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/v8/">v8</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="一、前言">一、前言</h2>
-<ul>
-<li>
-<p>CVE-2019-13764 是 v8 中的一个位于  JIT TyperPhase  <code>TypeInductionVariablePhi</code> 函数的漏洞。我们可以通过这个例子简单学习一下 TyperPhase 中对 InductionVariablePhi 的处理方式，以及越界读取构造方式。</p>
-</li>
-<li>
-<p>复现用的 v8 版本为 <code>7.8.279.23</code>（chromium 78.0.3904.108） 。</p>
-</li>
-</ul> 
-      <a class="article-more-link" href="/2021/02/CVE-2019-13764/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-  </article>
-  
-
-  
-  <nav class="page-nav">
-    
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/2/">下一页</a>
   </nav>
-  
-</section>
-</div>
 
+   
+ 
+   
+<div class="gitalk" id="gitalk-container"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
+
+
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script>
+
+<script type="text/javascript">
+  var gitalk = new Gitalk({
+    clientID: '5f6c407f4cb8963d03ac',
+    clientSecret: '1d6faa663a735dbfd671990187d6e62b32498560',
+    repo: 'kiprey.github.io',
+    owner: 'kiprey',
+    admin: ['kiprey'],
+    // id: location.pathname,      // Ensure uniqueness and length less than 50
+    id: md5(location.pathname),
+    distractionFreeMode: false,  // Facebook-like distraction free mode
+    pagerDirection: 'last'
+  })
+
+  gitalk.render('gitalk-container')
+</script>
+     
+</article>
+
+</section>
       <footer class="footer">
   <div class="outer">
     <ul>
@@ -972,6 +424,23 @@ var _hmt = _hmt || [];
 <script src="/js/lazyload.min.js"></script>
 
 <!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
