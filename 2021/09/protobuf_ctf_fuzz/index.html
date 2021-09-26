@@ -83,7 +83,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">2.4k</span>
+            <span class="post-count">2.5k</span>
         </span>
     </span>
 
@@ -92,7 +92,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">11 分钟</span>
+            <span class="post-count">12 分钟</span>
         </span>
     </span>
 </div>
@@ -179,6 +179,11 @@ var _hmt = _hmt || [];
 <p>运行时如果遇到 <code>afl-quemu-trace</code> 不存在，则单独执行<code>AFLplusplus/qemu_mode/build_qemu_support.sh</code> 构建即可。</p>
 <h2 id="三、源代码">三、源代码</h2>
 <p>相关源代码以及构建方式已开源至 <a href="https://github.com/Kiprey/protobuf_ctf_fuzz" target="_blank" rel="noopener">github</a> 上。</p>
+<h2 id="四、可改进的地方">四、可改进的地方</h2>
+<ol>
+<li>libprotobuf-mutator 的变异效果一般，最好手动改进一下</li>
+<li>需要实现一下 trim 逻辑，空的 trim 逻辑可能会产生 <strong>样例爆炸</strong></li>
+</ol>
  
       <!-- reward -->
       
