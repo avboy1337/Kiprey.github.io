@@ -185,6 +185,8 @@ var _hmt = _hmt || [];
 <p><img src="/2021/09/protobuf_ctf_fuzz/image-20210927082630107.png" alt="image-20210927082630107"></p>
 <p>这一看，要么是架构问题，要么是 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a> / <a href="http://ld.so" target="_blank" rel="noopener">ld.so</a> 的问题。因此执行以下命令以更新 babyheap 所使用的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a> &amp; <a href="http://ld.so" target="_blank" rel="noopener">ld.so</a>，之后便可以正常执行。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">patchelf --<span class="built_in">set</span>-interpreter /lib64/ld-linux-x86-64.so.2 ./babyheap</span><br><span class="line">patchelf --replace-needed libc.so libc.so.6 ./babyheap</span><br></pre></td></tr></table></figure>
+<p>跑起来效果，还行？（不是很懂.jpg）</p>
+<p><img src="/2021/09/protobuf_ctf_fuzz/image-20210927112534183.png" alt="image-20210927112534183"></p>
  
       <!-- reward -->
       
