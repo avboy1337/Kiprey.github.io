@@ -162,7 +162,7 @@ var _hmt = _hmt || [];
     
     
     <article
-  id="post-heap-2-chunks"
+  id="post-heap-1-arena"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -173,8 +173,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/2020/03/heap-2-chunks/"
-    >heap - 2 - chunk的分类</a> 
+  <a class="article-title" href="/2020/03/heap-1-arena/"
+    >heap - 1 - arena</a> 
 </h2>
  
 
@@ -182,17 +182,21 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/2020/03/heap-2-chunks/" class="article-date">
+      <a href="/2020/03/heap-1-arena/" class="article-date">
   <time datetime="2020-03-28T16:00:00.000Z" itemprop="datePublished">2020-03-29</time>
 </a>    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>堆块最小分配的单位 —— malloc_chunk !</p>
-<h2 id="1-chunk的结构体">1. chunk的结构体</h2>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span> &#123;</span></span><br><span class="line"></span><br><span class="line">  INTERNAL_SIZE_T      prev_size;  <span class="comment">/* Size of previous chunk (if free).  */</span></span><br><span class="line">  INTERNAL_SIZE_T      size;       <span class="comment">/* Size in bytes, including overhead. */</span></span><br><span class="line"></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">fd</span>;</span>         <span class="comment">/* double links -- used only if free. */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">bk</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Only used for large blocks: pointer to next larger size.  */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">fd_nextsize</span>;</span> <span class="comment">/* double links -- used only if free. */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">bk_nextsize</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure> 
-      <a class="article-more-link" href="/2020/03/heap-2-chunks/"
+  <p>堆的 <strong>管理者</strong></p>
+<h2 id="1-什么是-arena">1. 什么是 arena</h2>
+<p>堆，是内存分配所用的内存，在计算机世界中是一种比较复杂的部件，里面有大量的信息需要被管理<br>
+而<code>arena</code>，就是管理堆的一个结构</p>
+<h2 id="2-arena-的特点">2. arena 的特点</h2>
+<p>一个线程只有一个<code>arena</code>，这些<code>arena</code>是互不相同的。<br>
+主线程的<code>arena</code>称为<code>main_arena</code>，子线程的<code>arena</code>称为<code>thread_arena</code>。</p> 
+      <a class="article-more-link" href="/2020/03/heap-1-arena/"
         >阅读更多...</a
       >
        
