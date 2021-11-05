@@ -162,6 +162,72 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-2020wdbctf"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2020/05/2020wdbctf/"
+    >2020网鼎杯部分Pwn题解</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2020/05/2020wdbctf/" class="article-date">
+  <time datetime="2020-05-22T15:42:09.000Z" itemprop="datePublished">2020-05-22</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <blockquote>
+<p>此处将会收录笔者力所能及的题解。<br>
+超出笔者技术水平的题目（例如kernel exploit）以及笔者因各种因素无法接触的题（例如bind pwn）将不会被收录。</p>
+</blockquote>
+<h2 id="1-青龙组">1.青龙组</h2>
+<h3 id="1-boom1">1. boom1</h3>
+<p>点击<a href="/2020/05/2020wdbctf/boom1" title="这里">这里</a>下载文件</p>
+<h4 id="1-易知信息">1) 易知信息</h4>
+<ul>
+<li>保护全开</li>
+<li>ELF文件中rodata段上有大量字符串。将其中部分字符串百度一下（例如： <code>duplicate global definition</code>）便可得知，该程序为C语言解释器</li>
+<li>在程序main函数中，发现一串疑似可用的关键字/函数名。<br>
+<img src="/2020/05/2020wdbctf/boom1_KeyChars.png" alt="img"></li>
+</ul> 
+      <a class="article-more-link" href="/2020/05/2020wdbctf/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-heap-14-house"
   class="article article-type-post"
   itemscope
@@ -514,7 +580,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-heap-9-__int_free_source"
+  id="post-heap-10-_int_free_process"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -525,8 +591,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/2020/05/heap-9-__int_free_source/"
-    >heap - 9 - _int_free 源码及其部分分析</a> 
+  <a class="article-title" href="/2020/05/heap-10-_int_free_process/"
+    >heap - 10 - _int_free的相关操作</a> 
 </h2>
  
 
@@ -534,15 +600,15 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/2020/05/heap-9-__int_free_source/" class="article-date">
+      <a href="/2020/05/heap-10-_int_free_process/" class="article-date">
   <time datetime="2020-05-03T16:00:00.000Z" itemprop="datePublished">2020-05-04</time>
 </a>    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p><code>__int_free</code> —— 核心内存释放函数</p> 
-      <a class="article-more-link" href="/2020/05/heap-9-__int_free_source/"
+  <p>_int_free的一系列操作</p> 
+      <a class="article-more-link" href="/2020/05/heap-10-_int_free_process/"
         >阅读更多...</a
       >
        
@@ -638,7 +704,7 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-heap-10-_int_free_process"
+  id="post-heap-9-__int_free_source"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -649,8 +715,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/2020/05/heap-10-_int_free_process/"
-    >heap - 10 - _int_free的相关操作</a> 
+  <a class="article-title" href="/2020/05/heap-9-__int_free_source/"
+    >heap - 9 - _int_free 源码及其部分分析</a> 
 </h2>
  
 
@@ -658,15 +724,15 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/2020/05/heap-10-_int_free_process/" class="article-date">
+      <a href="/2020/05/heap-9-__int_free_source/" class="article-date">
   <time datetime="2020-05-03T16:00:00.000Z" itemprop="datePublished">2020-05-04</time>
 </a>    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>_int_free的一系列操作</p> 
-      <a class="article-more-link" href="/2020/05/heap-10-_int_free_process/"
+  <p><code>__int_free</code> —— 核心内存释放函数</p> 
+      <a class="article-more-link" href="/2020/05/heap-9-__int_free_source/"
         >阅读更多...</a
       >
        
@@ -733,70 +799,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/tools/" rel="tag">tools</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-heap-8-UAF"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/04/heap-8-UAF/"
-    >heap - 8 - UAF漏洞的简单介绍及其例子</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/04/heap-8-UAF/" class="article-date">
-  <time datetime="2020-04-17T16:00:00.000Z" itemprop="datePublished">2020-04-18</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>A good Hacker should always take good notes!  —— hacknote</p>
-<h2 id="1-UAF简介">1. UAF简介</h2>
-<p>UAF —— Use After Free. 指的是当某个指针被free后，没有及时将这个指针置空，导致该指针成为悬浮指针，在程序中仍然可以对该指针指向的内存执行某些操作，例如写入数据，查看数据等（操作取决于程序）</p>
-<h2 id="2-例子-—-pwnable-tw-hacknote">2. 例子 — pwnable.tw_hacknote</h2>
-<p>点击 <a href="/2020/04/heap-8-UAF/hacknote.zip" title="这里">这里</a> 下载题目</p>
-<h3 id="查看保护">查看保护</h3>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> root @ Kiprey <span class="keyword">in</span> ~/Desktop/Pwn [14:16:43]</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> checksec hacknote  </span></span><br><span class="line">[*] '/root/Desktop/Pwn/hacknote'</span><br><span class="line">    Arch:     i386-32-little</span><br><span class="line">    RELRO:    Partial RELRO</span><br><span class="line">    Stack:    Canary found</span><br><span class="line">    NX:       NX enabled</span><br><span class="line">    PIE:      No PIE (0x8048000)</span><br></pre></td></tr></table></figure>
-<h3 id="执行流程">执行流程</h3>
-<ol>
-<li>提示用户选择选项，有 <strong>添加笔记</strong>、 <strong>删除笔记</strong>、 <strong>输出笔记</strong>和<strong>退出程序</strong>四个选项</li>
-<li>根据用户的选择，执行不同的操作</li>
-</ol> 
-      <a class="article-more-link" href="/2020/04/heap-8-UAF/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Heap/" rel="tag">Heap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/pwnable-tw/" rel="tag">pwnable.tw</a></li></ul>
 
     </footer>
   </div>
