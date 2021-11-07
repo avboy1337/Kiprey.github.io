@@ -2,9 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://kiprey.github.io/2021/11/cs144-lab1/</loc>
+    
+    <lastmod>2021-11-07T01:54:41.104Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://kiprey.github.io/2021/11/cs144-lab0/</loc>
     
-    <lastmod>2021-11-05T05:46:22.244Z</lastmod>
+    <lastmod>2021-11-07T01:47:13.270Z</lastmod>
     
   </url>
   
@@ -408,13 +415,6 @@
   </url>
   
   <url>
-    <loc>https://kiprey.github.io/2020/04/heap-5-heap_definitions/</loc>
-    
-    <lastmod>2020-11-19T09:40:10.667Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>https://kiprey.github.io/2020/04/heap-4-_int_malloc_process/</loc>
     
     <lastmod>2020-11-19T09:40:10.667Z</lastmod>
@@ -422,9 +422,9 @@
   </url>
   
   <url>
-    <loc>https://kiprey.github.io/2020/03/heap-2-chunks/</loc>
+    <loc>https://kiprey.github.io/2020/04/heap-5-heap_definitions/</loc>
     
-    <lastmod>2020-11-19T09:40:10.665Z</lastmod>
+    <lastmod>2020-11-19T09:40:10.667Z</lastmod>
     
   </url>
   
@@ -436,14 +436,21 @@
   </url>
   
   <url>
-    <loc>https://kiprey.github.io/2020/03/heap-1-arena/</loc>
+    <loc>https://kiprey.github.io/2020/03/heap-2-chunks/</loc>
+    
+    <lastmod>2020-11-19T09:40:10.665Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://kiprey.github.io/2020/05/heap-11-malloc_consolidate/</loc>
     
     <lastmod>2020-11-19T09:40:10.649Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://kiprey.github.io/2020/05/heap-11-malloc_consolidate/</loc>
+    <loc>https://kiprey.github.io/2020/03/heap-1-arena/</loc>
     
     <lastmod>2020-11-19T09:40:10.649Z</lastmod>
     
@@ -457,14 +464,14 @@
   </url>
   
   <url>
-    <loc>https://kiprey.github.io/2020/04/crypto/</loc>
+    <loc>https://kiprey.github.io/2020/06/compiler-learning/</loc>
     
     <lastmod>2020-11-19T09:40:10.580Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://kiprey.github.io/2020/06/compiler-learning/</loc>
+    <loc>https://kiprey.github.io/2020/04/crypto/</loc>
     
     <lastmod>2020-11-19T09:40:10.580Z</lastmod>
     
