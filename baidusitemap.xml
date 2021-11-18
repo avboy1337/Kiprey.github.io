@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://kiprey.github.io/2021/11/cs144-lab4/</loc>
+    <loc>https://kiprey.github.io/2021/11/cs144-lab6/</loc>
+    <lastmod>2021-11-18</lastmod>
+  </url>
+  <url>
+    <loc>https://kiprey.github.io/2021/11/cs144-lab5/</loc>
+    <lastmod>2021-11-18</lastmod>
+  </url>
+  <url>
+    <loc>https://kiprey.github.io/2021/11/cs144-lab2/</loc>
     <lastmod>2021-11-16</lastmod>
   </url>
   <url>
@@ -9,7 +17,7 @@
     <lastmod>2021-11-16</lastmod>
   </url>
   <url>
-    <loc>https://kiprey.github.io/2021/11/cs144-lab2/</loc>
+    <loc>https://kiprey.github.io/2021/11/cs144-lab4/</loc>
     <lastmod>2021-11-16</lastmod>
   </url>
   <url>
@@ -221,15 +229,15 @@
     <lastmod>2020-11-19</lastmod>
   </url>
   <url>
+    <loc>https://kiprey.github.io/2020/04/heap-6-__libc_malloc_source/</loc>
+    <lastmod>2020-11-19</lastmod>
+  </url>
+  <url>
     <loc>https://kiprey.github.io/2020/04/heap-5-heap_definitions/</loc>
     <lastmod>2020-11-19</lastmod>
   </url>
   <url>
     <loc>https://kiprey.github.io/2020/04/heap-4-_int_malloc_process/</loc>
-    <lastmod>2020-11-19</lastmod>
-  </url>
-  <url>
-    <loc>https://kiprey.github.io/2020/04/heap-6-__libc_malloc_source/</loc>
     <lastmod>2020-11-19</lastmod>
   </url>
   <url>

@@ -108,12 +108,12 @@ var _hmt = _hmt || [];
     <div class="article-entry" itemprop="articleBody">
        
   <h2 id="一、简介">一、简介</h2>
-<p>这里记录了笔者学习 CS144 计算机网络 Lab4 的一些笔记 - TCP 发送方实现 TCPConnection</p>
+<p>这里记录了笔者学习 CS144 计算机网络 Lab4 的一些笔记 - TCP 总实现 TCPConnection</p>
 <p>CS144 Lab4 实验指导书 - <a href="https://cs144.github.io/assignments/lab4.pdf" target="_blank" rel="noopener">Lab Checkpoint 4: the summit (TCP in full)</a></p>
 <p>个人 CS144 实验项目地址 - <a href="https://github.com/Kiprey/sponge" target="_blank" rel="noopener">github</a></p>
 <a id="more"></a>
 <h2 id="二、环境配置">二、环境配置</h2>
-<p>当前我们的实验代码位于 <code>master</code> 分支，而在完成 Lab2 之前需要合并一些 Lab3 的依赖代码，因此执行以下命令：</p>
+<p>当前我们的实验代码位于 <code>master</code> 分支，而在完成 Lab 之前需要合并一些依赖代码，因此执行以下命令：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git merge origin/lab4-startercode</span><br></pre></td></tr></table></figure>
 <p>之后重新 make 编译即可。</p>
 <h2 id="三、TCPConnection-简述">三、TCPConnection 简述</h2>
@@ -257,7 +257,7 @@ var _hmt = _hmt || [];
 <p>CS144 中用来模拟两机网络交互的那部分代码很有意思，这里简单的研究了一下 <code>tcp_ipv4.cc</code> 中的完整逻辑。</p>
 <p>首先，项目根路径中的 <code>tun.sh</code> 会使用 <code>ip tuntap</code> 技术创建虚拟 Tun/Tap 网络设备。这类接口仅能工作在内核中。不同于普通的网络接口，没有物理硬件。这样做的目的应该是为了模拟真实网络环境下的网络环境。</p>
 <blockquote>
-<p>这里是 tun/tap 的相信描述 - <a href="https://zhuanlan.zhihu.com/p/260405786" target="_blank" rel="noopener">虚拟设备之TUN和TAP - 知乎</a></p>
+<p>这里是 tun/tap 的详细描述 - <a href="https://zhuanlan.zhihu.com/p/260405786" target="_blank" rel="noopener">虚拟设备之TUN和TAP - 知乎</a></p>
 </blockquote>
 <p>当 Tun/Tap 网络设备建立好后，tcp_ipv4.cc 中会建立一个 <code>TCPOverIPv4OverTunFdAdapter</code>。<code>TunFd</code>指的是连接进 Tun 设备上的 socket，而<code>TCPOverIPv4OverTunFdAdapter</code>是一个 IP 层面的封装接口。当调用 adapter 向其写入 TCP 报文段时，它会自动 wrap 上 IP 段并传输进网络设备中；读取也是亦然，会自动解除 IP 段并返回其内部封装的 TCP报文段。</p>
 <p>接下来，无论对于 Server 还是 Client，在三次握手之后，都会建立一个新的线程，来专门执行 <code>LossyTCPOverIPv4SpongeSocket</code> 中的 eventloop。而子线程会另起一个 eventloop 以及另外开辟两个缓冲区，用于存放用户写入的数据与即将输出至屏幕的数据。当用户通过 stdin 输入数据时， <strong>eventloop  中所注册的 poll 事件</strong>被检测到，则数据将会被写入进本地输入缓冲区中。当 <code>TCPOverIPv4OverTunFdAdapter</code> 可写时，它会将本地输入缓冲区中的数据全部写入至 <code>TCPOverIPv4OverTunFdAdapter</code> ，并最终传输至远程。</p>
@@ -341,6 +341,15 @@ var _hmt = _hmt || [];
 
    
   <nav class="article-nav">
+    
+      <a href="/2021/11/cs144-lab5/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            CS144计算机网络 Lab5
+          
+        </div>
+      </a>
     
     
       <a href="/2021/11/cs144-lab3/" class="article-nav-link">

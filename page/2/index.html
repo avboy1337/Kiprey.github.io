@@ -162,6 +162,123 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-pwnable-tw-2"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/09/pwnable-tw-2/"
+    >Pwnable.tw 部分题解-2</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/09/pwnable-tw-2/" class="article-date">
+  <time datetime="2021-09-23T03:12:44.000Z" itemprop="datePublished">2021-09-23</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="简介">简介</h2>
+<p>这里将保存部分做过的 <a href="http://pwnable.tw" target="_blank" rel="noopener">pwnable.tw</a> 的题解。</p> 
+      <a class="article-more-link" href="/2021/09/pwnable-tw-2/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/pwnable-tw/" rel="tag">pwnable.tw</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-cnatda-1"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/05/cnatda-1/"
+    >计算机网络笔记-1</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/05/cnatda-1/" class="article-date">
+  <time datetime="2021-05-15T03:12:44.000Z" itemprop="datePublished">2021-05-15</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="简介">简介</h2>
+<ul>
+<li>这里记录了笔者阅读《计算机网络：自顶向下方法》的一些笔记。笔记有所缩略。</li>
+<li>主要关于
+<ul>
+<li>第一章：计算机网络和因特网</li>
+<li>第二章：应用层</li>
+<li>第三章：运输层</li>
+</ul>
+</li>
+</ul> 
+      <a class="article-more-link" href="/2021/05/cnatda-1/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/" rel="tag">计算机网络</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-WebServer-1"
   class="article article-type-post"
   itemscope
@@ -672,141 +789,13 @@ var _hmt = _hmt || [];
 </article>
 
     
-    <article
-  id="post-v8-turboFan"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/01/v8-turboFan/"
-    >浅析 V8-turboFan</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/01/v8-turboFan/" class="article-date">
-  <time datetime="2021-01-23T07:20:22.000Z" itemprop="datePublished">2021-01-23</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/chrome/">chrome</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="一、前言">一、前言</h2>
-<ul>
-<li>
-<p>v8 是一种 JS 引擎的实现，它由Google开发，使用C++编写。</p>
-<p>v8 被设计用于提高网页浏览器内部 JavaScript 代码执行的性能。为了提高性能，v8 将会把 JS 代码转换为更高效的机器码，而非传统的使用解释器执行。因此 v8 引入了 <strong>JIT (Just-In-Time)</strong> 机制，该机制将会在运行时动态编译 JS 代码为机器码，以提高运行速度。</p>
-</li>
-<li>
-<p>TurboFan是 v8 的优化编译器之一，它使用了 <a href="https://darksi.de/d.sea-of-nodes/" target="_blank" rel="noopener">sea of nodes</a> 这个编译器概念。</p>
-<blockquote>
-<p>sea of nodes 不是单纯的指某个图的结点，它是一种<strong>特殊中间表示</strong>的图。</p>
-<p>它的表示形式与一般的CFG/DFG不同，其具体内容请查阅上面的连接。</p>
-</blockquote>
-<p>TurboFan的相关源码位于<code>v8/compiler</code>文件夹下。</p></li></ul> 
-      <a class="article-more-link" href="/2021/01/v8-turboFan/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-secLab-CodeQL-learning"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/12/secLab-CodeQL-learning/"
-    >深入学习CodeQL by security_lab</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/12/secLab-CodeQL-learning/" class="article-date">
-  <time datetime="2020-12-24T07:24:31.000Z" itemprop="datePublished">2020-12-24</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%A4%A9%E9%97%AE%E4%B9%8B%E8%B7%AF/">天问之路</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="一、简介">一、简介</h2>
-<p><a href="https://github.com/github/securitylab/tree/main/CodeQL_Queries/cpp" target="_blank" rel="noopener">github SecurityLab</a> 上有多个CodeQL的使用例子</p>
-<p>通过学习这些例子，我们可以加深对CodeQL的了解，以便于更好的使用它。</p> 
-      <a class="article-more-link" href="/2020/12/secLab-CodeQL-learning/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CodeQL/" rel="tag">CodeQL</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
   </article>
   
 
   
   <nav class="page-nav">
     
-    <a class="extend prev" rel="prev" href="/">上一页</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/3/">下一页</a>
+    <a class="extend prev" rel="prev" href="/">上一页</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/3/">下一页</a>
   </nav>
   
 </section>
