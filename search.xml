@@ -10,18 +10,63 @@
 ]]></content>
   </entry>
   <entry>
+    <title>CS144计算机网络 Lab7</title>
+    <url>/2021/11/cs144-lab7/</url>
+    <content><![CDATA[<h2 id="一、简介">一、简介</h2>
+<p>这里记录了笔者学习 CS144 计算机网络 Lab7 的一些笔记（？）</p>
+<p>这也是 CS144 的最终实验（终于快完结了）</p>
+<p>CS144 Lab7 实验指导书 - <a href="https://cs144.github.io/assignments/lab7.pdf" target="_blank" rel="noopener">Final checkpoint: putting it all together</a></p>
+<p>个人 CS144 实验项目地址 - <a href="https://github.com/Kiprey/sponge" target="_blank" rel="noopener">github</a></p>
+<a id="more"></a>
+<p>该实验无需进行任何编码操作。</p>
+<p>同时我们还可以在这个实验中，将之前7个实验里所有实现的内容全部粘合在一起，并与真实网络进行通信。</p>
+<p>这是最终粘合的效果：</p>
+<p><img src="/2021/11/cs144-lab7/image-20211118211047223.png" alt="image-20211118211047223"></p>
+<h2 id="二、环境配置">二、环境配置</h2>
+<p>当前我们的实验代码位于 <code>master</code> 分支，而在完成 Lab 之前需要合并一些依赖代码，因此执行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git merge origin/lab7-startercode</span><br></pre></td></tr></table></figure>
+<p>之后重新 make 编译即可。</p>
+<h2 id="三、运行">三、运行</h2>
+<p>在两个终端分别执行以下两个命令</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">./apps/lab7 server cs144.keithw.org 3000</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">./apps/lab7 client cs144.keithw.org 3001</span><br></pre></td></tr></table></figure>
+<p>便可以看到两个服务成功相互连接：</p>
+<p><img src="/2021/11/cs144-lab7/image-20211118212210235.png" alt="image-20211118212210235"></p>
+<p><img src="/2021/11/cs144-lab7/image-20211118212219097.png" alt="image-20211118212219097"></p>
+<p>CS144 最终全部测试结果如下：</p>
+<p><img src="/2021/11/cs144-lab7/image-20211118212610868.png" alt="image-20211118212610868"></p>
+<p>CS144 圆满结束！完结撒花！</p>
+]]></content>
+      <tags>
+        <tag>计算机网络</tag>
+        <tag>CS144</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>CS144计算机网络 Lab6</title>
     <url>/2021/11/cs144-lab6/</url>
     <content><![CDATA[<h2 id="一、简介">一、简介</h2>
 <p>这里记录了笔者学习 CS144 计算机网络 Lab6 的一些笔记 - <strong>IP Router 路由器</strong> 的实现</p>
-<p>CS144 Lab5 实验指导书 - <a href="https://cs144.github.io/assignments/lab6.pdf" target="_blank" rel="noopener">Lab Checkpoint 6: building an IP router</a></p>
+<p>CS144 Lab6 实验指导书 - <a href="https://cs144.github.io/assignments/lab6.pdf" target="_blank" rel="noopener">Lab Checkpoint 6: building an IP router</a></p>
 <p>个人 CS144 实验项目地址 - <a href="https://github.com/Kiprey/sponge" target="_blank" rel="noopener">github</a></p>
 <a id="more"></a>
+<p>在这个实验中，我们将完成一个<strong>简易</strong>路由器，其功能是：对于给定的数据包，<strong>确认发送接口</strong>以及<strong>下一跳的 IP 地址</strong>。为了简化实验难度，该实验中<strong>无需处理任何复杂路由协议</strong>，实验代码最多只需30行。</p>
+<p><img src="/2021/11/cs144-lab6/image-20211118175306520.png" alt="image-20211118175306520"></p>
 <h2 id="二、环境配置">二、环境配置</h2>
 <p>当前我们的实验代码位于 <code>master</code> 分支，而在完成 Lab 之前需要合并一些依赖代码，因此执行以下命令：</p>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git merge origin/lab6-startercode</span><br></pre></td></tr></table></figure>
 <p>之后重新 make 编译即可。</p>
-<h2 id="三、">三、</h2>
+<h2 id="三、Router-的实现">三、Router 的实现</h2>
+<p>这里的 Router 实现比较简单，只需实现一下 IP 最长匹配并将数据包转发即可。</p>
+<p>类私有成员实现如下：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Router</span> &#123;</span></span><br><span class="line">    <span class="comment">//! The router's collection of network interfaces</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;AsyncNetworkInterface&gt; _interfaces&#123;&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//! Send a single datagram from the appropriate outbound interface to the next hop,</span></span><br><span class="line">    <span class="comment">//! as specified by the route with the longest prefix_length that matches the</span></span><br><span class="line">    <span class="comment">//! datagram's destination address.</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">route_one_datagram</span><span class="params">(InternetDatagram &amp;dgram)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">RouterTableEntry</span> &#123;</span></span><br><span class="line">        <span class="keyword">const</span> <span class="keyword">uint32_t</span> route_prefix;</span><br><span class="line">        <span class="keyword">const</span> <span class="keyword">uint8_t</span> prefix_length;</span><br><span class="line">        <span class="keyword">const</span> <span class="built_in">std</span>::optional&lt;Address&gt; next_hop;</span><br><span class="line">        <span class="keyword">const</span> <span class="keyword">size_t</span> interface_idx;</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;RouterTableEntry&gt; _router_table&#123;&#125;;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    [...]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>类函数方法实现如下：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">//! \param[in] route_prefix The "up-to-32-bit" IPv4 address prefix to match the datagram's destination address against</span></span><br><span class="line"><span class="comment">//! \param[in] prefix_length For this route to be applicable, how many high-order (most-significant) bits of the route_prefix will need to match the corresponding bits of the datagram's destination address?</span></span><br><span class="line"><span class="comment">//! \param[in] next_hop The IP address of the next hop. Will be empty if the network is directly attached to the router (in which case, the next hop address should be the datagram's final destination).</span></span><br><span class="line"><span class="comment">//! \param[in] interface_num The index of the interface to send the datagram out on.</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Router::add_route</span><span class="params">(<span class="keyword">const</span> <span class="keyword">uint32_t</span> route_prefix,</span></span></span><br><span class="line"><span class="function"><span class="params">                       <span class="keyword">const</span> <span class="keyword">uint8_t</span> prefix_length,</span></span></span><br><span class="line"><span class="function"><span class="params">                       <span class="keyword">const</span> optional&lt;Address&gt; next_hop,</span></span></span><br><span class="line"><span class="function"><span class="params">                       <span class="keyword">const</span> <span class="keyword">size_t</span> interface_num)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">cerr</span> &lt;&lt; <span class="string">"DEBUG: adding route "</span> &lt;&lt; Address::from_ipv4_numeric(route_prefix).ip() &lt;&lt; <span class="string">"/"</span> &lt;&lt; <span class="keyword">int</span>(prefix_length)</span><br><span class="line">         &lt;&lt; <span class="string">" =&gt; "</span> &lt;&lt; (next_hop.has_value() ? next_hop-&gt;ip() : <span class="string">"(direct)"</span>) &lt;&lt; <span class="string">" on interface "</span> &lt;&lt; interface_num &lt;&lt; <span class="string">"\n"</span>;</span><br><span class="line"></span><br><span class="line">    _router_table.push_back(&#123;route_prefix, prefix_length, next_hop, interface_num&#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//! \param[in] dgram The datagram to be routed</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Router::route_one_datagram</span><span class="params">(InternetDatagram &amp;dgram)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">uint32_t</span> dst_ip_addr = dgram.header().dst;</span><br><span class="line">    <span class="keyword">auto</span> max_matched_entry = _router_table.end();</span><br><span class="line">    <span class="comment">// 开始查询</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> router_entry_iter = _router_table.begin(); router_entry_iter != _router_table.end();</span><br><span class="line">         router_entry_iter++) &#123;</span><br><span class="line">        <span class="comment">// 如果前缀匹配匹配长度为 0，或者前缀匹配相同</span></span><br><span class="line">        <span class="keyword">if</span> (router_entry_iter-&gt;prefix_length == <span class="number">0</span> ||</span><br><span class="line">            (router_entry_iter-&gt;route_prefix ^ dst_ip_addr) &gt;&gt; (<span class="number">32</span> - router_entry_iter-&gt;prefix_length) == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">// 如果条件符合，则更新最匹配的条目</span></span><br><span class="line">            <span class="keyword">if</span> (max_matched_entry == _router_table.end() ||</span><br><span class="line">                max_matched_entry-&gt;prefix_length &lt; router_entry_iter-&gt;prefix_length)</span><br><span class="line">                max_matched_entry = router_entry_iter;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 将数据包 TTL 减去1</span></span><br><span class="line">    <span class="comment">// 如果存在最匹配的，并且数据包仍然存活，则将其转发</span></span><br><span class="line">    <span class="keyword">if</span> (max_matched_entry != _router_table.end() &amp;&amp; dgram.header().ttl-- &gt; <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">const</span> optional&lt;Address&gt; next_hop = max_matched_entry-&gt;next_hop;</span><br><span class="line">        AsyncNetworkInterface &amp;interface = _interfaces[max_matched_entry-&gt;interface_idx];</span><br><span class="line">        <span class="keyword">if</span> (next_hop.has_value())</span><br><span class="line">            interface.send_datagram(dgram, next_hop.value());</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            interface.send_datagram(dgram, Address::from_ipv4_numeric(dst_ip_addr));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 其他情况下则丢弃该数据包</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="四、测试">四、测试</h2>
+<p>这是 CS144 的测试网络拓扑：</p>
+<p><img src="/2021/11/cs144-lab6/image-20211118175644978.png" alt="image-20211118175644978"></p>
+<p>以下是我的测试结果：</p>
+<p><img src="/2021/11/cs144-lab6/image-20211118210129124.png" alt="image-20211118210129124"></p>
 ]]></content>
       <tags>
         <tag>计算机网络</tag>
@@ -16185,94 +16230,6 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
       </tags>
   </entry>
   <entry>
-    <title>heap - 10 - _int_free的相关操作</title>
-    <url>/2020/05/heap-10-_int_free_process/</url>
-    <content><![CDATA[<p>_int_free的一系列操作</p>
-<a id="more"></a>
-<blockquote>
-<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
-</blockquote>
-<h2 id="1-判断当前chunk的大小是否异常小或者异常大-内存有无对齐">1. 判断当前chunk的大小是否异常小或者异常大,内存有无对齐</h2>
-<ul>
-<li>如果是，则 <strong>报错退出</strong></li>
-</ul>
-<h2 id="2-如果当前chunk大小-小于-fast-chunk的最大值">2. 如果当前chunk大小 小于 fast chunk的最大值</h2>
-<ul>
-<li>判断下一个内存相邻chunk的size是否异常大或异常小，如果是，则 <strong>报错退出</strong></li>
-<li>判断当前fastbin链头的chunk是否为当前chunk(防止 <strong>连续的</strong> double free)。如果是，则 <strong>报错退出</strong></li>
-<li>将当前chunk放入fastbin链头</li>
-<li>如果实际放入的fast bin，其index与当前chunk的预期index不同，则 <strong>报错退出</strong></li>
-<li>如果上面的都没出错的话，则函数执行结束，<strong>函数返回</strong></li>
-</ul>
-<h2 id="3-判断当前chunk是否是调用mmap分配的">3. 判断当前chunk是否是调用mmap分配的</h2>
-<ul>
-<li>如果是，则
-<ul>
-<li>如果当前chunk为top chunk，则意味着double free， <strong>报错退出</strong>。因为top chunk为free chunk，不可再被free</li>
-<li>如果当前chunk的下一个内存相邻chunk(next chunk)，其内存起始地址超过了top chunk的最大内存地址，则 <strong>报错退出</strong></li>
-<li>如果当前chunk是inuse的，则 <strong>报错退出</strong></li>
-<li>如果next chunk的size异常大或者异常小，则 <strong>报错退出</strong></li>
-<li>如果上一个内存相邻chunk是free chunk，则将上一个chunk unlink，并与当前chunk合并</li>
-<li>判断next chunk是否为top chunk
-<ul>
-<li>如果不是
-<ul>
-<li>判断next chunk是否是空闲的（inuse）
-<ul>
-<li>如果是，则与当前待释放chunk合并</li>
-<li>否则，清空其PREV_INUSE标志位</li>
-</ul>
-</li>
-<li>将当前待释放chunk放入unsorted bin里</li>
-</ul>
-</li>
-<li>如果是
-<ul>
-<li>则当前chunk与top chunk合并</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>如果当前chunk的size大于某个临界点（临界点大小默认65535bytes/64KB）
-<ul>
-<li>如果存在fast chunk，则进行malloc_consolidate</li>
-<li>判断当前arena是否为main_arena
-<ul>
-<li>如果是，并且top chunk的大小超过某个临界点，则调用systrim返还多余内存</li>
-<li>否则，调用heap_trim返还内存给操作系统</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>函数执行结束，<strong>函数返回</strong></li>
-</ul>
-</li>
-<li>如果不是，则调用munmap函数释放当前chunk的内存，函数执行结束，<strong>函数返回</strong></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-        <tag>Heap</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>heap - 9 - _int_free 源码及其部分分析</title>
-    <url>/2020/05/heap-9-__int_free_source/</url>
-    <content><![CDATA[<p><code>__int_free</code> —— 核心内存释放函数</p>
-<a id="more"></a>
-<blockquote>
-<p>所有的分析都以注释的形式添加进源代码中，方便阅读</p>
-</blockquote>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line">_int_free (mstate av, mchunkptr p, <span class="keyword">int</span> have_lock)</span><br><span class="line">&#123;</span><br><span class="line">  INTERNAL_SIZE_T size;        <span class="comment">/* its size */</span></span><br><span class="line">  mfastbinptr *fb;             <span class="comment">/* associated fastbin */</span></span><br><span class="line">  mchunkptr nextchunk;         <span class="comment">/* next contiguous chunk */</span></span><br><span class="line">  INTERNAL_SIZE_T nextsize;    <span class="comment">/* its size */</span></span><br><span class="line">  <span class="keyword">int</span> nextinuse;               <span class="comment">/* true if nextchunk is used */</span></span><br><span class="line">  INTERNAL_SIZE_T prevsize;    <span class="comment">/* size of previous contiguous chunk */</span></span><br><span class="line">  mchunkptr bck;               <span class="comment">/* misc temp for linking */</span></span><br><span class="line">  mchunkptr fwd;               <span class="comment">/* misc temp for linking */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span> *errstr = <span class="literal">NULL</span>;</span><br><span class="line">  <span class="keyword">int</span> locked = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  size = chunksize (p);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Little security check which won't hurt performance: the</span></span><br><span class="line"><span class="comment">     allocator never wrapps around at the end of the address space.</span></span><br><span class="line"><span class="comment">     Therefore we can exclude some size values which might appear</span></span><br><span class="line"><span class="comment">     here by accident or by "design" from some intruder.  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk的大小异常大，或者地址不是按 2SIZE_SZ 对齐，则报错退出</span></span><br><span class="line">  <span class="keyword">if</span> (__builtin_expect ((<span class="keyword">uintptr_t</span>) p &gt; (<span class="keyword">uintptr_t</span>) -size, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (misaligned_chunk (p), <span class="number">0</span>))</span><br><span class="line">  &#123;</span><br><span class="line">    errstr = <span class="string">"free(): invalid pointer"</span>;</span><br><span class="line">  errout:</span><br><span class="line">    <span class="keyword">if</span> (!have_lock &amp;&amp; locked)</span><br><span class="line">      (<span class="keyword">void</span>) mutex_unlock (&amp;av-&gt;mutex);</span><br><span class="line">    malloc_printerr (check_action, errstr, chunk2mem (p), av);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">/* We know that each chunk is at least MINSIZE bytes in size or a</span></span><br><span class="line"><span class="comment">     multiple of MALLOC_ALIGNMENT.  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 检查一下chunk size是否比最小chunk size还要小，或者是否没有对齐内存</span></span><br><span class="line">  <span class="keyword">if</span> (__glibc_unlikely (size &lt; MINSIZE || !aligned_OK (size)))</span><br><span class="line">  &#123;</span><br><span class="line">    errstr = <span class="string">"free(): invalid size"</span>;</span><br><span class="line">    <span class="keyword">goto</span> errout;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 进行一系列的检查</span></span><br><span class="line">  check_inuse_chunk(av, p);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    If eligible, place chunk on a fastbin so it can be found</span></span><br><span class="line"><span class="comment">    and used quickly in malloc.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk的大小满足fastbin的要求，则放入fastbin</span></span><br><span class="line">  <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(size) &lt;= (<span class="keyword">unsigned</span> <span class="keyword">long</span>)(get_max_fast ())</span><br><span class="line"></span><br><span class="line">#<span class="keyword">if</span> TRIM_FASTBINS</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">        If TRIM_FASTBINS set, don't place chunks</span></span><br><span class="line"><span class="comment">        bordering top into fastbins</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        <span class="comment">// 如果TRIM_FASTBINS设置了，就不能把与top chunk相邻的chunk放入fastbin里</span></span><br><span class="line">      &amp;&amp; (chunk_at_offset(p, size) != av-&gt;top)</span><br><span class="line">#endif</span><br><span class="line">      )</span><br><span class="line">  &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 判断下一个chunk的大小是否异常小或者异常大</span></span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (chunk_at_offset (p, size)-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (chunksize (chunk_at_offset (p, size)) &gt;= av-&gt;system_mem, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="comment">/* We might not have a lock at this point and concurrent modifications</span></span><br><span class="line"><span class="comment">        of system_mem might have let to a false positive.  Redo the test</span></span><br><span class="line"><span class="comment">        after getting the lock.  */</span></span><br><span class="line">      <span class="keyword">if</span> (have_lock</span><br><span class="line">        || (&#123; assert (locked == <span class="number">0</span>);</span><br><span class="line">        mutex_lock(&amp;av-&gt;mutex);</span><br><span class="line">        locked = <span class="number">1</span>;</span><br><span class="line">        chunk_at_offset (p, size)-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ</span><br><span class="line">          || chunksize (chunk_at_offset (p, size)) &gt;= av-&gt;system_mem;</span><br><span class="line">          &#125;))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"free(): invalid next size (fast)"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">if</span> (! have_lock)</span><br><span class="line">      &#123;</span><br><span class="line">        (<span class="keyword">void</span>)mutex_unlock(&amp;av-&gt;mutex);</span><br><span class="line">        locked = <span class="number">0</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果相关标志设置了，则初始化当前chunk的内存</span></span><br><span class="line">    free_perturb (chunk2mem(p), size - <span class="number">2</span> * SIZE_SZ);</span><br><span class="line"></span><br><span class="line">    set_fastchunks(av);</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> idx = fastbin_index(size);</span><br><span class="line">    fb = &amp;fastbin (av, idx);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Atomically link P to its fastbin: P-&gt;FD = *FB; *FB = P;  */</span></span><br><span class="line">    <span class="comment">// 将当前fast free chunk放入fast bin里</span></span><br><span class="line">    mchunkptr old = *fb, old2;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> old_idx = ~<span class="number">0u</span>;</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    &#123;</span><br><span class="line">      <span class="comment">/* Check that the top of the bin is not the record we are going to add</span></span><br><span class="line"><span class="comment">          (i.e., double free).  */</span></span><br><span class="line"></span><br><span class="line">      <span class="comment">// 判断fastbin的头chunk是否就是我们将要free的chunk，以防止正常用户的double free(hacker另说)</span></span><br><span class="line">      <span class="keyword">if</span> (__builtin_expect (old == p, <span class="number">0</span>))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"double free or corruption (fasttop)"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">/* Check that size of fastbin chunk at the top is the same as</span></span><br><span class="line"><span class="comment">          size of the chunk that we are adding.  We can dereference OLD</span></span><br><span class="line"><span class="comment">          only if we have the lock, otherwise it might have already been</span></span><br><span class="line"><span class="comment">          deallocated.  See use of OLD_IDX below for the actual check.  */</span></span><br><span class="line">      <span class="keyword">if</span> (have_lock &amp;&amp; old != <span class="literal">NULL</span>)</span><br><span class="line">        old_idx = fastbin_index(chunksize(old));</span><br><span class="line">      p-&gt;fd = old2 = old;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">while</span> ((old = catomic_compare_and_exchange_val_rel (fb, p, old2)) != old2);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果实际放入的fastbin index与预期的不同，则error</span></span><br><span class="line">    <span class="keyword">if</span> (have_lock &amp;&amp; old != <span class="literal">NULL</span> &amp;&amp; __builtin_expect (old_idx != idx, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"invalid fastbin entry (free)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    Consolidate other non-mmapped chunks as they arrive.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line">  <span class="comment">// 如果当前chunk不是fast bin，并且也不是mmap来的</span></span><br><span class="line">  <span class="keyword">else</span> <span class="keyword">if</span> (!chunk_is_mmapped(p))</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> (! have_lock)</span><br><span class="line">    &#123;</span><br><span class="line">      (<span class="keyword">void</span>)mutex_lock(&amp;av-&gt;mutex);</span><br><span class="line">      locked = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    nextchunk = chunk_at_offset(p, size);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Lightweight tests: check whether the block is already the</span></span><br><span class="line"><span class="comment">       top block.  */</span></span><br><span class="line">    <span class="comment">// 判断当前chunk是否top chunk</span></span><br><span class="line">    <span class="keyword">if</span> (__glibc_unlikely (p == av-&gt;top))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (top)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Or whether the next chunk is beyond the boundaries of the arena.  */</span></span><br><span class="line">    <span class="comment">// 判断下一个chunk的地址是否超出top chunk</span></span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (contiguous (av)</span><br><span class="line">      &amp;&amp; (<span class="keyword">char</span> *) nextchunk</span><br><span class="line">      &gt;= ((<span class="keyword">char</span> *) av-&gt;top + chunksize(av-&gt;top)), <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (out)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Or whether the block is actually not marked used.  */</span></span><br><span class="line">    <span class="comment">// 判断当前chunk是否是inuse的</span></span><br><span class="line">    <span class="keyword">if</span> (__glibc_unlikely (!prev_inuse(nextchunk)))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (!prev)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 判断下一个chunk的大小是否异常大或者异常小</span></span><br><span class="line">    nextsize = chunksize(nextchunk);</span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (nextchunk-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (nextsize &gt;= av-&gt;system_mem, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"free(): invalid next size (normal)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    free_perturb (chunk2mem(p), size - <span class="number">2</span> * SIZE_SZ);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* consolidate backward */</span></span><br><span class="line">    <span class="comment">// 如果上一个内存相邻的chunk是free chunk，则于其合并</span></span><br><span class="line">    <span class="comment">// 注意：由于fast chunk的prev_inuse始终为1，所以fast_chunk不会被合并</span></span><br><span class="line">    <span class="keyword">if</span> (!prev_inuse(p)) &#123;</span><br><span class="line">      prevsize = p-&gt;prev_size;</span><br><span class="line">      size += prevsize;</span><br><span class="line">      p = chunk_at_offset(p, -((<span class="keyword">long</span>) prevsize));</span><br><span class="line">      unlink(av, p, bck, fwd);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果下一个chunk不为top chunk,则清除下一个chunk的prev_inuse位</span></span><br><span class="line">    <span class="keyword">if</span> (nextchunk != av-&gt;top) &#123;</span><br><span class="line">      <span class="comment">/* get and clear inuse bit */</span></span><br><span class="line">      nextinuse = inuse_bit_at_offset(nextchunk, nextsize);</span><br><span class="line">      <span class="comment">// 如果下一个内存相邻的chunk为free chunk，则与其合并</span></span><br><span class="line">      <span class="comment">/* consolidate forward */</span></span><br><span class="line">      <span class="keyword">if</span> (!nextinuse)</span><br><span class="line">      &#123;</span><br><span class="line">        unlink(av, nextchunk, bck, fwd);</span><br><span class="line">        size += nextsize;</span><br><span class="line">      &#125; <span class="keyword">else</span></span><br><span class="line">      clear_inuse_bit_at_offset(nextchunk, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">      <span class="comment">/*</span></span><br><span class="line"><span class="comment">      Place the chunk in unsorted chunk list. Chunks are</span></span><br><span class="line"><span class="comment">      not placed into regular bins until after they have</span></span><br><span class="line"><span class="comment">      been given one chance to be used in malloc.</span></span><br><span class="line"><span class="comment">      */</span></span><br><span class="line">      <span class="comment">// 把当前chunk 无论大小，全部放进unsorted bin里</span></span><br><span class="line">      bck = unsorted_chunks(av);</span><br><span class="line">      fwd = bck-&gt;fd;</span><br><span class="line">      <span class="keyword">if</span> (__glibc_unlikely (fwd-&gt;bk != bck))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"free(): corrupted unsorted chunks"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      p-&gt;fd = fwd;</span><br><span class="line">      p-&gt;bk = bck;</span><br><span class="line">      <span class="keyword">if</span> (!in_smallbin_range(size))</span><br><span class="line">      &#123;</span><br><span class="line">        p-&gt;fd_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">        p-&gt;bk_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      bck-&gt;fd = p;</span><br><span class="line">      fwd-&gt;bk = p;</span><br><span class="line"></span><br><span class="line">      set_head(p, size | PREV_INUSE);</span><br><span class="line">      set_foot(p, size);</span><br><span class="line"></span><br><span class="line">      check_free_chunk(av, p);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">      If the chunk borders the current high end of memory,</span></span><br><span class="line"><span class="comment">      consolidate into top</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">    <span class="comment">// 如果下一个chunk是top chunk，则直接与top chunk合并，不再放入unsorted bin里</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">      size += nextsize;</span><br><span class="line">      set_head(p, size | PREV_INUSE);</span><br><span class="line">      av-&gt;top = p;</span><br><span class="line">      check_chunk(av, p);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">      If freeing a large space, consolidate possibly-surrounding</span></span><br><span class="line"><span class="comment">      chunks. Then, if the total unused topmost memory exceeds trim</span></span><br><span class="line"><span class="comment">      threshold, ask malloc_trim to reduce top.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">      Unless max_fast is 0, we don't know if there are fastbins</span></span><br><span class="line"><span class="comment">      bordering top, so we cannot tell for sure whether threshold</span></span><br><span class="line"><span class="comment">      has been reached unless fastbins are consolidated.  But we</span></span><br><span class="line"><span class="comment">      don't want to consolidate on each free.  As a compromise,</span></span><br><span class="line"><span class="comment">      consolidation is performed if FASTBIN_CONSOLIDATION_THRESHOLD</span></span><br><span class="line"><span class="comment">      is reached.</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 在完成之前的chunk合并后，如果当前chunk的size非常大，那就来一次（可能有的）内存整合，并返还多余的内存给操作系统</span></span><br><span class="line">    <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(size) &gt;= FASTBIN_CONSOLIDATION_THRESHOLD)</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">if</span> (have_fastchunks(av))</span><br><span class="line">        malloc_consolidate(av);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (av == &amp;main_arena)</span><br><span class="line">      &#123;</span><br><span class="line">  <span class="meta">#<span class="meta-keyword">ifndef</span> MORECORE_CANNOT_TRIM</span></span><br><span class="line">        <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(chunksize(av-&gt;top)) &gt;=</span><br><span class="line">            (<span class="keyword">unsigned</span> <span class="keyword">long</span>)(mp_.trim_threshold))</span><br><span class="line">          systrim(mp_.top_pad, av);</span><br><span class="line">  <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span></span><br><span class="line">      &#123;</span><br><span class="line">        <span class="comment">/* Always try heap_trim(), even if the top chunk is not</span></span><br><span class="line"><span class="comment">          large, because the corresponding heap might go away.  */</span></span><br><span class="line">        heap_info *heap = heap_for_ptr(top(av));</span><br><span class="line"></span><br><span class="line">        assert(heap-&gt;ar_ptr == av);</span><br><span class="line">        heap_trim(heap, mp_.top_pad);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (! have_lock)</span><br><span class="line">    &#123;</span><br><span class="line">      assert (locked);</span><br><span class="line">      (<span class="keyword">void</span>)mutex_unlock(&amp;av-&gt;mutex);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    If the chunk was allocated via mmap, release via munmap().</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk是通过mmap来的，则munmap</span></span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    munmap_chunk (p);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-        <tag>Heap</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>heap - 11 - malloc_consolidate 源码及其部分分析</title>
     <url>/2020/05/heap-11-malloc_consolidate/</url>
     <content><![CDATA[<p>fast chunk的内存整合</p>
@@ -16338,6 +16295,94 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
 <p>所有的分析都以注释的形式添加进源代码中，方便阅读</p>
 </blockquote>
 <figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  ------------------------- malloc_consolidate -------------------------</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">  malloc_consolidate is a specialized version of free() that tears</span></span><br><span class="line"><span class="comment">  down chunks held in fastbins.  Free itself cannot be used for this</span></span><br><span class="line"><span class="comment">  purpose since, among other things, it might place chunks back onto</span></span><br><span class="line"><span class="comment">  fastbins.  So, instead, we need to use a minor variant of the same</span></span><br><span class="line"><span class="comment">  code.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">  Also, because this routine needs to be called the first time through</span></span><br><span class="line"><span class="comment">  malloc anyway, it turns out to be the perfect place to trigger</span></span><br><span class="line"><span class="comment">  initialization code.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">malloc_consolidate</span><span class="params">(mstate av)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  mfastbinptr*    fb;                 <span class="comment">/* current fastbin being consolidated */</span></span><br><span class="line">  mfastbinptr*    maxfb;              <span class="comment">/* last fastbin (for loop control) */</span></span><br><span class="line">  mchunkptr       p;                  <span class="comment">/* current chunk being consolidated */</span></span><br><span class="line">  mchunkptr       nextp;              <span class="comment">/* next chunk to consolidate */</span></span><br><span class="line">  mchunkptr       unsorted_bin;       <span class="comment">/* bin header */</span></span><br><span class="line">  mchunkptr       first_unsorted;     <span class="comment">/* chunk to link to */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* These have same use as in free() */</span></span><br><span class="line">  mchunkptr       nextchunk;</span><br><span class="line">  INTERNAL_SIZE_T size;</span><br><span class="line">  INTERNAL_SIZE_T nextsize;</span><br><span class="line">  INTERNAL_SIZE_T prevsize;</span><br><span class="line">  <span class="keyword">int</span>             nextinuse;</span><br><span class="line">  mchunkptr       bck;</span><br><span class="line">  mchunkptr       fwd;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    If max_fast is 0, we know that av hasn't</span></span><br><span class="line"><span class="comment">    yet been initialized, in which case do so below</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (get_max_fast () != <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// 清空arena上关于fastbin的标志位</span></span><br><span class="line">    clear_fastchunks(av);</span><br><span class="line"></span><br><span class="line">    unsorted_bin = unsorted_chunks(av);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">      Remove each chunk from fast bin and consolidate it, placing it</span></span><br><span class="line"><span class="comment">      then in unsorted bin. Among other reasons for doing this,</span></span><br><span class="line"><span class="comment">      placing in unsorted bin avoids needing to calculate actual bins</span></span><br><span class="line"><span class="comment">      until malloc is sure that chunks aren't immediately going to be</span></span><br><span class="line"><span class="comment">      reused anyway.</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line"></span><br><span class="line">    maxfb = &amp;fastbin (av, NFASTBINS - <span class="number">1</span>);</span><br><span class="line">    fb = &amp;fastbin (av, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">      <span class="comment">// 依次遍历fastbins的各个index的链头</span></span><br><span class="line">      p = atomic_exchange_acq (fb, <span class="number">0</span>);</span><br><span class="line">      <span class="comment">// 如果当前遍历到的index，其链上存在fast chunk</span></span><br><span class="line">      <span class="keyword">if</span> (p != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">          check_inuse_chunk(av, p);</span><br><span class="line">          nextp = p-&gt;fd;</span><br><span class="line"></span><br><span class="line">          <span class="comment">/* Slightly streamlined version of consolidation code in free() */</span></span><br><span class="line">          size = p-&gt;size &amp; ~(PREV_INUSE|NON_MAIN_ARENA);</span><br><span class="line">          nextchunk = chunk_at_offset(p, size);</span><br><span class="line">          nextsize = chunksize(nextchunk);</span><br><span class="line">          <span class="comment">// 如果上一个内存相邻chunk为free chunk，则与当前chunk合并</span></span><br><span class="line">          <span class="keyword">if</span> (!prev_inuse(p)) &#123;</span><br><span class="line">            prevsize = p-&gt;prev_size;</span><br><span class="line">            size += prevsize;</span><br><span class="line">            p = chunk_at_offset(p, -((<span class="keyword">long</span>) prevsize));</span><br><span class="line">            unlink(av, p, bck, fwd);</span><br><span class="line">          &#125;</span><br><span class="line"></span><br><span class="line">          <span class="comment">// 如果下一个内存相邻chunk不为top chunk</span></span><br><span class="line">          <span class="keyword">if</span> (nextchunk != av-&gt;top) &#123;</span><br><span class="line">            nextinuse = inuse_bit_at_offset(nextchunk, nextsize);</span><br><span class="line">            <span class="comment">// 如果下一个内存相邻chunk为free chunk，则与当前chunk合并</span></span><br><span class="line">            <span class="keyword">if</span> (!nextinuse) &#123;</span><br><span class="line">              size += nextsize;</span><br><span class="line">              unlink(av, nextchunk, bck, fwd);</span><br><span class="line">            &#125; <span class="keyword">else</span></span><br><span class="line">              clear_inuse_bit_at_offset(nextchunk, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 将（已经合并了相邻chunk的）当前chunk放入unsorted bin里</span></span><br><span class="line">            first_unsorted = unsorted_bin-&gt;fd;</span><br><span class="line">            unsorted_bin-&gt;fd = p;</span><br><span class="line">            first_unsorted-&gt;bk = p;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (!in_smallbin_range (size)) &#123;</span><br><span class="line">              p-&gt;fd_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">              p-&gt;bk_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            set_head(p, size | PREV_INUSE);</span><br><span class="line">            p-&gt;bk = unsorted_bin;</span><br><span class="line">            p-&gt;fd = first_unsorted;</span><br><span class="line">            set_foot(p, size);</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="comment">// 如果下一个内存相邻chunk是top chunk</span></span><br><span class="line">          <span class="comment">// 当前fast chunk与top chunk合并</span></span><br><span class="line">          <span class="keyword">else</span> &#123;</span><br><span class="line">            size += nextsize;</span><br><span class="line">            set_head(p, size | PREV_INUSE);</span><br><span class="line">            av-&gt;top = p;</span><br><span class="line">          &#125;</span><br><span class="line">        <span class="comment">// 一直遍历，直到当前fastbin链上的所有chunk全部放入unsorted bin里</span></span><br><span class="line">        &#125; <span class="keyword">while</span> ( (p = nextp) != <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// 一直遍历，直到所有fastbin链全部遍历完成</span></span><br><span class="line">    &#125; <span class="keyword">while</span> (fb++ != maxfb);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 初始时 fastchunk的最大值为0，此时需要对heap进行初始化</span></span><br><span class="line">    malloc_init_state(av);</span><br><span class="line">    check_malloc_state(av);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Pwn</tag>
+        <tag>Heap</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>heap - 9 - _int_free 源码及其部分分析</title>
+    <url>/2020/05/heap-9-__int_free_source/</url>
+    <content><![CDATA[<p><code>__int_free</code> —— 核心内存释放函数</p>
+<a id="more"></a>
+<blockquote>
+<p>所有的分析都以注释的形式添加进源代码中，方便阅读</p>
+</blockquote>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line">_int_free (mstate av, mchunkptr p, <span class="keyword">int</span> have_lock)</span><br><span class="line">&#123;</span><br><span class="line">  INTERNAL_SIZE_T size;        <span class="comment">/* its size */</span></span><br><span class="line">  mfastbinptr *fb;             <span class="comment">/* associated fastbin */</span></span><br><span class="line">  mchunkptr nextchunk;         <span class="comment">/* next contiguous chunk */</span></span><br><span class="line">  INTERNAL_SIZE_T nextsize;    <span class="comment">/* its size */</span></span><br><span class="line">  <span class="keyword">int</span> nextinuse;               <span class="comment">/* true if nextchunk is used */</span></span><br><span class="line">  INTERNAL_SIZE_T prevsize;    <span class="comment">/* size of previous contiguous chunk */</span></span><br><span class="line">  mchunkptr bck;               <span class="comment">/* misc temp for linking */</span></span><br><span class="line">  mchunkptr fwd;               <span class="comment">/* misc temp for linking */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span> *errstr = <span class="literal">NULL</span>;</span><br><span class="line">  <span class="keyword">int</span> locked = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  size = chunksize (p);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Little security check which won't hurt performance: the</span></span><br><span class="line"><span class="comment">     allocator never wrapps around at the end of the address space.</span></span><br><span class="line"><span class="comment">     Therefore we can exclude some size values which might appear</span></span><br><span class="line"><span class="comment">     here by accident or by "design" from some intruder.  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk的大小异常大，或者地址不是按 2SIZE_SZ 对齐，则报错退出</span></span><br><span class="line">  <span class="keyword">if</span> (__builtin_expect ((<span class="keyword">uintptr_t</span>) p &gt; (<span class="keyword">uintptr_t</span>) -size, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (misaligned_chunk (p), <span class="number">0</span>))</span><br><span class="line">  &#123;</span><br><span class="line">    errstr = <span class="string">"free(): invalid pointer"</span>;</span><br><span class="line">  errout:</span><br><span class="line">    <span class="keyword">if</span> (!have_lock &amp;&amp; locked)</span><br><span class="line">      (<span class="keyword">void</span>) mutex_unlock (&amp;av-&gt;mutex);</span><br><span class="line">    malloc_printerr (check_action, errstr, chunk2mem (p), av);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">/* We know that each chunk is at least MINSIZE bytes in size or a</span></span><br><span class="line"><span class="comment">     multiple of MALLOC_ALIGNMENT.  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 检查一下chunk size是否比最小chunk size还要小，或者是否没有对齐内存</span></span><br><span class="line">  <span class="keyword">if</span> (__glibc_unlikely (size &lt; MINSIZE || !aligned_OK (size)))</span><br><span class="line">  &#123;</span><br><span class="line">    errstr = <span class="string">"free(): invalid size"</span>;</span><br><span class="line">    <span class="keyword">goto</span> errout;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 进行一系列的检查</span></span><br><span class="line">  check_inuse_chunk(av, p);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    If eligible, place chunk on a fastbin so it can be found</span></span><br><span class="line"><span class="comment">    and used quickly in malloc.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk的大小满足fastbin的要求，则放入fastbin</span></span><br><span class="line">  <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(size) &lt;= (<span class="keyword">unsigned</span> <span class="keyword">long</span>)(get_max_fast ())</span><br><span class="line"></span><br><span class="line">#<span class="keyword">if</span> TRIM_FASTBINS</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">        If TRIM_FASTBINS set, don't place chunks</span></span><br><span class="line"><span class="comment">        bordering top into fastbins</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        <span class="comment">// 如果TRIM_FASTBINS设置了，就不能把与top chunk相邻的chunk放入fastbin里</span></span><br><span class="line">      &amp;&amp; (chunk_at_offset(p, size) != av-&gt;top)</span><br><span class="line">#endif</span><br><span class="line">      )</span><br><span class="line">  &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 判断下一个chunk的大小是否异常小或者异常大</span></span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (chunk_at_offset (p, size)-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (chunksize (chunk_at_offset (p, size)) &gt;= av-&gt;system_mem, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="comment">/* We might not have a lock at this point and concurrent modifications</span></span><br><span class="line"><span class="comment">        of system_mem might have let to a false positive.  Redo the test</span></span><br><span class="line"><span class="comment">        after getting the lock.  */</span></span><br><span class="line">      <span class="keyword">if</span> (have_lock</span><br><span class="line">        || (&#123; assert (locked == <span class="number">0</span>);</span><br><span class="line">        mutex_lock(&amp;av-&gt;mutex);</span><br><span class="line">        locked = <span class="number">1</span>;</span><br><span class="line">        chunk_at_offset (p, size)-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ</span><br><span class="line">          || chunksize (chunk_at_offset (p, size)) &gt;= av-&gt;system_mem;</span><br><span class="line">          &#125;))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"free(): invalid next size (fast)"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">if</span> (! have_lock)</span><br><span class="line">      &#123;</span><br><span class="line">        (<span class="keyword">void</span>)mutex_unlock(&amp;av-&gt;mutex);</span><br><span class="line">        locked = <span class="number">0</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果相关标志设置了，则初始化当前chunk的内存</span></span><br><span class="line">    free_perturb (chunk2mem(p), size - <span class="number">2</span> * SIZE_SZ);</span><br><span class="line"></span><br><span class="line">    set_fastchunks(av);</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> idx = fastbin_index(size);</span><br><span class="line">    fb = &amp;fastbin (av, idx);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Atomically link P to its fastbin: P-&gt;FD = *FB; *FB = P;  */</span></span><br><span class="line">    <span class="comment">// 将当前fast free chunk放入fast bin里</span></span><br><span class="line">    mchunkptr old = *fb, old2;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> old_idx = ~<span class="number">0u</span>;</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    &#123;</span><br><span class="line">      <span class="comment">/* Check that the top of the bin is not the record we are going to add</span></span><br><span class="line"><span class="comment">          (i.e., double free).  */</span></span><br><span class="line"></span><br><span class="line">      <span class="comment">// 判断fastbin的头chunk是否就是我们将要free的chunk，以防止正常用户的double free(hacker另说)</span></span><br><span class="line">      <span class="keyword">if</span> (__builtin_expect (old == p, <span class="number">0</span>))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"double free or corruption (fasttop)"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">/* Check that size of fastbin chunk at the top is the same as</span></span><br><span class="line"><span class="comment">          size of the chunk that we are adding.  We can dereference OLD</span></span><br><span class="line"><span class="comment">          only if we have the lock, otherwise it might have already been</span></span><br><span class="line"><span class="comment">          deallocated.  See use of OLD_IDX below for the actual check.  */</span></span><br><span class="line">      <span class="keyword">if</span> (have_lock &amp;&amp; old != <span class="literal">NULL</span>)</span><br><span class="line">        old_idx = fastbin_index(chunksize(old));</span><br><span class="line">      p-&gt;fd = old2 = old;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">while</span> ((old = catomic_compare_and_exchange_val_rel (fb, p, old2)) != old2);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果实际放入的fastbin index与预期的不同，则error</span></span><br><span class="line">    <span class="keyword">if</span> (have_lock &amp;&amp; old != <span class="literal">NULL</span> &amp;&amp; __builtin_expect (old_idx != idx, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"invalid fastbin entry (free)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    Consolidate other non-mmapped chunks as they arrive.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line">  <span class="comment">// 如果当前chunk不是fast bin，并且也不是mmap来的</span></span><br><span class="line">  <span class="keyword">else</span> <span class="keyword">if</span> (!chunk_is_mmapped(p))</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> (! have_lock)</span><br><span class="line">    &#123;</span><br><span class="line">      (<span class="keyword">void</span>)mutex_lock(&amp;av-&gt;mutex);</span><br><span class="line">      locked = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    nextchunk = chunk_at_offset(p, size);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Lightweight tests: check whether the block is already the</span></span><br><span class="line"><span class="comment">       top block.  */</span></span><br><span class="line">    <span class="comment">// 判断当前chunk是否top chunk</span></span><br><span class="line">    <span class="keyword">if</span> (__glibc_unlikely (p == av-&gt;top))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (top)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Or whether the next chunk is beyond the boundaries of the arena.  */</span></span><br><span class="line">    <span class="comment">// 判断下一个chunk的地址是否超出top chunk</span></span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (contiguous (av)</span><br><span class="line">      &amp;&amp; (<span class="keyword">char</span> *) nextchunk</span><br><span class="line">      &gt;= ((<span class="keyword">char</span> *) av-&gt;top + chunksize(av-&gt;top)), <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (out)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Or whether the block is actually not marked used.  */</span></span><br><span class="line">    <span class="comment">// 判断当前chunk是否是inuse的</span></span><br><span class="line">    <span class="keyword">if</span> (__glibc_unlikely (!prev_inuse(nextchunk)))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"double free or corruption (!prev)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 判断下一个chunk的大小是否异常大或者异常小</span></span><br><span class="line">    nextsize = chunksize(nextchunk);</span><br><span class="line">    <span class="keyword">if</span> (__builtin_expect (nextchunk-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ, <span class="number">0</span>)</span><br><span class="line">      || __builtin_expect (nextsize &gt;= av-&gt;system_mem, <span class="number">0</span>))</span><br><span class="line">    &#123;</span><br><span class="line">      errstr = <span class="string">"free(): invalid next size (normal)"</span>;</span><br><span class="line">      <span class="keyword">goto</span> errout;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    free_perturb (chunk2mem(p), size - <span class="number">2</span> * SIZE_SZ);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* consolidate backward */</span></span><br><span class="line">    <span class="comment">// 如果上一个内存相邻的chunk是free chunk，则于其合并</span></span><br><span class="line">    <span class="comment">// 注意：由于fast chunk的prev_inuse始终为1，所以fast_chunk不会被合并</span></span><br><span class="line">    <span class="keyword">if</span> (!prev_inuse(p)) &#123;</span><br><span class="line">      prevsize = p-&gt;prev_size;</span><br><span class="line">      size += prevsize;</span><br><span class="line">      p = chunk_at_offset(p, -((<span class="keyword">long</span>) prevsize));</span><br><span class="line">      unlink(av, p, bck, fwd);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果下一个chunk不为top chunk,则清除下一个chunk的prev_inuse位</span></span><br><span class="line">    <span class="keyword">if</span> (nextchunk != av-&gt;top) &#123;</span><br><span class="line">      <span class="comment">/* get and clear inuse bit */</span></span><br><span class="line">      nextinuse = inuse_bit_at_offset(nextchunk, nextsize);</span><br><span class="line">      <span class="comment">// 如果下一个内存相邻的chunk为free chunk，则与其合并</span></span><br><span class="line">      <span class="comment">/* consolidate forward */</span></span><br><span class="line">      <span class="keyword">if</span> (!nextinuse)</span><br><span class="line">      &#123;</span><br><span class="line">        unlink(av, nextchunk, bck, fwd);</span><br><span class="line">        size += nextsize;</span><br><span class="line">      &#125; <span class="keyword">else</span></span><br><span class="line">      clear_inuse_bit_at_offset(nextchunk, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">      <span class="comment">/*</span></span><br><span class="line"><span class="comment">      Place the chunk in unsorted chunk list. Chunks are</span></span><br><span class="line"><span class="comment">      not placed into regular bins until after they have</span></span><br><span class="line"><span class="comment">      been given one chance to be used in malloc.</span></span><br><span class="line"><span class="comment">      */</span></span><br><span class="line">      <span class="comment">// 把当前chunk 无论大小，全部放进unsorted bin里</span></span><br><span class="line">      bck = unsorted_chunks(av);</span><br><span class="line">      fwd = bck-&gt;fd;</span><br><span class="line">      <span class="keyword">if</span> (__glibc_unlikely (fwd-&gt;bk != bck))</span><br><span class="line">      &#123;</span><br><span class="line">        errstr = <span class="string">"free(): corrupted unsorted chunks"</span>;</span><br><span class="line">        <span class="keyword">goto</span> errout;</span><br><span class="line">      &#125;</span><br><span class="line">      p-&gt;fd = fwd;</span><br><span class="line">      p-&gt;bk = bck;</span><br><span class="line">      <span class="keyword">if</span> (!in_smallbin_range(size))</span><br><span class="line">      &#123;</span><br><span class="line">        p-&gt;fd_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">        p-&gt;bk_nextsize = <span class="literal">NULL</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      bck-&gt;fd = p;</span><br><span class="line">      fwd-&gt;bk = p;</span><br><span class="line"></span><br><span class="line">      set_head(p, size | PREV_INUSE);</span><br><span class="line">      set_foot(p, size);</span><br><span class="line"></span><br><span class="line">      check_free_chunk(av, p);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">      If the chunk borders the current high end of memory,</span></span><br><span class="line"><span class="comment">      consolidate into top</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">    <span class="comment">// 如果下一个chunk是top chunk，则直接与top chunk合并，不再放入unsorted bin里</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">      size += nextsize;</span><br><span class="line">      set_head(p, size | PREV_INUSE);</span><br><span class="line">      av-&gt;top = p;</span><br><span class="line">      check_chunk(av, p);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">      If freeing a large space, consolidate possibly-surrounding</span></span><br><span class="line"><span class="comment">      chunks. Then, if the total unused topmost memory exceeds trim</span></span><br><span class="line"><span class="comment">      threshold, ask malloc_trim to reduce top.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">      Unless max_fast is 0, we don't know if there are fastbins</span></span><br><span class="line"><span class="comment">      bordering top, so we cannot tell for sure whether threshold</span></span><br><span class="line"><span class="comment">      has been reached unless fastbins are consolidated.  But we</span></span><br><span class="line"><span class="comment">      don't want to consolidate on each free.  As a compromise,</span></span><br><span class="line"><span class="comment">      consolidation is performed if FASTBIN_CONSOLIDATION_THRESHOLD</span></span><br><span class="line"><span class="comment">      is reached.</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 在完成之前的chunk合并后，如果当前chunk的size非常大，那就来一次（可能有的）内存整合，并返还多余的内存给操作系统</span></span><br><span class="line">    <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(size) &gt;= FASTBIN_CONSOLIDATION_THRESHOLD)</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">if</span> (have_fastchunks(av))</span><br><span class="line">        malloc_consolidate(av);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (av == &amp;main_arena)</span><br><span class="line">      &#123;</span><br><span class="line">  <span class="meta">#<span class="meta-keyword">ifndef</span> MORECORE_CANNOT_TRIM</span></span><br><span class="line">        <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(chunksize(av-&gt;top)) &gt;=</span><br><span class="line">            (<span class="keyword">unsigned</span> <span class="keyword">long</span>)(mp_.trim_threshold))</span><br><span class="line">          systrim(mp_.top_pad, av);</span><br><span class="line">  <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span></span><br><span class="line">      &#123;</span><br><span class="line">        <span class="comment">/* Always try heap_trim(), even if the top chunk is not</span></span><br><span class="line"><span class="comment">          large, because the corresponding heap might go away.  */</span></span><br><span class="line">        heap_info *heap = heap_for_ptr(top(av));</span><br><span class="line"></span><br><span class="line">        assert(heap-&gt;ar_ptr == av);</span><br><span class="line">        heap_trim(heap, mp_.top_pad);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (! have_lock)</span><br><span class="line">    &#123;</span><br><span class="line">      assert (locked);</span><br><span class="line">      (<span class="keyword">void</span>)mutex_unlock(&amp;av-&gt;mutex);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">    If the chunk was allocated via mmap, release via munmap().</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果当前chunk是通过mmap来的，则munmap</span></span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    munmap_chunk (p);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Pwn</tag>
+        <tag>Heap</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>heap - 10 - _int_free的相关操作</title>
+    <url>/2020/05/heap-10-_int_free_process/</url>
+    <content><![CDATA[<p>_int_free的一系列操作</p>
+<a id="more"></a>
+<blockquote>
+<p>注意！ 以下步骤若未明确标明退出函数，则表示在执行完当前操作后，继续执行剩余操作</p>
+</blockquote>
+<h2 id="1-判断当前chunk的大小是否异常小或者异常大-内存有无对齐">1. 判断当前chunk的大小是否异常小或者异常大,内存有无对齐</h2>
+<ul>
+<li>如果是，则 <strong>报错退出</strong></li>
+</ul>
+<h2 id="2-如果当前chunk大小-小于-fast-chunk的最大值">2. 如果当前chunk大小 小于 fast chunk的最大值</h2>
+<ul>
+<li>判断下一个内存相邻chunk的size是否异常大或异常小，如果是，则 <strong>报错退出</strong></li>
+<li>判断当前fastbin链头的chunk是否为当前chunk(防止 <strong>连续的</strong> double free)。如果是，则 <strong>报错退出</strong></li>
+<li>将当前chunk放入fastbin链头</li>
+<li>如果实际放入的fast bin，其index与当前chunk的预期index不同，则 <strong>报错退出</strong></li>
+<li>如果上面的都没出错的话，则函数执行结束，<strong>函数返回</strong></li>
+</ul>
+<h2 id="3-判断当前chunk是否是调用mmap分配的">3. 判断当前chunk是否是调用mmap分配的</h2>
+<ul>
+<li>如果是，则
+<ul>
+<li>如果当前chunk为top chunk，则意味着double free， <strong>报错退出</strong>。因为top chunk为free chunk，不可再被free</li>
+<li>如果当前chunk的下一个内存相邻chunk(next chunk)，其内存起始地址超过了top chunk的最大内存地址，则 <strong>报错退出</strong></li>
+<li>如果当前chunk是inuse的，则 <strong>报错退出</strong></li>
+<li>如果next chunk的size异常大或者异常小，则 <strong>报错退出</strong></li>
+<li>如果上一个内存相邻chunk是free chunk，则将上一个chunk unlink，并与当前chunk合并</li>
+<li>判断next chunk是否为top chunk
+<ul>
+<li>如果不是
+<ul>
+<li>判断next chunk是否是空闲的（inuse）
+<ul>
+<li>如果是，则与当前待释放chunk合并</li>
+<li>否则，清空其PREV_INUSE标志位</li>
+</ul>
+</li>
+<li>将当前待释放chunk放入unsorted bin里</li>
+</ul>
+</li>
+<li>如果是
+<ul>
+<li>则当前chunk与top chunk合并</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>如果当前chunk的size大于某个临界点（临界点大小默认65535bytes/64KB）
+<ul>
+<li>如果存在fast chunk，则进行malloc_consolidate</li>
+<li>判断当前arena是否为main_arena
+<ul>
+<li>如果是，并且top chunk的大小超过某个临界点，则调用systrim返还多余内存</li>
+<li>否则，调用heap_trim返还内存给操作系统</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>函数执行结束，<strong>函数返回</strong></li>
+</ul>
+</li>
+<li>如果不是，则调用munmap函数释放当前chunk的内存，函数执行结束，<strong>函数返回</strong></li>
+</ul>
 ]]></content>
       <tags>
         <tag>CTF</tag>
@@ -16455,6 +16500,186 @@ iterator本身便可以使用对应宏定义(例如<code>__VALUE_TYPE</code>)来
         <tag>Pwn</tag>
         <tag>Heap</tag>
         <tag>pwnable.tw</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CTF Reverse 的笔记</title>
+    <url>/2020/04/reverse/</url>
+    <content><![CDATA[<ul>
+<li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li>
+<li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li>
+</ul>
+<h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2>
+<p>迷宫问题有以下特点:</p>
+<ul>
+<li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li>
+<li>将用户输入限制在少数几个字符范围内.</li>
+<li>一般只有一个迷宫入口和一个迷宫出口</li>
+</ul>
+<p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p>
+<a id="more"></a>]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Reverse</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CTF Pwn 的杂项笔记</title>
+    <url>/2020/04/pwn/</url>
+    <content><![CDATA[<p>这里是笔者记录的一些内容较少、不便于整理出一篇博客的<strong>Pwn杂项</strong>知识点。</p>
+<h2 id="1-docker-使用-使用手册">1. docker 使用 - <a href="http://www.docker.org.cn/index.html" target="_blank" rel="noopener">使用手册</a></h2>
+<h2 id="2-漏洞">2. 漏洞</h2>
+<ol>
+<li>
+<p>格式化字符串</p>
+ <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// %lln 四字 / %ln 双字 / %hn 单字 / %hhn 字节</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%(n-1)$[format]"</span>); <span class="comment">// -&gt; 第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%&#123;n-1&#125;$n"</span>); <span class="comment">// -&gt; 将输出的字符个数写入第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%nc"</span>); <span class="comment">// -&gt; 输出对应参数n个字符</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<a id="more"></a>
+<h2 id="3-绕过防护的手段">3. 绕过防护的手段</h2>
+<ol>
+<li>NX ------ 使用 ROPgadget 搜索可利用的小片段代码</li>
+<li>Canary – 读取 Canary 值并在 payload 中使用</li>
+<li>PIE ------ 由于相对偏移量不变，尝试泄露出任意一个基地址即可绕过</li>
+</ol>
+<h2 id="4-pwntools-docs">4. pwntools - <a href="http://docs.pwntools.com/en/stable/" target="_blank" rel="noopener">docs</a></h2>
+<ol>
+<li>
+<p>DynELF 类 - 用于泄露 libc - <a href="http://docs.pwntools.com/en/stable/dynelf.html" target="_blank" rel="noopener">docs</a></p>
+<ol>
+<li>
+<blockquote>
+<p>注意：构建leak函数时，必要时刻需要重置栈<br>
+防止因为部分关键数据被覆盖而导致leak失败陷入死循环</p>
+</blockquote>
+</li>
+</ol>
+</li>
+<li>
+<p>Fmtstr 类 - 对 printf 漏洞构造恶意 format - <a href="http://docs.pwntools.com/en/stable/fmtstr.html" target="_blank" rel="noopener">docs</a></p>
+<ol>
+<li>较常使用的功能是<br>
+<code>fmtstr_payload(offset,{address:data}, numbwritten=0, write_size=’byte’)</code>。
+<blockquote>
+<p>第一个参数 offset 是第一个可控的栈偏移(不包含格式化字符串参数)<br>
+第二个字典看名字就可以理解，<br>
+numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 printf(“Hello [var]”)，此时在可控变量之前已经输出了“Hello ”共计六个字符，应该设置参数值为 6。<br>
+第四个选择用 %hhn(byte),%hn(word)还是%n(dword).在我们的例子里就可以写成 fmtstr_payload(5, {printf_got:system_plt})</p>
+</blockquote>
+</li>
+</ol>
+</li>
+<li>
+<p>shellcraft 类 - shellcode 生成器</p>
+<ol>
+<li>
+<p>使用前需先指定平台</p>
+ <figure class="highlight python"><table><tr><td class="code"><pre><span class="line">context(os=<span class="string">"linux"</span>, arch=<span class="string">"amd64"</span>, bits=<span class="number">64</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+<li>
+<p>部分函数声明</p>
+<ol>
+<li>log
+<ol>
+<li><code>log.success()</code></li>
+<li><code>log.info()</code></li>
+<li><code>log.error()</code></li>
+<li><code>log.failure()</code></li>
+<li><code>context.level</code> = ‘debug’/‘error’</li>
+</ol>
+</li>
+<li><code>p64(int)</code> —— 传入值，传出 bytes</li>
+<li><code>u64(bytes)</code> —— 与 p64 相反</li>
+<li><code>ELF(elf_path_str)</code> —— 读取 ELF 文件（可执行文件，.so 共享库…）</li>
+<li><code>process(path_str)</code> —— 执行传入文件路径上的程序</li>
+<li><code>remote(ip_str, port_int</code>)` —— 传入格式为字符串的 ip 地址，以及格式为值的端口，连接并得到 IO 对象</li>
+<li><code>send(bytes)</code> —— 发送数据，不带 0x0A</li>
+<li><code>sendline(bytes)</code> —— 发送数据，结尾带 0x0A(’\n’)</li>
+<li><code>recv(int)</code> —— 参数可选，接收 n 个字节的数据</li>
+<li><code>recvline()</code> —— 接收数据，在没有接收到换行符的情况下一直阻塞</li>
+<li><code>recvuntil(Str)</code> —— 一直读取输出的信息，直到读取到传入的字符串</li>
+</ol>
+</li>
+<li>
+<p>有时候可能会因为缓冲区的问题阻塞一部分数据，加上 sleep 调整可能会得到改善</p>
+</li>
+</ol>
+<h2 id="5-One-gadget-github">5. One_gadget - <a href="https://github.com/david942j/one_gadget" target="_blank" rel="noopener">github</a></h2>
+<h2 id="6-ROPgadget">6. ROPgadget</h2>
+<ol>
+<li>
+<pre><code class="language-bash"> # 查找字符串
+ ROPgadget --binary ./pwn --string &quot;/bin/sh&quot;
+ # 查找全部的gadget，并通过管道将信息发送到grep进行筛选
+ ROPgadget --binary ./pwn1_64 | grep &quot;pop rdi&quot;
+ #筛选出有pop或ret的片段
+ ROPgadget --binary ./pwn1_64 --only &quot;pop|ret&quot;
+ <figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">2. &gt; 注意：构建超长ROP链时，必要时刻需要重置栈  </span><br><span class="line">    &gt; 防止因为部分关键数据被覆盖而导致调用syscall的函数无法使用  </span><br><span class="line">    &gt; 例子: hgame2020 ROP_LEVEL0 构建 open-read-puts 链</span><br><span class="line"></span><br><span class="line"><span class="comment">## 7. GDB</span></span><br><span class="line"></span><br><span class="line">```bash</span><br><span class="line"><span class="comment">#输出system函数的内存地址</span></span><br><span class="line">gdb-peda$ <span class="builtin-name">print</span> system</span><br><span class="line"><span class="comment">#显示某个地址上的值，x表示examine，s表示string</span></span><br><span class="line">db-peda$ x/s 0x7FFFF7F7ECEE</span><br></pre></td></tr></table></figure>
+
+</code></pre>
+</li>
+</ol>
+<h2 id="8-libc-相关">8. libc 相关</h2>
+<ol>
+<li>
+<p><a href="https://github.com/matrix1001/glibc-all-in-one" target="_blank" rel="noopener">glibc-all-in-one</a></p>
+</li>
+<li>
+<p>pwn 题给出的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p>
+<ol>
+<li>可用于得到 system 函数和&quot;/bin/bash&quot;相对于库基址的偏移量</li>
+<li>在程序中得到某个函数泄露出的地址之后，例如 write 函数的 GOT 地址，即可通过偏移量调用 system(&quot;/bin/bash&quot;)</li>
+</ol>
+</li>
+<li>
+<p>libc-database : 通过某些函数的地址来查询 libc 的版本 - <a href="https://libc.blukat.me/" target="_blank" rel="noopener">在线工具</a></p>
+</li>
+<li>
+<p>更换加载的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p>
+<ol>
+<li>
+<p><a href="https://www.mankier.com/1/patchelf#--force-rpath" target="_blank" rel="noopener">patchelf 手册页</a></p>
+ <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">patchelf --<span class="built_in">set</span>-interpreter &lt;libc_ld&gt; &lt;elf_name&gt; <span class="comment"># 设置链接器</span></span><br><span class="line">patchelf --<span class="built_in">set</span>-rpath &lt;libc_parent_folder&gt;:/&lt;libc_name&gt; &lt;elf_name&gt;</span><br><span class="line"><span class="comment"># patchelf --add-needed # 添加libc.so</span></span><br><span class="line"><span class="comment"># patchelf --replace-needed # 替换libc.so</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><a href="https://bbs.pediy.com/thread-225849.htm" target="_blank" rel="noopener">关于不同版本 glibc 强行加载的方法</a></p>
+</li>
+</ol>
+<blockquote>
+<p>注意，更换使用的libc时，一定要同时更换对应版本的<code>ld.so</code>链接器，否则会无法正常使用libc而导致段错误</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="9-shellcode">9.  shellcode</h2>
+<ol>
+<li>
+<p><a href="http://shell-storm.org/shellcode" target="_blank" rel="noopener">shellcode 数据库</a></p>
+</li>
+<li>
+<p>常用 shellcode</p>
+ <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Linux x86-64 29 bytes</span></span><br><span class="line"><span class="keyword">char</span> code[] = <span class="string">"\x31\xc0\x48\xbb\xd1\x9d\x96\x91\xd0\x8c\x97\xff\x48\xf7\xdb\x53\x54\x5f\x99\x52\x57\x54\x5e\xb0\x3b\x0f\x05"</span>;</span><br><span class="line"><span class="comment">// Linux x86 21 bytes</span></span><br><span class="line"><span class="keyword">char</span> shellcode[] =</span><br><span class="line"><span class="string">"\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80"</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>生成特定格式的 shellcode - msfven</p>
+ <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python -c <span class="string">'import sys; sys.stdout.write("\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80")'</span> |  msfvenom -p - -e x86/alpha_mixed -a linux -f raw -a x86 --platform linux BufferRegister=EAX -o output.txt</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="10-Linux-Syscall-Reference">10. Linux Syscall Reference</h2>
+<ol>
+<li><a href="http://syscalls.kernelgrok.com/" target="_blank" rel="noopener">x86</a>
+<blockquote>
+<p>int <code>execve</code>(const char *<code>pathname</code>, char *const <code>argv</code>[], char *const <code>envp</code>[]);<br>
+<code>sys_exec</code> : <code>eax</code> = 0xB, <code>ebx</code> = path_str_addr, <code>ecx</code> = NULL, <code>edx</code> = NULL</p>
+</blockquote>
+</li>
+<li><a href="http://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/" target="_blank" rel="noopener">x64</a></li>
+</ol>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Pwn</tag>
       </tags>
   </entry>
   <entry>
@@ -16685,186 +16910,6 @@ ipconfig/flusdns<br>
       <tags>
         <tag>CTF</tag>
         <tag>Web</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CTF Pwn 的杂项笔记</title>
-    <url>/2020/04/pwn/</url>
-    <content><![CDATA[<p>这里是笔者记录的一些内容较少、不便于整理出一篇博客的<strong>Pwn杂项</strong>知识点。</p>
-<h2 id="1-docker-使用-使用手册">1. docker 使用 - <a href="http://www.docker.org.cn/index.html" target="_blank" rel="noopener">使用手册</a></h2>
-<h2 id="2-漏洞">2. 漏洞</h2>
-<ol>
-<li>
-<p>格式化字符串</p>
- <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// %lln 四字 / %ln 双字 / %hn 单字 / %hhn 字节</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%(n-1)$[format]"</span>); <span class="comment">// -&gt; 第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%&#123;n-1&#125;$n"</span>); <span class="comment">// -&gt; 将输出的字符个数写入第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%nc"</span>); <span class="comment">// -&gt; 输出对应参数n个字符</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<a id="more"></a>
-<h2 id="3-绕过防护的手段">3. 绕过防护的手段</h2>
-<ol>
-<li>NX ------ 使用 ROPgadget 搜索可利用的小片段代码</li>
-<li>Canary – 读取 Canary 值并在 payload 中使用</li>
-<li>PIE ------ 由于相对偏移量不变，尝试泄露出任意一个基地址即可绕过</li>
-</ol>
-<h2 id="4-pwntools-docs">4. pwntools - <a href="http://docs.pwntools.com/en/stable/" target="_blank" rel="noopener">docs</a></h2>
-<ol>
-<li>
-<p>DynELF 类 - 用于泄露 libc - <a href="http://docs.pwntools.com/en/stable/dynelf.html" target="_blank" rel="noopener">docs</a></p>
-<ol>
-<li>
-<blockquote>
-<p>注意：构建leak函数时，必要时刻需要重置栈<br>
-防止因为部分关键数据被覆盖而导致leak失败陷入死循环</p>
-</blockquote>
-</li>
-</ol>
-</li>
-<li>
-<p>Fmtstr 类 - 对 printf 漏洞构造恶意 format - <a href="http://docs.pwntools.com/en/stable/fmtstr.html" target="_blank" rel="noopener">docs</a></p>
-<ol>
-<li>较常使用的功能是<br>
-<code>fmtstr_payload(offset,{address:data}, numbwritten=0, write_size=’byte’)</code>。
-<blockquote>
-<p>第一个参数 offset 是第一个可控的栈偏移(不包含格式化字符串参数)<br>
-第二个字典看名字就可以理解，<br>
-numbwritten 是指 printf 在格式化字符串之前输出的数据，比如 printf(“Hello [var]”)，此时在可控变量之前已经输出了“Hello ”共计六个字符，应该设置参数值为 6。<br>
-第四个选择用 %hhn(byte),%hn(word)还是%n(dword).在我们的例子里就可以写成 fmtstr_payload(5, {printf_got:system_plt})</p>
-</blockquote>
-</li>
-</ol>
-</li>
-<li>
-<p>shellcraft 类 - shellcode 生成器</p>
-<ol>
-<li>
-<p>使用前需先指定平台</p>
- <figure class="highlight python"><table><tr><td class="code"><pre><span class="line">context(os=<span class="string">"linux"</span>, arch=<span class="string">"amd64"</span>, bits=<span class="number">64</span>)</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-</li>
-<li>
-<p>部分函数声明</p>
-<ol>
-<li>log
-<ol>
-<li><code>log.success()</code></li>
-<li><code>log.info()</code></li>
-<li><code>log.error()</code></li>
-<li><code>log.failure()</code></li>
-<li><code>context.level</code> = ‘debug’/‘error’</li>
-</ol>
-</li>
-<li><code>p64(int)</code> —— 传入值，传出 bytes</li>
-<li><code>u64(bytes)</code> —— 与 p64 相反</li>
-<li><code>ELF(elf_path_str)</code> —— 读取 ELF 文件（可执行文件，.so 共享库…）</li>
-<li><code>process(path_str)</code> —— 执行传入文件路径上的程序</li>
-<li><code>remote(ip_str, port_int</code>)` —— 传入格式为字符串的 ip 地址，以及格式为值的端口，连接并得到 IO 对象</li>
-<li><code>send(bytes)</code> —— 发送数据，不带 0x0A</li>
-<li><code>sendline(bytes)</code> —— 发送数据，结尾带 0x0A(’\n’)</li>
-<li><code>recv(int)</code> —— 参数可选，接收 n 个字节的数据</li>
-<li><code>recvline()</code> —— 接收数据，在没有接收到换行符的情况下一直阻塞</li>
-<li><code>recvuntil(Str)</code> —— 一直读取输出的信息，直到读取到传入的字符串</li>
-</ol>
-</li>
-<li>
-<p>有时候可能会因为缓冲区的问题阻塞一部分数据，加上 sleep 调整可能会得到改善</p>
-</li>
-</ol>
-<h2 id="5-One-gadget-github">5. One_gadget - <a href="https://github.com/david942j/one_gadget" target="_blank" rel="noopener">github</a></h2>
-<h2 id="6-ROPgadget">6. ROPgadget</h2>
-<ol>
-<li>
-<pre><code class="language-bash"> # 查找字符串
- ROPgadget --binary ./pwn --string &quot;/bin/sh&quot;
- # 查找全部的gadget，并通过管道将信息发送到grep进行筛选
- ROPgadget --binary ./pwn1_64 | grep &quot;pop rdi&quot;
- #筛选出有pop或ret的片段
- ROPgadget --binary ./pwn1_64 --only &quot;pop|ret&quot;
- <figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">2. &gt; 注意：构建超长ROP链时，必要时刻需要重置栈  </span><br><span class="line">    &gt; 防止因为部分关键数据被覆盖而导致调用syscall的函数无法使用  </span><br><span class="line">    &gt; 例子: hgame2020 ROP_LEVEL0 构建 open-read-puts 链</span><br><span class="line"></span><br><span class="line"><span class="comment">## 7. GDB</span></span><br><span class="line"></span><br><span class="line">```bash</span><br><span class="line"><span class="comment">#输出system函数的内存地址</span></span><br><span class="line">gdb-peda$ <span class="builtin-name">print</span> system</span><br><span class="line"><span class="comment">#显示某个地址上的值，x表示examine，s表示string</span></span><br><span class="line">db-peda$ x/s 0x7FFFF7F7ECEE</span><br></pre></td></tr></table></figure>
-
-</code></pre>
-</li>
-</ol>
-<h2 id="8-libc-相关">8. libc 相关</h2>
-<ol>
-<li>
-<p><a href="https://github.com/matrix1001/glibc-all-in-one" target="_blank" rel="noopener">glibc-all-in-one</a></p>
-</li>
-<li>
-<p>pwn 题给出的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p>
-<ol>
-<li>可用于得到 system 函数和&quot;/bin/bash&quot;相对于库基址的偏移量</li>
-<li>在程序中得到某个函数泄露出的地址之后，例如 write 函数的 GOT 地址，即可通过偏移量调用 system(&quot;/bin/bash&quot;)</li>
-</ol>
-</li>
-<li>
-<p>libc-database : 通过某些函数的地址来查询 libc 的版本 - <a href="https://libc.blukat.me/" target="_blank" rel="noopener">在线工具</a></p>
-</li>
-<li>
-<p>更换加载的 <a href="http://libc.so" target="_blank" rel="noopener">libc.so</a></p>
-<ol>
-<li>
-<p><a href="https://www.mankier.com/1/patchelf#--force-rpath" target="_blank" rel="noopener">patchelf 手册页</a></p>
- <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">patchelf --<span class="built_in">set</span>-interpreter &lt;libc_ld&gt; &lt;elf_name&gt; <span class="comment"># 设置链接器</span></span><br><span class="line">patchelf --<span class="built_in">set</span>-rpath &lt;libc_parent_folder&gt;:/&lt;libc_name&gt; &lt;elf_name&gt;</span><br><span class="line"><span class="comment"># patchelf --add-needed # 添加libc.so</span></span><br><span class="line"><span class="comment"># patchelf --replace-needed # 替换libc.so</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p><a href="https://bbs.pediy.com/thread-225849.htm" target="_blank" rel="noopener">关于不同版本 glibc 强行加载的方法</a></p>
-</li>
-</ol>
-<blockquote>
-<p>注意，更换使用的libc时，一定要同时更换对应版本的<code>ld.so</code>链接器，否则会无法正常使用libc而导致段错误</p>
-</blockquote>
-</li>
-</ol>
-<h2 id="9-shellcode">9.  shellcode</h2>
-<ol>
-<li>
-<p><a href="http://shell-storm.org/shellcode" target="_blank" rel="noopener">shellcode 数据库</a></p>
-</li>
-<li>
-<p>常用 shellcode</p>
- <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Linux x86-64 29 bytes</span></span><br><span class="line"><span class="keyword">char</span> code[] = <span class="string">"\x31\xc0\x48\xbb\xd1\x9d\x96\x91\xd0\x8c\x97\xff\x48\xf7\xdb\x53\x54\x5f\x99\x52\x57\x54\x5e\xb0\x3b\x0f\x05"</span>;</span><br><span class="line"><span class="comment">// Linux x86 21 bytes</span></span><br><span class="line"><span class="keyword">char</span> shellcode[] =</span><br><span class="line"><span class="string">"\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80"</span>;</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>生成特定格式的 shellcode - msfven</p>
- <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python -c <span class="string">'import sys; sys.stdout.write("\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80")'</span> |  msfvenom -p - -e x86/alpha_mixed -a linux -f raw -a x86 --platform linux BufferRegister=EAX -o output.txt</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<h2 id="10-Linux-Syscall-Reference">10. Linux Syscall Reference</h2>
-<ol>
-<li><a href="http://syscalls.kernelgrok.com/" target="_blank" rel="noopener">x86</a>
-<blockquote>
-<p>int <code>execve</code>(const char *<code>pathname</code>, char *const <code>argv</code>[], char *const <code>envp</code>[]);<br>
-<code>sys_exec</code> : <code>eax</code> = 0xB, <code>ebx</code> = path_str_addr, <code>ecx</code> = NULL, <code>edx</code> = NULL</p>
-</blockquote>
-</li>
-<li><a href="http://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/" target="_blank" rel="noopener">x64</a></li>
-</ol>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CTF Reverse 的笔记</title>
-    <url>/2020/04/reverse/</url>
-    <content><![CDATA[<ul>
-<li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li>
-<li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li>
-</ul>
-<h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2>
-<p>迷宫问题有以下特点:</p>
-<ul>
-<li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li>
-<li>将用户输入限制在少数几个字符范围内.</li>
-<li>一般只有一个迷宫入口和一个迷宫出口</li>
-</ul>
-<p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p>
-<a id="more"></a>]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Reverse</tag>
       </tags>
   </entry>
   <entry>
@@ -18039,6 +18084,40 @@ bins --> large[Large bins]</pre>
       </tags>
   </entry>
   <entry>
+    <title>heap - 1 - arena</title>
+    <url>/2020/03/heap-1-arena/</url>
+    <content><![CDATA[<p>堆的 <strong>管理者</strong></p>
+<h2 id="1-什么是-arena">1. 什么是 arena</h2>
+<p>堆，是内存分配所用的内存，在计算机世界中是一种比较复杂的部件，里面有大量的信息需要被管理<br>
+而<code>arena</code>，就是管理堆的一个结构</p>
+<h2 id="2-arena-的特点">2. arena 的特点</h2>
+<p>一个线程只有一个<code>arena</code>，这些<code>arena</code>是互不相同的。<br>
+主线程的<code>arena</code>称为<code>main_arena</code>，子线程的<code>arena</code>称为<code>thread_arena</code>。</p>
+<a id="more"></a>
+<h2 id="3-arena-的数量限制">3. arena 的数量限制</h2>
+<p>并不是每个线程都有一个<code>arena</code>，其个数是有限制的。</p>
+<blockquote>
+<p>由于笔者在写这篇文章时，所涉猎的堆漏洞类型暂时没有涉及arena的其他知识，故此处留坑。</p>
+</blockquote>
+<h2 id="4-arena-的实现">4. arena 的实现</h2>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">   ----------- Internal state representation and initialization -----------</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="comment">/* Serialize access.  */</span></span><br><span class="line">  <span class="keyword">mutex_t</span> mutex;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Flags (formerly in max_fast).  */</span></span><br><span class="line">  <span class="keyword">int</span> flags;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Fastbins */</span></span><br><span class="line">  mfastbinptr fastbinsY[NFASTBINS];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Base of the topmost chunk -- not otherwise kept in a bin */</span></span><br><span class="line">  mchunkptr top;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* The remainder from the most recent split of a small request */</span></span><br><span class="line">  mchunkptr last_remainder;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Normal bins packed as described above */</span></span><br><span class="line">  mchunkptr bins[NBINS * <span class="number">2</span> - <span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Bitmap of bins */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> binmap[BINMAPSIZE];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list for free arenas.  Access to this field is serialized</span></span><br><span class="line"><span class="comment">     by free_list_lock in arena.c.  */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next_free</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Number of threads attached to this arena.  0 if the arena is on</span></span><br><span class="line"><span class="comment">     the free list.  Access to this field is serialized by</span></span><br><span class="line"><span class="comment">     free_list_lock in arena.c.  */</span></span><br><span class="line">  INTERNAL_SIZE_T attached_threads;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Memory allocated from the system in this arena.  */</span></span><br><span class="line">  INTERNAL_SIZE_T system_mem;</span><br><span class="line">  INTERNAL_SIZE_T max_system_mem;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>glibc中的<code>arena</code>使用的就是此结构体。</li>
+<li>该结构体包含了各种信息，例如<code>bin</code>链的头地址、<code>topchunk</code>的地址以及<code>last remainder</code>地址等等</li>
+<li>成员binmap用于记录bin的相关信息，例如某个bin是否为空
+<ul>
+<li>当需要遍历bin时，可以转而遍历binmap，以减小直接遍历bin时的 <strong>内存页载入、搜索、切换到下一个内存页等等</strong> 所带来的时间消耗</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <tags>
+        <tag>CTF</tag>
+        <tag>Pwn</tag>
+        <tag>Heap</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>heap - 2 - chunk的分类</title>
     <url>/2020/03/heap-2-chunks/</url>
     <content><![CDATA[<p>堆块最小分配的单位 —— malloc_chunk !</p>
@@ -18110,40 +18189,6 @@ bins --> large[Large bins]</pre>
 <ul>
 <li>当用户请求的是一个small chunk，并且该请求无法被small bin和unsorted bin满足</li>
 <li>此时查找最合适的chunk，并把该chunk切割，剩余部分放入unsorted bin里并成为新的last remainder</li>
-</ul>
-]]></content>
-      <tags>
-        <tag>CTF</tag>
-        <tag>Pwn</tag>
-        <tag>Heap</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>heap - 1 - arena</title>
-    <url>/2020/03/heap-1-arena/</url>
-    <content><![CDATA[<p>堆的 <strong>管理者</strong></p>
-<h2 id="1-什么是-arena">1. 什么是 arena</h2>
-<p>堆，是内存分配所用的内存，在计算机世界中是一种比较复杂的部件，里面有大量的信息需要被管理<br>
-而<code>arena</code>，就是管理堆的一个结构</p>
-<h2 id="2-arena-的特点">2. arena 的特点</h2>
-<p>一个线程只有一个<code>arena</code>，这些<code>arena</code>是互不相同的。<br>
-主线程的<code>arena</code>称为<code>main_arena</code>，子线程的<code>arena</code>称为<code>thread_arena</code>。</p>
-<a id="more"></a>
-<h2 id="3-arena-的数量限制">3. arena 的数量限制</h2>
-<p>并不是每个线程都有一个<code>arena</code>，其个数是有限制的。</p>
-<blockquote>
-<p>由于笔者在写这篇文章时，所涉猎的堆漏洞类型暂时没有涉及arena的其他知识，故此处留坑。</p>
-</blockquote>
-<h2 id="4-arena-的实现">4. arena 的实现</h2>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">   ----------- Internal state representation and initialization -----------</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="comment">/* Serialize access.  */</span></span><br><span class="line">  <span class="keyword">mutex_t</span> mutex;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Flags (formerly in max_fast).  */</span></span><br><span class="line">  <span class="keyword">int</span> flags;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Fastbins */</span></span><br><span class="line">  mfastbinptr fastbinsY[NFASTBINS];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Base of the topmost chunk -- not otherwise kept in a bin */</span></span><br><span class="line">  mchunkptr top;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* The remainder from the most recent split of a small request */</span></span><br><span class="line">  mchunkptr last_remainder;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Normal bins packed as described above */</span></span><br><span class="line">  mchunkptr bins[NBINS * <span class="number">2</span> - <span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Bitmap of bins */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> binmap[BINMAPSIZE];</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Linked list for free arenas.  Access to this field is serialized</span></span><br><span class="line"><span class="comment">     by free_list_lock in arena.c.  */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">malloc_state</span> *<span class="title">next_free</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Number of threads attached to this arena.  0 if the arena is on</span></span><br><span class="line"><span class="comment">     the free list.  Access to this field is serialized by</span></span><br><span class="line"><span class="comment">     free_list_lock in arena.c.  */</span></span><br><span class="line">  INTERNAL_SIZE_T attached_threads;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Memory allocated from the system in this arena.  */</span></span><br><span class="line">  INTERNAL_SIZE_T system_mem;</span><br><span class="line">  INTERNAL_SIZE_T max_system_mem;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<ul>
-<li>glibc中的<code>arena</code>使用的就是此结构体。</li>
-<li>该结构体包含了各种信息，例如<code>bin</code>链的头地址、<code>topchunk</code>的地址以及<code>last remainder</code>地址等等</li>
-<li>成员binmap用于记录bin的相关信息，例如某个bin是否为空
-<ul>
-<li>当需要遍历bin时，可以转而遍历binmap，以减小直接遍历bin时的 <strong>内存页载入、搜索、切换到下一个内存页等等</strong> 所带来的时间消耗</li>
-</ul>
-</li>
 </ul>
 ]]></content>
       <tags>

@@ -217,6 +217,63 @@ var _hmt = _hmt || [];
 
     
     <article
+  id="post-cs144-lab7"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/11/cs144-lab7/"
+    >CS144计算机网络 Lab7</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/11/cs144-lab7/" class="article-date">
+  <time datetime="2021-11-17T16:00:00.000Z" itemprop="datePublished">2021-11-18</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="一、简介">一、简介</h2>
+<p>这里记录了笔者学习 CS144 计算机网络 Lab7 的一些笔记（？）</p>
+<p>这也是 CS144 的最终实验（终于快完结了）</p>
+<p>CS144 Lab7 实验指导书 - <a href="https://cs144.github.io/assignments/lab7.pdf" target="_blank" rel="noopener">Final checkpoint: putting it all together</a></p>
+<p>个人 CS144 实验项目地址 - <a href="https://github.com/Kiprey/sponge" target="_blank" rel="noopener">github</a></p> 
+      <a class="article-more-link" href="/2021/11/cs144-lab7/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CS144/" rel="tag">CS144</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/" rel="tag">计算机网络</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-cs144-lab6"
   class="article article-type-post"
   itemscope
@@ -246,7 +303,7 @@ var _hmt = _hmt || [];
        
   <h2 id="一、简介">一、简介</h2>
 <p>这里记录了笔者学习 CS144 计算机网络 Lab6 的一些笔记 - <strong>IP Router 路由器</strong> 的实现</p>
-<p>CS144 Lab5 实验指导书 - <a href="https://cs144.github.io/assignments/lab6.pdf" target="_blank" rel="noopener">Lab Checkpoint 6: building an IP router</a></p>
+<p>CS144 Lab6 实验指导书 - <a href="https://cs144.github.io/assignments/lab6.pdf" target="_blank" rel="noopener">Lab Checkpoint 6: building an IP router</a></p>
 <p>个人 CS144 实验项目地址 - <a href="https://github.com/Kiprey/sponge" target="_blank" rel="noopener">github</a></p> 
       <a class="article-more-link" href="/2021/11/cs144-lab6/"
         >阅读更多...</a
@@ -653,67 +710,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kernel/" rel="tag">kernel</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-protobuf_ctf_fuzz"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/09/protobuf_ctf_fuzz/"
-    >使用 protobuf &amp; AFLplusplus 进行简易 CTF 自动化 fuzz</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/09/protobuf_ctf_fuzz/" class="article-date">
-  <time datetime="2021-09-26T05:39:22.000Z" itemprop="datePublished">2021-09-26</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="一、简介">一、简介</h2>
-<p>看 <a href="https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md" target="_blank" rel="noopener">fuzz 的结构感知</a> 时遇到了 protobuf，觉得很有意思，于是尝试使用 protobuf 来进行快速简易的 CTF fuzz。</p>
-<p>以下以 <a href="https://ctftime.org/task/16415" target="_blank" rel="noopener">TCTF2021-babyheap2021</a> 为例，来简单说明一下自动化步骤。</p>
-<p>这里主要用到以下项目：</p>
-<ul>
-<li><a href="https://github.com/AFLplusplus/AFLplusplus" target="_blank" rel="noopener">AFL++</a>，其中的 qemu mode + qasan</li>
-<li><a href="https://github.com/thebabush/afl-libprotobuf-mutator" target="_blank" rel="noopener">afl-libprotobuf-mutator</a></li>
-</ul>
-<p>需要注意的是，该 fuzz 目前处于实验性版本，可能不太稳定，仅作为学习研究使用。</p> 
-      <a class="article-more-link" href="/2021/09/protobuf_ctf_fuzz/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/fuzz/" rel="tag">fuzz</a></li></ul>
 
     </footer>
   </div>
