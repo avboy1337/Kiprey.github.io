@@ -162,6 +162,60 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-kernel_pwn_introduction"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/10/kernel_pwn_introduction/"
+    >Kernel pwn CTF 入门</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/10/kernel_pwn_introduction/" class="article-date">
+  <time datetime="2021-10-02T05:39:22.000Z" itemprop="datePublished">2021-10-02</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="一、简介">一、简介</h2>
+<p>内核 CTF 入门，主要参考 <a href="https://wiki.x10sec.org/pwn/linux/kernel-mode/environment/readme/" target="_blank" rel="noopener">CTF-Wiki</a>。</p> 
+      <a class="article-more-link" href="/2021/10/kernel_pwn_introduction/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kernel/" rel="tag">kernel</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-protobuf_ctf_fuzz"
   class="article article-type-post"
   itemscope
@@ -694,72 +748,6 @@ var _hmt = _hmt || [];
 </li>
 </ul> 
       <a class="article-more-link" href="/2021/02/CVE-2019-13764/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-CVE-2020-6468"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/02/CVE-2020-6468/"
-    >CVE-2020-6468 分析</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/02/CVE-2020-6468/" class="article-date">
-  <time datetime="2021-02-09T16:00:00.000Z" itemprop="datePublished">2021-02-10</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/v8/">v8</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="一、前言">一、前言</h2>
-<ul>
-<li>
-<p>CVE-2020-6468 是 v8 中的一个位于 <code>DeadCodeElimination::ReduceDeoptimizeOrReturnOrTerminateOrTailCall</code> 函数的 JIT 漏洞。通过该漏洞攻击者可<strong>触发类型混淆</strong>并<strong>修改数组的长度</strong>，这会导致<strong>任意越界读写</strong>并可进一步达到 <strong>RCE</strong>。</p>
-<p>具体的说，就是可以在 CheckMaps 结点前向目标对象内部写入 -1，在被认出对象类型前成功修改数组长度。</p>
-</li>
-<li>
-<p>测试用的 v8 版本为 <code>8.1.307</code> 。</p>
-</li>
-</ul> 
-      <a class="article-more-link" href="/2021/02/CVE-2020-6468/"
         >阅读更多...</a
       >
        
