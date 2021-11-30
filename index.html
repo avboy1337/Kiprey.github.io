@@ -217,6 +217,68 @@ var _hmt = _hmt || [];
 
     
     <article
+  id="post-healer"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/11/healer/"
+    >《HEALER - Relation Learning Guided Kernel Fuzzing》 论文笔记</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/11/healer/" class="article-date">
+  <time datetime="2021-11-28T16:00:00.000Z" itemprop="datePublished">2021-11-29</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/">论文阅读</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="一、简介">一、简介</h2>
+<p>Healer 是受 Syzkaller 启发的 kernel fuzz。</p>
+<p>与 Syzkaller 类似，Healer 使用 <a href="https://github.com/google/syzkaller/blob/master/docs/syscall_descriptions.md" target="_blank" rel="noopener">Syzlang</a> 描述所提供的 syscall 信息来生成确认参数结构约束和部分语义约束的系统调用序列，并通过不断执行生成的调用序列来发现内核错误，导致内核崩溃。</p>
+<p>与 Syzkaller 不同，Healer 不使用 choise table，而是通过动态移除<strong>最小化调用序列</strong>中的调用并观察覆盖范围变化来检测<strong>不同系统调用之间的内部关系</strong>，并利用内部关系来指导调用序列的生成和变异。此外，Healer 还使用了与 Syzkaller 不同的架构设计。</p>
+<p>论文地址：<a href="http://www.wingtecher.com/themes/WingTecherResearch/assets/papers/healer-sosp21.pdf" target="_blank" rel="noopener">HEALER: Relation Learning Guided Kernel Fuzzing</a></p>
+<p>项目地址：<a href="https://github.com/SunHao-0/healer" target="_blank" rel="noopener">github</a></p> 
+      <a class="article-more-link" href="/2021/11/healer/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/fuzz/" rel="tag">fuzz</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kernel/" rel="tag">kernel</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-syzkaller_1"
   class="article article-type-post"
   itemscope
@@ -229,7 +291,7 @@ var _hmt = _hmt || [];
        
 <h2 itemprop="name">
   <a class="article-title" href="/2021/11/syzkaller_1/"
-    >syzkaller 系列 1 - 环境搭建</a> 
+    >syzkaller 环境搭建</a> 
 </h2>
  
 
@@ -644,62 +706,6 @@ var _hmt = _hmt || [];
 <p>个人 CS144 实验项目地址 - <a href="https://github.com/Kiprey/sponge" target="_blank" rel="noopener">github</a></p>
 <p>PS: 在做 CS144 前，最好先学一手计网理论，或者读读我之前写的<a href="https://kiprey.github.io/2021/05/cnatda-1/#4-%E9%9D%A2%E5%90%91%E8%BF%9E%E6%8E%A5%E7%9A%84%E8%BF%90%E8%BE%93%EF%BC%9ATCP">笔记</a></p> 
       <a class="article-more-link" href="/2021/11/cs144-lab1/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CS144/" rel="tag">CS144</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/" rel="tag">计算机网络</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-cs144-lab0"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2021/11/cs144-lab0/"
-    >CS144计算机网络 Lab0</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2021/11/cs144-lab0/" class="article-date">
-  <time datetime="2021-11-03T16:00:00.000Z" itemprop="datePublished">2021-11-04</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="一、简介">一、简介</h2>
-<p>这里记录了笔者配置 CS144 计算机网络实验环境的一些步骤。</p>
-<p>CS144 Lab0 实验指导书 - <a href="https://cs144.github.io/assignments/lab0.pdf" target="_blank" rel="noopener">Lab Checkpoint 0: networking warmup</a></p>
-<p>个人 CS144 实验项目地址 - <a href="https://github.com/Kiprey/sponge" target="_blank" rel="noopener">github</a></p> 
-      <a class="article-more-link" href="/2021/11/cs144-lab0/"
         >阅读更多...</a
       >
        

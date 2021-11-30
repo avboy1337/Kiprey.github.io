@@ -162,6 +162,71 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-CVE-2019-13764"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2021/02/CVE-2019-13764/"
+    >CVE-2019-13764 分析</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2021/02/CVE-2019-13764/" class="article-date">
+  <time datetime="2021-02-10T16:00:00.000Z" itemprop="datePublished">2021-02-11</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/v8/">v8</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="一、前言">一、前言</h2>
+<ul>
+<li>
+<p>CVE-2019-13764 是 v8 中的一个位于  JIT TyperPhase  <code>TypeInductionVariablePhi</code> 函数的漏洞。我们可以通过这个例子简单学习一下 TyperPhase 中对 InductionVariablePhi 的处理方式，以及越界读取构造方式。</p>
+</li>
+<li>
+<p>复现用的 v8 版本为 <code>7.8.279.23</code>（chromium 78.0.3904.108） 。</p>
+</li>
+</ul> 
+      <a class="article-more-link" href="/2021/02/CVE-2019-13764/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/v8/" rel="tag">v8</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-CVE-2020-6468"
   class="article article-type-post"
   itemscope
@@ -699,66 +764,6 @@ var _hmt = _hmt || [];
        
   该文章已被加密, 请输入密码查看。 
       <a class="article-more-link" href="/2020/10/CVE-2020-6549/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/chrome/" rel="tag">chrome</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-CVE-2019-5826"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/10/CVE-2019-5826/"
-    >CVE-2019-5826分析</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/10/CVE-2019-5826/" class="article-date">
-  <time datetime="2020-10-11T14:38:27.000Z" itemprop="datePublished">2020-10-11</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/vulnerability-analysis/">vulnerability analysis</a> / <a class="article-category-link" href="/categories/vulnerability-analysis/chrome/">chrome</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="简介">简介</h2>
-<ul>
-<li>
-<p>CVE-2019-5826是Google Chrome里IndexedDB中的Use-after-free漏洞，在版本73.0.3683.86之前该漏洞允许攻击者通过<strong>搭配render的RCE漏洞</strong>来造成UAF并<strong>沙箱逃逸</strong>。</p></li></ul> 
-      <a class="article-more-link" href="/2020/10/CVE-2019-5826/"
         >阅读更多...</a
       >
        
