@@ -162,7 +162,7 @@ var _hmt = _hmt || [];
     
     
     <article
-  id="post-heap-12-fastbin_attack"
+  id="post-heap-10-_int_free_process"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -173,8 +173,8 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/2020/05/heap-12-fastbin_attack/"
-    >heap - 12 - fastbin attack</a> 
+  <a class="article-title" href="/2020/05/heap-10-_int_free_process/"
+    >heap - 10 - _int_free的相关操作</a> 
 </h2>
  
 
@@ -182,33 +182,15 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/2020/05/heap-12-fastbin_attack/" class="article-date">
-  <time datetime="2020-05-04T16:00:00.000Z" itemprop="datePublished">2020-05-05</time>
+      <a href="/2020/05/heap-10-_int_free_process/" class="article-date">
+  <time datetime="2020-05-03T16:00:00.000Z" itemprop="datePublished">2020-05-04</time>
 </a>    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <p>利用Fastbin attack进行任意地址读写</p>
-<h2 id="1-原理">1. 原理</h2>
-<ul>
-<li>fastbin attack 存在的原因在于 fastbin 是使用fast chunk的fd指针，即单链表来维护释放的堆块的</li>
-<li>并且由 fastbin 管理的 chunk 即使被释放，其 next_chunk 的 prev_inuse 位也不会被清空</li>
-<li>利用的条件是
-<ul>
-<li>能够控制fast chunk的fd指针</li>
-<li>漏洞发生在fast chunk类型上</li>
-</ul>
-</li>
-</ul>
-<h2 id="2-Arbitrary-Alloc">2. Arbitrary Alloc</h2>
-<h3 id="1-介绍">1) 介绍</h3>
-<ul>
-<li>
-<p>如果我们更改fastbin链尾的fast chunk fd指针为我们的目的地址<br>
-则在几次malloc后，fastbin指针就会指向我们的目的地址<br>
-下一次malloc fast_chunk就会取得目的地址的指针，然后就可以进行读写了（操作取决于程序）</p></li></ul> 
-      <a class="article-more-link" href="/2020/05/heap-12-fastbin_attack/"
+  <p>_int_free的一系列操作</p> 
+      <a class="article-more-link" href="/2020/05/heap-10-_int_free_process/"
         >阅读更多...</a
       >
        
@@ -221,7 +203,7 @@ var _hmt = _hmt || [];
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/BUUOJ/" rel="tag">BUUOJ</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Heap/" rel="tag">Heap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Heap/" rel="tag">Heap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
 
     </footer>
   </div>
@@ -357,59 +339,6 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-heap-10-_int_free_process"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/05/heap-10-_int_free_process/"
-    >heap - 10 - _int_free的相关操作</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/05/heap-10-_int_free_process/" class="article-date">
-  <time datetime="2020-05-03T16:00:00.000Z" itemprop="datePublished">2020-05-04</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>_int_free的一系列操作</p> 
-      <a class="article-more-link" href="/2020/05/heap-10-_int_free_process/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Heap/" rel="tag">Heap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
   id="post-gdb_command"
   class="article article-type-post"
   itemscope
@@ -516,6 +445,67 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Heap/" rel="tag">Heap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/pwnable-tw/" rel="tag">pwnable.tw</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-pwn"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2020/04/pwn/"
+    >CTF Pwn 的杂项笔记</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2020/04/pwn/" class="article-date">
+  <time datetime="2020-04-15T16:00:00.000Z" itemprop="datePublished">2020-04-16</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>这里是笔者记录的一些内容较少、不便于整理出一篇博客的<strong>Pwn杂项</strong>知识点。</p>
+<h2 id="1-docker-使用-使用手册">1. docker 使用 - <a href="http://www.docker.org.cn/index.html" target="_blank" rel="noopener">使用手册</a></h2>
+<h2 id="2-漏洞">2. 漏洞</h2>
+<ol>
+<li>
+<p>格式化字符串</p>
+ <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// %lln 四字 / %ln 双字 / %hn 单字 / %hhn 字节</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%(n-1)$[format]"</span>); <span class="comment">// -&gt; 第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%&#123;n-1&#125;$n"</span>); <span class="comment">// -&gt; 将输出的字符个数写入第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%nc"</span>); <span class="comment">// -&gt; 输出对应参数n个字符</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol> 
+      <a class="article-more-link" href="/2020/04/pwn/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
 
     </footer>
   </div>
@@ -664,70 +654,6 @@ var _hmt = _hmt || [];
 
     
     <article
-  id="post-misc"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/04/misc/"
-    >CTF Misc 的笔记</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/04/misc/" class="article-date">
-  <time datetime="2020-04-15T16:00:00.000Z" itemprop="datePublished">2020-04-16</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>一点点曾经整理的Misc笔记，数量较少。</p>
-<h2 id="1-git">1. git</h2>
-<ol>
-<li>
-<p>查找所有 commit - <a href="https://www.cnblogs.com/Tkitn/p/11648456.html" target="_blank" rel="noopener">参考链接</a></p>
- <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看所有commit，包括已撤回的提交</span></span><br><span class="line">git <span class="built_in">log</span> --reflog</span><br><span class="line"><span class="comment"># 重置commit头</span></span><br><span class="line">git reset --hard [commit-Hash]</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>查看 git 提交的文件内容 - <a href="https://blog.csdn.net/daguanjia11/article/details/73309026" target="_blank" rel="noopener">git 对象库</a></p>
- <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看所有提交log（包括已撤回的提交）</span></span><br><span class="line">git <span class="built_in">log</span> --pretty=raw</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的类型</span></span><br><span class="line">git cat-file -t [Hash]</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的内容</span></span><br><span class="line">git cat-file -p [tree/file-Hash]</span><br><span class="line"><span class="comment"># 查看树的内容</span></span><br><span class="line">git ls-tree [-r是否递归][-t输出更完整的信息（包括子树）] [commit/tree-hash]</span><br></pre></td></tr></table></figure>
-</li>
-</ol> 
-      <a class="article-more-link" href="/2020/04/misc/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Misc/" rel="tag">Misc</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
   id="post-CTF_web"
   class="article article-type-post"
   itemscope
@@ -785,6 +711,70 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Web/" rel="tag">Web</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-misc"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2020/04/misc/"
+    >CTF Misc 的笔记</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2020/04/misc/" class="article-date">
+  <time datetime="2020-04-15T16:00:00.000Z" itemprop="datePublished">2020-04-16</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>一点点曾经整理的Misc笔记，数量较少。</p>
+<h2 id="1-git">1. git</h2>
+<ol>
+<li>
+<p>查找所有 commit - <a href="https://www.cnblogs.com/Tkitn/p/11648456.html" target="_blank" rel="noopener">参考链接</a></p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看所有commit，包括已撤回的提交</span></span><br><span class="line">git <span class="built_in">log</span> --reflog</span><br><span class="line"><span class="comment"># 重置commit头</span></span><br><span class="line">git reset --hard [commit-Hash]</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查看 git 提交的文件内容 - <a href="https://blog.csdn.net/daguanjia11/article/details/73309026" target="_blank" rel="noopener">git 对象库</a></p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看所有提交log（包括已撤回的提交）</span></span><br><span class="line">git <span class="built_in">log</span> --pretty=raw</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的类型</span></span><br><span class="line">git cat-file -t [Hash]</span><br><span class="line"><span class="comment"># 查看某个Hash值对应的内容</span></span><br><span class="line">git cat-file -p [tree/file-Hash]</span><br><span class="line"><span class="comment"># 查看树的内容</span></span><br><span class="line">git ls-tree [-r是否递归][-t输出更完整的信息（包括子树）] [commit/tree-hash]</span><br></pre></td></tr></table></figure>
+</li>
+</ol> 
+      <a class="article-more-link" href="/2020/04/misc/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Misc/" rel="tag">Misc</a></li></ul>
 
     </footer>
   </div>
