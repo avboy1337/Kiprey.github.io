@@ -162,6 +162,77 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-heap-12-fastbin_attack"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2020/05/heap-12-fastbin_attack/"
+    >heap - 12 - fastbin attack</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2020/05/heap-12-fastbin_attack/" class="article-date">
+  <time datetime="2020-05-04T16:00:00.000Z" itemprop="datePublished">2020-05-05</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>利用Fastbin attack进行任意地址读写</p>
+<h2 id="1-原理">1. 原理</h2>
+<ul>
+<li>fastbin attack 存在的原因在于 fastbin 是使用fast chunk的fd指针，即单链表来维护释放的堆块的</li>
+<li>并且由 fastbin 管理的 chunk 即使被释放，其 next_chunk 的 prev_inuse 位也不会被清空</li>
+<li>利用的条件是
+<ul>
+<li>能够控制fast chunk的fd指针</li>
+<li>漏洞发生在fast chunk类型上</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-Arbitrary-Alloc">2. Arbitrary Alloc</h2>
+<h3 id="1-介绍">1) 介绍</h3>
+<ul>
+<li>
+<p>如果我们更改fastbin链尾的fast chunk fd指针为我们的目的地址<br>
+则在几次malloc后，fastbin指针就会指向我们的目的地址<br>
+下一次malloc fast_chunk就会取得目的地址的指针，然后就可以进行读写了（操作取决于程序）</p></li></ul> 
+      <a class="article-more-link" href="/2020/05/heap-12-fastbin_attack/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/BUUOJ/" rel="tag">BUUOJ</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Heap/" rel="tag">Heap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-heap-11-malloc_consolidate"
   class="article article-type-post"
   itemscope
@@ -209,6 +280,112 @@ var _hmt = _hmt || [];
 </li>
 </ul> 
       <a class="article-more-link" href="/2020/05/heap-11-malloc_consolidate/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Heap/" rel="tag">Heap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-heap-9-__int_free_source"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2020/05/heap-9-__int_free_source/"
+    >heap - 9 - _int_free 源码及其部分分析</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2020/05/heap-9-__int_free_source/" class="article-date">
+  <time datetime="2020-05-03T16:00:00.000Z" itemprop="datePublished">2020-05-04</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p><code>__int_free</code> —— 核心内存释放函数</p> 
+      <a class="article-more-link" href="/2020/05/heap-9-__int_free_source/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Heap/" rel="tag">Heap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-heap-10-_int_free_process"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2020/05/heap-10-_int_free_process/"
+    >heap - 10 - _int_free的相关操作</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2020/05/heap-10-_int_free_process/" class="article-date">
+  <time datetime="2020-05-03T16:00:00.000Z" itemprop="datePublished">2020-05-04</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>_int_free的一系列操作</p> 
+      <a class="article-more-link" href="/2020/05/heap-10-_int_free_process/"
         >阅读更多...</a
       >
        
@@ -350,6 +527,143 @@ var _hmt = _hmt || [];
 
     
     <article
+  id="post-crypto"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2020/04/crypto/"
+    >CTF Crypto 的笔记</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2020/04/crypto/" class="article-date">
+  <time datetime="2020-04-15T16:00:00.000Z" itemprop="datePublished">2020-04-16</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>一点点Crypto的笔记，真的只有一点点。</p>
+<h2 id="1-RSA">1. RSA</h2>
+<ol>
+<li>RSA 算法原理
+<ol>
+<li><a href="https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/" target="_blank" rel="noopener">CTF-Wiki</a></li>
+<li><a href="https://www.kancloud.cn/kancloud/rsa_algorithm/48484" target="_blank" rel="noopener">看云</a></li>
+</ol>
+</li>
+<li>分解质数
+<ol>
+<li>
+<p>命令行分解 - <a href="https://github.com/ryosan-470/factordb-pycli" target="_blank" rel="noopener">Github</a></p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo pip install factordb-pycli</span><br><span class="line">factordb [-h] [--json] number</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>在线解两质数相乘 - <a href="http://factordb.com/index.php" target="_blank" rel="noopener">网址</a></p>
+</li>
+</ol>
+</li>
+</ol> 
+      <a class="article-more-link" href="/2020/04/crypto/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Crypto/" rel="tag">Crypto</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-reverse"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2020/04/reverse/"
+    >CTF Reverse 的笔记</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2020/04/reverse/" class="article-date">
+  <time datetime="2020-04-15T16:00:00.000Z" itemprop="datePublished">2020-04-16</time>
+</a>    
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <ul>
+<li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li>
+<li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li>
+</ul>
+<h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2>
+<p>迷宫问题有以下特点:</p>
+<ul>
+<li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li>
+<li>将用户输入限制在少数几个字符范围内.</li>
+<li>一般只有一个迷宫入口和一个迷宫出口</li>
+</ul>
+<p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p> 
+      <a class="article-more-link" href="/2020/04/reverse/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Reverse/" rel="tag">Reverse</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-misc"
   class="article article-type-post"
   itemscope
@@ -471,310 +785,6 @@ var _hmt = _hmt || [];
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Web/" rel="tag">Web</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-reverse"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/04/reverse/"
-    >CTF Reverse 的笔记</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/04/reverse/" class="article-date">
-  <time datetime="2020-04-15T16:00:00.000Z" itemprop="datePublished">2020-04-16</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <ul>
-<li>笔者会把一些曾经遇到过的Reverse知识点记录在这里。</li>
-<li>但笔者并非主攻二进制逆向，故逆向笔记会相对较少。</li>
-</ul>
-<h2 id="1-迷宫问题（maze）">1. 迷宫问题（maze）</h2>
-<p>迷宫问题有以下特点:</p>
-<ul>
-<li>在内存中布置一张 “地图”，这个地图可能是字符（例如<code>#</code>之类的），也可能是一些数字的二进制</li>
-<li>将用户输入限制在少数几个字符范围内.</li>
-<li>一般只有一个迷宫入口和一个迷宫出口</li>
-</ul>
-<p>详情<a href="https://ctf-wiki.github.io/ctf-wiki/reverse/maze/maze-zh/" target="_blank" rel="noopener">CTF-Wiki</a></p> 
-      <a class="article-more-link" href="/2020/04/reverse/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Reverse/" rel="tag">Reverse</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-pwn"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/04/pwn/"
-    >CTF Pwn 的杂项笔记</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/04/pwn/" class="article-date">
-  <time datetime="2020-04-15T16:00:00.000Z" itemprop="datePublished">2020-04-16</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>这里是笔者记录的一些内容较少、不便于整理出一篇博客的<strong>Pwn杂项</strong>知识点。</p>
-<h2 id="1-docker-使用-使用手册">1. docker 使用 - <a href="http://www.docker.org.cn/index.html" target="_blank" rel="noopener">使用手册</a></h2>
-<h2 id="2-漏洞">2. 漏洞</h2>
-<ol>
-<li>
-<p>格式化字符串</p>
- <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// %lln 四字 / %ln 双字 / %hn 单字 / %hhn 字节</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%(n-1)$[format]"</span>); <span class="comment">// -&gt; 第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%&#123;n-1&#125;$n"</span>); <span class="comment">// -&gt; 将输出的字符个数写入第n个参数</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"%nc"</span>); <span class="comment">// -&gt; 输出对应参数n个字符</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol> 
-      <a class="article-more-link" href="/2020/04/pwn/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-crypto"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/04/crypto/"
-    >CTF Crypto 的笔记</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/04/crypto/" class="article-date">
-  <time datetime="2020-04-15T16:00:00.000Z" itemprop="datePublished">2020-04-16</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>一点点Crypto的笔记，真的只有一点点。</p>
-<h2 id="1-RSA">1. RSA</h2>
-<ol>
-<li>RSA 算法原理
-<ol>
-<li><a href="https://wiki.x10sec.org/crypto/asymmetric/rsa/rsa_theory/" target="_blank" rel="noopener">CTF-Wiki</a></li>
-<li><a href="https://www.kancloud.cn/kancloud/rsa_algorithm/48484" target="_blank" rel="noopener">看云</a></li>
-</ol>
-</li>
-<li>分解质数
-<ol>
-<li>
-<p>命令行分解 - <a href="https://github.com/ryosan-470/factordb-pycli" target="_blank" rel="noopener">Github</a></p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo pip install factordb-pycli</span><br><span class="line">factordb [-h] [--json] number</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>在线解两质数相乘 - <a href="http://factordb.com/index.php" target="_blank" rel="noopener">网址</a></p>
-</li>
-</ol>
-</li>
-</ol> 
-      <a class="article-more-link" href="/2020/04/crypto/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Crypto/" rel="tag">Crypto</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-heap-7- __int_malloc_source"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/04/heap-7-%20__int_malloc_source/"
-    >heap - 7 - _int_malloc 源码及其部分分析</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/04/heap-7-%20__int_malloc_source/" class="article-date">
-  <time datetime="2020-04-06T16:00:00.000Z" itemprop="datePublished">2020-04-07</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p><code>__int_malloc</code> —— 核心内存分配函数</p> 
-      <a class="article-more-link" href="/2020/04/heap-7-%20__int_malloc_source/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Heap/" rel="tag">Heap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-heap-6-__libc_malloc_source"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2020/04/heap-6-__libc_malloc_source/"
-    >heap - 6 - __libc_malloc 源码及其部分分析</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2020/04/heap-6-__libc_malloc_source/" class="article-date">
-  <time datetime="2020-04-05T16:00:00.000Z" itemprop="datePublished">2020-04-06</time>
-</a>    
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <p>调用<code>malloc</code>后首执行的函数  —— <code>__libc_malloc</code>!</p> 
-      <a class="article-more-link" href="/2020/04/heap-6-__libc_malloc_source/"
-        >阅读更多...</a
-      >
-       
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Heap/" rel="tag">Heap</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pwn/" rel="tag">Pwn</a></li></ul>
 
     </footer>
   </div>
